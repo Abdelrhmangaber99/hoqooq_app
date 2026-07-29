@@ -7,6 +7,10 @@ abstract class AuthEvent extends Equatable {
   List<Object> get props => [];
 }
 
+/// Dispatched once on app start (from the splash screen) to attempt a
+/// silent session restore from the stored refresh token.
+class SessionRestoreRequested extends AuthEvent {}
+
 class LoginRequested extends AuthEvent {
   final String email;
   final String password;

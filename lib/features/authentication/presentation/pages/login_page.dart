@@ -173,31 +173,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
               
               const SizedBox(height: 60),
-              
-              // Footer
-              Center(
-                child: RichText(
-                  text: TextSpan(
-                    style: AppTypography.bodyMedium,
-                    children: [
-                      TextSpan(text: '${context.tr('new_to_lexora')} '),
-                      WidgetSpan(
-                        child: GestureDetector(
-                          onTap: () => context.push(AppRouter.signUp),
-                          child: Text(
-                            context.tr('create_account'),
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
             ],
           ),
         ),

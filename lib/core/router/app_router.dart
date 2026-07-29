@@ -3,7 +3,6 @@ import 'route_guards.dart';
 
 import '../../features/authentication/presentation/pages/splash_page.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
-import '../../features/authentication/presentation/pages/sign_up_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/calendar/presentation/pages/appointment_details_page.dart';
@@ -20,7 +19,6 @@ class AppRouter {
 
   static const String splash = '/';
   static const String login = '/login';
-  static const String signUp = '/sign-up';
   static const String home = '/home';
   static const String calendar = '/calendar';
   static const String clients = '/clients';
@@ -38,10 +36,6 @@ class AppRouter {
       GoRoute(
         path: login,
         builder: (context, state) => const LoginPage(),
-      ),
-      GoRoute(
-        path: signUp,
-        builder: (context, state) => const SignUpPage(),
       ),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/router/app_router.dart';
+import '../bloc/auth_bloc.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -29,11 +31,8 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
         setState(() {});
       });
 
-    _controller.forward().then((_) {
-      if (mounted) {
-        context.go(AppRouter.login);
-      }
-    });
+    _controller.forward();
+    context.read<AuthBloc>().add(SessionRestoreRequested());
   }
 
   @override
@@ -44,6 +43,19 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          context.go(AppRouter.home);
+        } else if (state is AuthUnauthenticated) {
+          context.go(AppRouter.login);
+        }
+      },
+      child: _buildSplashBody(),
+    );
+  }
+
+  Widget _buildSplashBody() {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(

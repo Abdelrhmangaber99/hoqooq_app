@@ -13,17 +13,21 @@ import 'package:dio/dio.dart' as _i361;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:hqooq/core/localization/locale_bloc.dart' as _i40;
 import 'package:hqooq/core/network/dio_client.dart' as _i893;
-import 'package:hqooq/core/network/interceptors/tenant_interceptor.dart'
-    as _i486;
+import 'package:hqooq/core/network/interceptors/auth_interceptor.dart' as _i404;
+import 'package:hqooq/core/network/interceptors/refresh_interceptor.dart'
+    as _i722;
+import 'package:hqooq/core/storage/token_storage.dart' as _i23;
 import 'package:hqooq/core/theme/theme_bloc.dart' as _i926;
-import 'package:hqooq/features/authentication/data/repository/mock_auth_repository.dart'
-    as _i648;
+import 'package:hqooq/features/authentication/data/repository/auth_repository.dart'
+    as _i494;
 import 'package:hqooq/features/authentication/domain/repository/i_auth_repository.dart'
     as _i598;
 import 'package:hqooq/features/authentication/domain/usecases/login_use_case.dart'
     as _i196;
 import 'package:hqooq/features/authentication/presentation/bloc/auth_bloc.dart'
     as _i1026;
+import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart'
+    as _i81;
 import 'package:hqooq/features/calendar/data/repository/mock_appointment_repository.dart'
     as _i456;
 import 'package:hqooq/features/calendar/domain/repository/i_appointment_repository.dart'
@@ -58,20 +62,31 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final networkModule = _$NetworkModule();
-    gh.factory<_i486.TenantInterceptor>(() => _i486.TenantInterceptor());
     gh.lazySingleton<_i40.LocaleBloc>(() => _i40.LocaleBloc());
-    gh.lazySingleton<_i361.Dio>(() => networkModule.dio);
+    gh.lazySingleton<_i23.TokenStorage>(() => const _i23.TokenStorage());
     gh.lazySingleton<_i926.ThemeBloc>(() => _i926.ThemeBloc());
+    gh.lazySingleton<_i81.SessionCubit>(() => _i81.SessionCubit());
     gh.lazySingleton<_i320.ICaseRepository>(() => _i155.MockCaseRepository());
-    gh.lazySingleton<_i598.IAuthRepository>(() => _i648.MockAuthRepository());
+    gh.factory<_i404.AuthInterceptor>(
+      () => _i404.AuthInterceptor(gh<_i81.SessionCubit>()),
+    );
     gh.lazySingleton<_i588.IAppointmentRepository>(
       () => _i456.MockAppointmentRepository(),
+    );
+    gh.factory<_i722.RefreshInterceptor>(
+      () => _i722.RefreshInterceptor(
+        gh<_i23.TokenStorage>(),
+        gh<_i81.SessionCubit>(),
+      ),
     );
     gh.lazySingleton<_i794.IClientRepository>(
       () => _i317.MockClientRepository(),
     );
-    gh.lazySingleton<_i196.LoginUseCase>(
-      () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
+    gh.lazySingleton<_i361.Dio>(
+      () => networkModule.dio(
+        gh<_i404.AuthInterceptor>(),
+        gh<_i722.RefreshInterceptor>(),
+      ),
     );
     gh.lazySingleton<_i613.GetCasesUseCase>(
       () => _i613.GetCasesUseCase(gh<_i320.ICaseRepository>()),
@@ -88,11 +103,22 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i723.GetClientsUseCase>(
       () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
     );
-    gh.factory<_i1026.AuthBloc>(
-      () => _i1026.AuthBloc(gh<_i196.LoginUseCase>()),
+    gh.lazySingleton<_i598.IAuthRepository>(
+      () => _i494.AuthRepository(gh<_i361.Dio>()),
     );
     gh.factory<_i165.ClientsBloc>(
       () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
+    );
+    gh.lazySingleton<_i196.LoginUseCase>(
+      () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
+    );
+    gh.factory<_i1026.AuthBloc>(
+      () => _i1026.AuthBloc(
+        gh<_i196.LoginUseCase>(),
+        gh<_i598.IAuthRepository>(),
+        gh<_i81.SessionCubit>(),
+        gh<_i23.TokenStorage>(),
+      ),
     );
     return this;
   }
