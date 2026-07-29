@@ -30,7 +30,7 @@ This repo already contains a working UI-only prototype (see `PROJECT_SUMMARY.md`
 | Forms | `reactive_forms` or hooks | not yet decided |
 | Models | `freezed` | `freezed` ✓ (matches) |
 | Routing | `go_router` | `go_router` ✓ (matches) |
-| HTTP | `dio` | `dio` ✓ (matches, but `dio_client.dart` hardcodes `baseUrl: https://api.hoqooq.com/v1` and has no auth/refresh interceptor yet — only a `TenantInterceptor` stub that reads `tenantId` off the mock user and injects `X-Tenant-ID` header client-side, which is itself a BR-003 violation to keep in mind when this gets replaced) |
+| HTTP | `dio` | `dio` ✓ (matches; as of M1, `dio_client.dart` uses `ApiConfig.baseUrl` + `AuthInterceptor` + `RefreshInterceptor`. `TenantInterceptor` has been removed — see M1 session log) |
 
 Existing features (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) are wired to **mock repositories** (`mock_auth_repository.dart`, `mock_case_repository.dart`, etc.) returning fake data — no real network calls yet. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. M1 adapts to this stack rather than migrating away from it.
 
@@ -40,7 +40,7 @@ Existing features (`lib/features/`: authentication, calendar, cases, clients, da
 
 | ID | Rule | App must do |
 |---|---|---|
-| BR-003 | Tenant isolation, row-scoped | Never send `tenant_id`/`tenantId` from the client (backend derives it from the JWT) — **currently violated by the collection's `POST/PATCH /users` body and by `TenantInterceptor`'s client-side header injection; do not replicate that pattern for new code**. Cross-tenant fetch → 404 rendered as "Not found," never "Forbidden." |
+| BR-003 | Tenant isolation, row-scoped | Never send `tenant_id`/`tenantId` from the client (backend derives it from the JWT). `TenantInterceptor`'s client-side header injection was removed in M1 for this reason — **still note the collection's `POST/PATCH /users` request bodies accept a client-supplied `tenantId` field; don't populate it from any future staff-management screen.** Cross-tenant fetch → 404 rendered as "Not found," never "Forbidden." |
 | BR-005 | Firm Admin full CRUD, non-restrictable | Never hide a module from Firm Admin in UI gating. |
 | BR-010 | Subscription lifecycle → read-only mode | On `SUSPENDED`/`PAST_DUE`, disable all create/update/delete UI with a banner. **No data source for this in the current API contract — flagged above.** |
 | BR-016/BR-024/BR-028/BR-029 | No hard delete (cases, documents, financial records) | Never wire a destructive "delete" UI action straight to the collection's `DELETE` endpoints for these entities without confirming with the user first — those endpoints being present doesn't make using them correct. |
@@ -54,53 +54,76 @@ Full rule set: BRD §7 (BR-001 – BR-037). Ask before writing code that could v
 
 ## Tech stack
 
-**Confirmed:** Flutter + Dart 3, `flutter_bloc`, `get_it` + `injectable`, `go_router`, `dio`, `freezed` + `json_serializable`, `flutter_secure_storage`, `hive`/`hive_flutter`, `logger`, `connectivity_plus`, `intl` + ARB-less JSON localization (currently `assets/lang/` — spec wants ARB files, needs reconciling — open item).
+**Confirmed:** Flutter + Dart 3, `flutter_bloc`, `get_it` + `injectable`, `go_router`, `dio`, `freezed` + `json_serializable`, `flutter_secure_storage`, `hive`/`hive_flutter`, `logger`, `connectivity_plus`, `mocktail` + `bloc_test` (test deps, added M1).
+
+**Localization:** two systems now coexist, deliberately. Existing screens (dashboard, calendar, clients, etc.) use the original `assets/lang/*.json` + `context.tr()` extension. New auth-flow strings added in M1 use Flutter's official ARB pipeline (`lib/l10n/app_en.arb` / `app_ar.arb` → generated `GeneratedAppLocalizations`, imported as `gen_l10n.GeneratedAppLocalizations` in `main.dart` to avoid a name clash with the existing custom `AppLocalizations` class). Finishing the migration for non-auth screens is a later-milestone task, not done.
 
 **Environments:** dev/local only for now; staging and prod base URLs don't exist yet. `--dart-define=API_BASE_URL=...` per spec §14, defaulting to the dev URL until staging/prod are stood up.
 
 **Push notifications:** deferred to M6 per spec — no Firebase project wiring before then.
 
-**Open items still needing your input before they block a milestone (not blocking M1 itself):**
-- Actual dev/local base URL value (currently a placeholder in `dio_client.dart`: `https://api.hoqooq.com/v1` — fictional, needs replacing).
+**Open items still needing your input before they block a later milestone:**
+- Actual dev/local base URL value — `ApiConfig.baseUrl` (`lib/core/network/api_config.dart`) defaults to `http://localhost:3000` via `--dart-define=API_BASE_URL`; replace with your real value whenever available.
 - iOS/Android minimum versions — defaulting to spec's iOS 14+ / Android 8 (API 26)+ until told otherwise.
-- Package name / bundle ID — `pubspec.yaml` has `name: hqooq` (no second "o"); Android `applicationId`/iOS bundle ID not yet set per-flavor. Defaulting to leaving `hqooq` and using `com.hoqooq.app`-style IDs as a placeholder — confirm before M1's flavor setup step actually runs.
-- Endpoints with no example response in the collection (`/roles`, `/roles/permissions`, `/ai/*`, `/calendar/timeline`, download endpoints) — treated as "real but undocumented"; build against best-guess shapes and revisit against a running environment when reached in a later milestone. Not needed for M1 (auth + `/me` only).
+- Package name / bundle ID — `pubspec.yaml` still has `name: hqooq`; Android is still `com.example.hqooq` (Flutter's default placeholder, never customized). Not touched — a build/deploy-milestone concern.
+- Endpoints with no example response in the collection (`/roles`, `/roles/permissions`, `/ai/*`, `/calendar/timeline`, download endpoints) — treated as "real but undocumented"; build against best-guess shapes and revisit against a running environment when reached in a later milestone.
+- **`User.isFirmAdmin` is hardcoded `false`** (`lib/features/authentication/domain/entities/user.dart`) — no example anywhere in `API_CONTRACT.md` shows a real `role.name` value for Firm Admin. Confirm the actual value against a live login response before any milestone that gates UI on Firm Admin status.
+- `AuthResponse.user` (login/refresh) is typed `Map<String, dynamic>?`, not `User` — every worked example shows `"user": {}`. The app always re-fetches via `GET /users/me` instead of trusting this field; revisit if a real response ever shows a populated shape here.
 
 ## Folder structure (as it exists today)
 
 ```
 lib/
   core/
-    auth/               # user_role.dart
+    auth/               # user_role.dart (unused by auth now; still referenced nowhere outside itself)
     errors/             # failures.dart
-    localization/       # app_localizations.dart, locale_bloc/event/state
-    network/            # dio_client.dart, interceptors/tenant_interceptor.dart, api_result.dart
+    localization/       # app_localizations.dart (JSON-based), locale_bloc/event/state
+    network/            # api_config.dart, dio_client.dart, interceptors/{auth,refresh}_interceptor.dart, api_result.dart
     router/             # app_router.dart, route_guards.dart
+    storage/            # token_storage.dart (added M1)
     theme/              # app_colors/radius/spacing/typography, theme_bloc/event/state
     widgets/            # app_button.dart, app_text_field.dart
   di/                   # injection.dart, injection.config.dart (injectable codegen)
+  l10n/                 # app_en.arb, app_ar.arb, generated app_localizations*.dart (added M1)
   features/
-    authentication/     # data/domain/presentation, mock_auth_repository
-    calendar/
-    cases/
-    clients/
+    authentication/
+      data/
+        models/         # login_request, refresh_request, forgot/reset/change_password_request, auth_response (added M1)
+        repository/      # auth_repository.dart (real, added M1) — no mock left
+      domain/
+        entities/       # user, role, permission, tenant_ref (rebuilt M1 to match API_CONTRACT.md)
+        repository/      # i_auth_repository.dart
+        usecases/        # login_use_case.dart
+      presentation/
+        bloc/            # auth_bloc, auth_event, auth_state, session_cubit, session_state (session_cubit added M1)
+        pages/           # login, splash (sign_up_page.dart kept but unrouted, see PLAN.md)
+    calendar/            # still mock-backed, untouched since M1 is auth-only
+    cases/               # still mock-backed
+    clients/             # still mock-backed
     dashboard/
     notifications/
     profile/
   shared/
     presentation/pages/main_layout.dart
+l10n.yaml               # gen-l10n config (added M1)
+test/
+  core/network/interceptors/refresh_interceptor_test.dart
+  features/authentication/{data/repository, domain/entities, presentation/{bloc,pages}}/*_test.dart
 ```
-Each feature: `data/repository` (mock today, real `dio` repos to come) → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`.
+Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. Auth is now fully real; calendar/cases/clients remain mock-backed until their own milestone.
 
 ## Coding conventions
 
 - All HTTP calls go through a single `dio` client configured per `API_CONTRACT.md` — no endpoint strings hardcoded inside feature repositories.
-- Every user-facing string localized from day one (spec wants ARB; current code uses `assets/lang/*.json` — reconcile before M1 sign-off, see clarifying questions).
+- Every user-facing string localized from day one. New strings go in ARB (`lib/l10n/`); existing screens' strings stay in `assets/lang/*.json` until their own migration milestone — don't mix the two within one new screen.
 - Test every screen in EN LTR and AR RTL.
-- API repository tests mock `dio` and assert request shape matches `API_CONTRACT.md` exactly (method, path, body keys/casing).
+- API repository tests mock `dio` (via `mocktail`) and assert request shape matches `API_CONTRACT.md` exactly (method, path, body keys/casing).
 - Freezed for all DTOs; camelCase JSON keys per the actual collection (not the snake_case the spec guessed).
 - Commit in small, milestone-scoped chunks referencing the milestone + BR-### or endpoint touched.
+- Widget tests: avoid `pumpAndSettle()` when the tree contains an indeterminate `CircularProgressIndicator` (never settles → timeout) or a `SnackBar` (its ~4s auto-dismiss timer gets fast-forwarded past, so the assertion finds nothing) — use a couple of fixed-duration `pump()` calls instead. If a widget test needs the real JSON-based `AppLocalizations` and lives in a file with multiple `testWidgets` blocks, preload it once in `setUpAll` and serve it via a `SynchronousFuture`-based delegate rather than letting each test await the real `rootBundle` load — that async gap doesn't reliably resolve past the first `pumpWidget` in one file (see `login_page_test.dart`).
 
 ## Session log
 
-- **2026-07-30** — Read spec, BRD, and Postman collection end-to-end. Produced `API_CONTRACT.md`. Discovered (a) the Postman collection conflicts with BRD business rules in multiple places (public signup, hard deletes, marketplace endpoints, missing subscription/MFA/timeline/versioning surfaces) and (b) an existing flutter_bloc/get_it/Hive UI-only prototype already lives in `lib/`, differing from the spec's Riverpod/drift assumption. Also found the git repository root is the entire home directory (`/Users/abdelrhmangaber`), not this project folder — flagged to user, not yet resolved. User confirmed: (1) treat the Postman collection as literal ground truth, flag BR conflicts inline per-milestone rather than blocking; (2) keep the existing flutter_bloc/get_it/Hive stack, no migration to Riverpod/drift; (3) dev/local base URL only for now (actual value still TBD from user); (4) defer Firebase/FCM to M6 per spec. Base URL value, min OS versions, package/bundle ID, and undocumented-endpoint handling still open (defaults assumed, noted above) — user said "continue" rather than answering each, so `PLAN.md` for M1 was drafted with explicit placeholders flagged rather than waiting further. Still waiting for explicit approval before writing any code.
+- **2026-07-30 (planning)** — Read spec, BRD, and Postman collection end-to-end. Produced `API_CONTRACT.md`. Discovered (a) the Postman collection conflicts with BRD business rules in multiple places (public signup, hard deletes, marketplace endpoints, missing subscription/MFA/timeline/versioning surfaces) and (b) an existing flutter_bloc/get_it/Hive UI-only prototype already lives in `lib/`, differing from the spec's Riverpod/drift assumption. Also found the git repository root is the entire home directory (`/Users/abdelrhmangaber`), not this project folder — flagged to user. User confirmed: (1) treat the Postman collection as literal ground truth, flag BR conflicts inline per-milestone rather than blocking; (2) keep the existing flutter_bloc/get_it/Hive stack, no migration to Riverpod/drift; (3) dev/local base URL only for now; (4) defer Firebase/FCM to M6 per spec. `PLAN.md` for M1 drafted and approved.
+
+- **2026-07-30 (M1 execution)** — Before writing code: initialized a proper git repo scoped to this project folder (`git init` inside `hoqooq_app-main`, per user's choice — the home-directory-wide repo is untouched and not used for this project going forward), and got explicit answers on the plan's three flagged decisions: remove `TenantInterceptor` outright, remove the sign-up nav entry (keep the page file, unrouted), migrate to ARB for new auth strings now. Implemented M1 in full per `PLAN.md`'s checklist — see that file for the itemized breakdown. Highlights not obvious from a diff: `AuthResponse.user` is deliberately untyped (`Map<String, dynamic>?`) because every login/refresh example in the collection shows an empty `user: {}`, so the app always re-fetches via `GET /users/me` instead of trusting it; `User.isFirmAdmin` is a scaffolded `false` pending a real `role.name` example; `SessionCubit` (not `AuthBloc`'s own state) is the actual source of truth read by route guards and the Dio interceptors, since interceptors can't cleanly depend on a widget-scoped Bloc. 31 tests added, all green; `flutter analyze` clean; `dart format` clean on every file this milestone touched (pre-existing formatting debt elsewhere in the repo was left alone to keep the diff reviewable — flagged, not fixed). M2 not started.
