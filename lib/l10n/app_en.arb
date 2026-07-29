@@ -1,0 +1,15 @@
+{
+  "@@locale": "en",
+  "sessionExpired": "Your session has expired. Please sign in again.",
+  "@sessionExpired": {
+    "description": "Shown when a token refresh fails and the app forces a logout."
+  },
+  "genericErrorMessage": "Something went wrong. Please try again.",
+  "@genericErrorMessage": {
+    "description": "Fallback message for an API error with no more specific mapping."
+  },
+  "networkErrorMessage": "No internet connection. Please check your network and try again.",
+  "@networkErrorMessage": {
+    "description": "Shown when a request fails due to no connectivity."
+  }
+}

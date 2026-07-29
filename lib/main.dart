@@ -8,6 +8,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'di/injection.dart';
 import 'features/authentication/presentation/bloc/auth_bloc.dart';
+import 'l10n/app_localizations.dart' as gen_l10n;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,7 @@ class MyApp extends StatelessWidget {
             routerConfig: AppRouter.router,
             localizationsDelegates: const [
               AppLocalizations.delegate,
+              gen_l10n.GeneratedAppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
