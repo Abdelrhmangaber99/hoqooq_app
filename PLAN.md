@@ -85,6 +85,82 @@ All camelCase per the actual collection.
 
 ---
 
-## Next: Milestone 2 proposal — not started
+# Milestone 2 — Cases & Clients (read-only)
 
-Per your collaboration rule ("work milestone by milestone... do not skip ahead"), M2 is **not** started and no code for it exists yet. Before drafting an M2 checklist I'd want to confirm: which read-only screens to prioritize first (spec §15 groups dashboard, cases, clients, hearings, calendar, documents-list, tasks-list together — that's a lot for one milestone), and whether the existing mock repositories for calendar/cases/clients (still untouched, still mock-backed) should be replaced screen-by-screen or all at once. Will propose a scoped M2 `PLAN.md` when you're ready to continue.
+**Status: SUPERSEDED — the Case/Client shapes this draft was written against no longer exist.** The user updated `hoqooq-postman-import.json` immediately after this was drafted; the backend rebuilt both `Case` and `Client` entirely (see `API_CONTRACT.md`'s breaking-changes section and `CLAUDE.md`'s session log). Left in place below for historical context — do not build against it. A redone version needs `agreedFee`/`priority`/`primaryLawyer`/`caseType`/`defaultCourt`/`team[]` for Case and `clientCode`/`nationalId`/`commercialReg`/`emails[]`/`phones[]`/`addresses[]` for Client instead of everything described here. Awaiting user direction before redrafting.
+
+## Framing (original draft, now stale)
+
+Spec §15's "M2 — Read-only workspace" groups dashboard, cases, clients, hearings, calendar, documents-list, and tasks-list into one milestone. That's too much for the same reason M1 stayed narrow: **tasks and documents don't exist as features at all yet** (no folder, no entity, no repository — not "mock-backed," genuinely unbuilt), and a real hearings feature doesn't exist either — the current `calendar` feature's single `Appointment` model conflates what are actually two separate real endpoints (`/hearings` for case-bound court sessions, `/calendar` for generic events). Bundling all of that into one milestone would repeat the mistake M1 was designed to avoid.
+
+**You confirmed: M2 = Cases + Clients only, read-only (list + detail).** Hearings, calendar, documents, tasks, and dashboard move to M3+.
+
+This is a bigger lift than it sounds, for a reason not obvious from the outside: **the existing `case_details_page.dart` and `client_profile_page.dart` are entirely hardcoded `StatelessWidget`s with no constructor parameters at all** — not wired to any bloc, not even accepting an `id` from navigation (`app_router.dart`'s routes for both don't pass one). This isn't "swap the repository under an existing wired screen" like M1's login page was; it's building the parameterization, the bloc wiring, and the data binding from scratch on top of screens that today are pure mockup.
+
+## What's real vs. what the mock UI assumes
+
+| | Mock entity/screen assumes | Actual `GET /cases` / `GET /clients` (`API_CONTRACT.md` §6, §10) |
+|---|---|---|
+| Case | `attorneyName` (string), `hearingsCount`, `documentsCount`, `daysOpen` — all flat display fields, none returned by the API | `id, title, caseNumber, status, type, clientId, filingDate, createdAt, updatedAt, client{...}, courtId, court{...}, description, assignments[]{id, role: LEAD\|SUPPORT, employee{...}}, notes[]{id, content, createdAt}` |
+| Client | `area` (practice area), `info` (freeform "2 cases · Since 2024" string) — not API fields | `id, type: INDIVIDUAL\|COMPANY, name, email?, phone?, address?, taxId?, createdAt, updatedAt` |
+| Case Detail tabs | Timeline, Hearings, Documents, Notes (all populated with hardcoded fake data) | Only **Notes** has any backing (`notes[]` comes inline with the case; `POST /cases/{id}/notes` exists). **No case-timeline endpoint exists at all** (confirmed gap in `API_CONTRACT.md`); Hearings/Documents tabs have no feature to back them yet in this milestone. |
+| Client Detail | Hardcoded "Active Cases" list (2 fake case cards) + "Recent Appointments" section | No `GET /clients/{id}/cases` endpoint and no documented `?clientId=` filter on `GET /cases` — associating a client's cases means fetching the **full** case list and filtering client-side, or deferring the section. "Recent Appointments" has zero backing (calendar/hearings out of scope). |
+| List endpoints | Spec assumed `?status=&lawyer_id=&q=&page=&limit=` on `GET /cases`, similar for clients | **No query parameters are documented on either `GET /cases` or `GET /clients`** in the collection — every example is a bare `GET` with an empty query array. Can't confirm server-side filtering/search/pagination exists at all. |
+
+## Decisions needed before/while building (flagging now, not guessing)
+
+1. **Case Detail tabs**: Timeline (no endpoint, ever, right now) and Hearings/Documents (no feature yet) can't show real data this milestone. Options: (a) remove those tabs entirely for M2, leaving Overview/Team/Notes; (b) keep them visible with a "Coming in a later milestone" placeholder. I'd default to (a) — a tab with a permanent placeholder reads as broken, not "not yet" — but flagging since it's a UI-scope call, not just an API one.
+2. **Client Detail's case list**: fetch all cases and filter client-side by `clientId` (extra full-list round-trip, doesn't scale, but shows real data), or drop the section for M2 and revisit once/if a server-side filter or sub-resource turns up. Same question for "Recent Appointments" — I'd default to dropping it entirely (zero backing, not even a partial one) unless you want a "coming soon" placeholder instead.
+3. **Pagination/search**: since no query params are documented, M2's lists would fetch the full `GET /cases` / `GET /clients` result and do search/filter/sort **client-side** in Dart, not server-side. Fine for a dev/small dataset; explicitly flagging that this won't scale and should be revisited once real query-param support is confirmed against a running backend.
+4. **Case status/type enum completeness**: examples show case `status` values `OPEN`, `CLOSED`, `ARCHIVED` and `type` values `FAMILY`, `CIVIL`, `COMMERCIAL`, `LABOR` — these are only what appeared in the collection's randomly-generated examples, not a documented exhaustive enum list (no OpenAPI schema backs this collection). I'll model them as Dart enums with an `unknown` fallback case so an unseen value from a real server doesn't crash parsing, rather than assuming the four/three values I've seen are the complete set.
+
+## Checklist
+
+### 1. Freezed models — Case & Client (per `API_CONTRACT.md` §6, §10)
+- [ ] `Client { id, type: ClientType, name, email?, phone?, address?, taxId?, createdAt, updatedAt }`
+- [ ] `Case { id, title, caseNumber, status: CaseStatus, type: CaseType, clientId, filingDate?, createdAt, updatedAt, client: Client?, courtId?, court: Court?, description?, assignments: List<CaseAssignment>, notes: List<CaseNote> }`
+- [ ] `Court { id, name, type, location?, contactInfo? }` (nested-only for M2 — no standalone courts feature/list screen this milestone)
+- [ ] `CaseAssignment { id, role: AssignmentRole (LEAD|SUPPORT), employee: Employee }`
+- [ ] `Employee { id, userId, position, hireDate, department, user: { id, email, firstName, lastName } }` (nested-only, matching what `assignments[].employee` returns — no standalone employee/staff feature this milestone)
+- [ ] `CaseNote { id, content, createdAt }`
+- [ ] `CaseStatus`/`CaseType`/`ClientType`/`AssignmentRole` enums with an `unknown` fallback for `json_serializable`'s `unknownEnumValue`, since the collection doesn't guarantee these lists are exhaustive.
+
+### 2. Repositories
+- [ ] `CaseRepository` (replaces `MockCaseRepository`): `getCases()` → `GET /cases`, `getCaseDetails(id)` → `GET /cases/{id}`. Read-only for M2 — no create/update/assignment/note-adding yet (that's a write milestone, M3+, per spec's own M2/M3 split).
+- [ ] `ClientRepository` (replaces `MockClientRepository`): `getClients()` → `GET /clients`, `getClientDetails(id)` → `GET /clients/{id}`.
+- [ ] Repository tests (`mocktail`-mocked `Dio`) asserting exact method/path against `API_CONTRACT.md`, same pattern as M1's `auth_repository_test.dart`.
+
+### 3. Presentation
+- [ ] `CasesBloc`/`ClientsBloc`: replace mock-backed list fetch with real repository calls; add loading/error/empty states (spec requires `EmptyState`/`ErrorView`/skeleton loader on every screen — none of that exists on the current mock-backed pages either, so this is also new work, not a regression).
+- [ ] New `CaseDetailsBloc`/`ClientDetailsBloc` (don't currently exist) to fetch by id.
+- [ ] `case_details_page.dart` and `client_profile_page.dart` **rewritten** to accept an id/entity from routing and render real bloc state, replacing 100% of the current hardcoded strings/numbers. Route definitions in `app_router.dart` updated to actually pass the id (`/case-details/:id`, `clients/:id/profile` or similar — exact path shape to match during implementation, not decided here).
+- [ ] Case Detail: Overview (title, caseNumber, status, type, filingDate, description, client, court) + Team (assignments → employee name/position) + Notes (`notes[]`, read-only display — no "add note" UI yet, since that's a write action out of M2's read-only scope). Timeline/Hearings/Documents tabs: per decision #1 above.
+- [ ] Client Detail: contact info (email/phone/address), type. Cases/appointments sections: per decision #2 above.
+- [ ] List screens: search/filter done client-side per decision #3, with `EmptyState` for zero results and `ErrorView` with retry on failure (spec §5, not currently implemented on the mock screens either).
+
+### 4. Localization
+- [ ] Any new strings this milestone introduces go in ARB (`lib/l10n/`), per the M1 precedent — existing screen strings that get reused as-is stay wherever they already are.
+
+### 5. Tests
+- [ ] Repository tests for `CaseRepository`/`ClientRepository` (dio-mocked, exact request shape).
+- [ ] Bloc tests for list + detail blocs (loading/success/error/empty).
+- [ ] Widget tests for list and detail screens in EN/LTR and AR/RTL, following the M1 test file's pattern for avoiding the `pumpAndSettle`-vs-indeterminate-animation and localization-preload gotchas already documented in `CLAUDE.md`.
+
+### Out of scope for M2 (explicitly deferred, not forgotten)
+- Hearings, calendar, documents, tasks, dashboard — separate features, none exist yet, moved to M3+.
+- Any write action (create/edit case or client, add note, change status, assign team member) — M2 is read-only per spec's own M2/M3 split.
+- Case timeline — no endpoint exists in the collection at all (not a scoping choice, a hard gap).
+- Server-side search/filter/pagination — not documented as existing; client-side only for now.
+
+## Definition of done
+- [ ] `Case`/`Client` (+ nested `Court`/`CaseAssignment`/`Employee`/`CaseNote`) models match `API_CONTRACT.md` exactly, with fallback-safe enums.
+- [ ] `MockCaseRepository`/`MockClientRepository` deleted — no mock left in either path.
+- [ ] Case Detail and Client Detail screens take a real id from routing and render real data — no hardcoded content remains.
+- [ ] Decisions #1-#3 above resolved (by your review of this plan, or by your answer if you want something different from the stated defaults).
+- [ ] All new/changed screens tested in EN/LTR and AR/RTL; empty/loading/error states covered.
+- [ ] `flutter analyze` clean; `dart format` clean on every file this milestone touches.
+- [ ] `CLAUDE.md` and `PLAN.md` updated with outcomes, same as M1.
+
+---
+
+Waiting for your review — either approve as-is (including the stated defaults for decisions #1-#3), or tell me what to change before I start.

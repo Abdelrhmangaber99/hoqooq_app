@@ -1,286 +1,213 @@
 # Hoqooq API Contract
 
-**Source:** `hoqooq-postman-import.json` (97 requests, Postman Collection v2.1). Per project instructions, this file is the source of truth for all HTTP calls — the mobile app's `dio` client is configured from what's documented here, not from the spec's "Assumed API contract" (spec §8) or the BRD's illustrative rules.
+**Source:** `hoqooq-postman-import.json` (87 requests, Postman Collection v2.1, `_postman_id: 0d05367b-0d3a-4c07-a99e-248fd3ff53b5`). Regenerated 2026-07-30 after the user replaced the file with an updated export — this is a **second, structurally different** version of the contract. See "Breaking changes since the M1 version" immediately below before assuming anything from the previous contract still holds.
 
-**⚠️ Read `CLAUDE.md` → "Critical: spec/collection divergence" before using this file.** The collection does not resemble the BRD's tenant-isolated, invite-only, no-hard-delete v1 product. It reads like a generic multi-tenant legal-SaaS boilerplate (public signup, lawyer marketplace, reviews, consultations, hard deletes everywhere, no MFA/subscription/tenant-isolation surface at all). Endpoint shapes below are documented exactly as given — do not assume they satisfy the BR-### rules just because they're listed.
-
-**Base URL:** collection variable `baseUrl = "/"` — not a real host. No dev/staging/prod URLs are defined anywhere in the collection. **Needs user input.**
-
-**Auth scheme observed:** `Authorization: Bearer <token>` on 90/97 requests. Login/signup/refresh/forgot-password/reset-password/`settings/public`/`reviews/lawyer/{id}` require no auth. No collection-level pre-request script rotates tokens — rotation logic is not visible in the collection itself, only inferable from `/auth/refresh`'s shape.
-
-**Naming convention:** all JSON is **camelCase** (`accessToken`, `firstName`, `caseId`), not the snake_case the spec guessed (`access_token`, `case_number`). Freezed models must use `@JsonKey`/camelCase mapping accordingly.
+Per project instructions, this file is the source of truth for all HTTP calls.
 
 ---
 
-## 1. Auth
+## ⚠️ Breaking changes since the M1 version of this file (2026-07-30, same day)
 
-| Method | Path | Auth | Request body | Response | Spec/BR mapping |
-|---|---|---|---|---|---|
-| POST | `/auth/login` | none | `{ email, password }` | 200 `{ accessToken, refreshToken, user }`; 401 on bad creds | Spec §4.1. **Diverges:** no `mfa_required`, no `permissions[]`, no `firm`, no `subscription_status` in the payload — `user` is an opaque object (shape not shown in examples for this endpoint, but matches `/users/me` shape elsewhere: id, email, firstName, lastName, isActive, roles[], tenant). BR-033 (session model) partially supported — see gap notes below. |
-| POST | `/auth/signup` | none | `{ email, password, firstName, lastName, userType: LAWYER, firmName }` | 201 `{ accessToken, refreshToken, user }`; 409 email exists | **Not in spec at all. Directly contradicts BR-001** ("no public signup — invite-only"). `userType`/`firmName` fields imply this creates a tenant + owner in one self-service call. |
-| POST | `/auth/refresh` | none | `{ refreshToken }` | 200 `{ accessToken, refreshToken, user }`; 401 invalid/expired | Spec §4.3 / BR-033. Shape matches rotation (new refreshToken returned), consistent with "15 min access / 7 day rotating refresh" — but the collection has no field confirming token lifetimes; those numbers come only from the BRD (§6.1.3), not from any response. |
-| POST | `/auth/logout` | bearer | `{ refreshToken }` | 204; 401 | Spec §4.5, minus device-token revocation (no `/devices` endpoint exists at all — see gaps). |
-| POST | `/auth/forgot-password` | none | `{ email }` | 200 (no body) | Spec §5.1 "Forgot password". |
-| POST | `/auth/reset-password` | none | `{ token, newPassword }` | 204 | Not explicitly in spec screens but consistent with forgot-password flow. |
-| POST | `/auth/change-password` | bearer | `{ oldPassword, newPassword }` | 204 | Not in spec; needed for Profile & Settings (§5.14). |
+This is not a re-randomization of examples — the collection went from 97 requests to 87, gained a global `/api` prefix, and several core entities were structurally rebuilt to match the BRD's actual data dictionary far more closely. Full diff method available: old export preserved as `/tmp/postman_full.json` from the M1 session, new one at `/tmp/postman_full_v2.json` (both outside the repo).
 
-**Not present anywhere in the collection:** `/auth/mfa/verify`, `/auth/activate` (invite-token activation). BRD §6.1.3 states MFA is **mandatory** for Super Admin and Firm Admin, and the spec's entire §4.2 invitation-activation flow assumes an activate-by-token endpoint. **Neither exists in this collection.** See gap analysis.
+### 1. Every path now has an `/api` prefix
+Old: `POST /auth/login`. New: `POST /api/auth/login`. This applies to **all 87 endpoints, no exceptions**. `ApiConfig.baseUrl` (or every call site) needs this prefix added — nothing in M1's shipped code has it yet.
+
+### 2. `GET /users/me`, `/users`, `/users/{id}` — User shape rebuilt (breaks M1's `User`/`Role`/`Permission` entities)
+| Field | M1 version | Current version |
+|---|---|---|
+| Name | `firstName` + `lastName` (both required) | Single `fullName` string |
+| Active flag | `isActive: boolean` | `status: string` (enum-shaped, matches BRD's `INVITED/ACTIVE/SUSPENDED/DEACTIVATED`) |
+| New fields | — | `isSuperAdmin: boolean`, `mfaEnabled: boolean` |
+| `roles[]` shape | `{id, name, displayNameEn, displayNameAr, permissions[]}` | `{id, code, scope, permissions[]}` — **no more `name`/`displayNameEn`/`displayNameAr`** |
+| `permissions[]` shape | `{id, resource, action, displayNameEn, displayNameAr}` | `{id, code}` — **no more `resource`/`action` split, no more display names** |
+
+**Impact:** `lib/features/authentication/domain/entities/user.dart`'s `fromJson` will throw immediately on a real response — `firstName`/`lastName`/`isActive` are marked `required` and no longer exist. `User.fullName` (the computed getter) is now redundant since the API provides it directly. `User.hasPerm(resource, action)` no longer has a `resource`/`action` pair to check against — permissions are now a single `code` string, so the method signature itself needs to change to `hasPerm(String permissionCode)`. This also **resolves** the "how would `isFirmAdmin` ever be detected" open question differently than expected: `role.code` (e.g. plausibly `"FIRM_ADMIN"`) is a much more promising signal than the old `role.name`/`displayNameEn` fields were, though still no example shows a real value — `<string>` placeholders throughout, same caveat as before.
+
+Auth endpoints themselves (`login`, `signup`, `refresh`, `logout`, `forgot-password`, `reset-password`, `change-password`) are **byte-for-byte unchanged** except for the `/api` prefix — confirmed by diffing every field. M1's `AuthRepository`/`AuthBloc`/token logic does not need to change beyond the base URL.
+
+### 3. `GET/POST/PATCH /cases`, `GET /cases/{id}` — Case shape completely rebuilt
+| | M1/previous version | Current version |
+|---|---|---|
+| Removed fields | `title`, `description`, `type`, `courtId`, `court{}`, `assignments[]`, `notes[]` | — |
+| Added fields | — | `tenantId`, `caseTypeId` + `caseType{id,name}` (lookup-based, replaces free-text `type`), `primaryLawyerId` + `primaryLawyer{User}` (singular, replaces `assignments[]`), `defaultCourtId` + `defaultCourt{Court}` (renamed from `courtId`/`court`), `openingDate`, `closingDate`, `outcomeSummary`, `agreedFee`, `priority`, `team[]` (replaces `assignments[]`, shape now `{id, role, user: {User}}` instead of `{id, role, employee: {Employee}}`) |
+| `POST /cases/{id}/assignments` | existed | **endpoint removed entirely** |
+| `POST /cases/{id}/notes` | existed | **endpoint removed entirely** — no note-adding capability exists anywhere now, and `notes[]` is gone from the response too |
+
+This is now dramatically closer to BRD §8.4 `cases` (agreed_fee, priority, opening/closing dates, primary_lawyer_id, case_type_id as a lookup) than the old version was. **Any M2 planning built against the old Case shape (title/description/assignments/notes) is void.**
+
+### 4. `GET/POST/PATCH /clients`, `GET /clients/{id}` — Client shape completely rebuilt
+| | Previous version | Current version |
+|---|---|---|
+| Removed | `name`, `email`, `phone`, `address`, `taxId` (all singular) | — |
+| Added | — | `tenantId`, `clientCode`, `fullName`, `status`, `nationalId`, `commercialReg`, `emails[]`, `phones[]`, `addresses[]` (all arrays now) |
+
+Now matches BRD §8.3 `clients` almost exactly (client_code, national_id/commercial_reg, multi-value contact arrays, status enum). **Any M2 planning built against the old Client shape is void.**
+
+### 5. Modules removed entirely
+- **`employees`** (5 endpoints: onboard, list, get, update, delete) — the whole staff-management surface is gone. BRD §6.2.3 Staff Management now has **zero backing** in this API (previously it existed, just with the wrong role/department taxonomy — now there's nothing at all).
+- **`reviews`** (2 endpoints) and **`consultations`** (1 endpoint) — the public lawyer-marketplace/review/booking surface flagged as a BR-violation in the M1 version of this file is now **gone**. This resolves that concern; no action needed.
+- Net: 10 endpoints removed, 0 added, 87 remain.
+
+### 6. Other structural changes worth knowing before touching a given module
+- **Opponents**: lost `email` and `notes` fields; now just `{type, name, phone, address}`.
+- **Courts**: `location`/`contactInfo` renamed to `city`/`address`; gained `isActive`.
+- **Tasks**: gained `assignedById` (alongside `assignedToId`); `status` enum changed from `TODO/IN_PROGRESS/DONE` to `PENDING/IN_PROGRESS/COMPLETED/CANCELLED`; gained `completedAt`.
+- **Documents**: `name` renamed to `title`; gained `fileType` (renamed from `contentType`), `sizeBytes` (renamed from `size`), `uploadedById`, `versionNumber`, `folderId`, `categoryId`. Still no `GET .../versions` endpoint — `versionNumber` is a counter, not a browsable history.
+- **Hearings**: gained `hearingTypeId`, `circuitId`, `judgeName`, `outcomeText`, `nextHearingAt`; `status` enum is now `SCHEDULED/COMPLETED/ADJOURNED` (matches BRD, no more `POSTPONED`).
+- **Calendar events**: `date`+`time`(string) replaced by proper `startsAt`/`endsAt` datetimes; gained `eventType: CUSTOM|TASK_DEADLINE|...`, `referenceId` (generic link, likely to case/hearing/task), `location`, `isAllDay`, `tenantId`.
+- **Invoices**: flat `amount` replaced by `subtotal`/`taxTotal`/`grandTotal`; gained proper `invoiceNumber`; `status` gained `PARTIAL`.
+- Still **no error-envelope example anywhere** — every 4xx/5xx response in all 87 requests has an empty body, same gap as before, not newly discovered.
+- Still **no subscription/billing surface, no MFA endpoint, no case-timeline endpoint, no document-versions-list endpoint** — all gaps flagged in the M1 version of this file persist unchanged.
+- `POST/PATCH /users`, `POST/PATCH /cases` **still accept a client-supplied `tenantId`** in the request body — the BR-003 concern flagged in M1 is unchanged and has spread to `/cases` too now.
+- Collection description changed from "Multi-Tenant SaaS Legal Practice Management System" to "Legal Practice Management System" — cosmetic, but noting it since "Multi-Tenant SaaS" was dropped from the wording.
 
 ---
 
-## 2. Users / Roles / Permissions
+## Base URL & auth (unchanged mechanics, changed path)
 
-| Method | Path | Auth | Request body | Response | Notes |
-|---|---|---|---|---|---|
-| POST | `/users` | bearer | `{ email, password, firstName, lastName, phone?, tenantId, roleIds[] }` | 201 User (id, email, firstName, lastName, isActive, createdAt, updatedAt, phone?, avatarUrl?, lastLoginAt?, roles[] w/ nested permissions[], tenant{id,name}) | **`tenantId` is client-supplied in the request body.** This directly conflicts with BR-003 ("the app never sends a tenant_id from the client — the backend derives it") and with spec line "the app never sends a tenant_id from the client." Flag before wiring this up. |
-| GET | `/users` | bearer | — | 200 User[] | No pagination/query params shown (spec assumed `?page=&limit=`). |
-| GET | `/users/me` | bearer | — | 200 User | This is the closest match to spec's `GET /me`, but **no `permissions: string[]` flat array, no `firm.timezone`, no `subscription_status`.** Permissions only appear nested inside each role's `permissions[]` (objects: `{id, resource, action, displayNameEn, displayNameAr}`), so RBAC code (`hasPerm()`) needs a different derivation than the spec's flat-array assumption. |
-| GET | `/users/{id}` | bearer | — | 200 User | |
-| PATCH | `/users/{id}` | bearer | `{ email?, firstName?, lastName?, phone?, tenantId?, roleIds[]? }` | 200 User | Same `tenantId`-in-body concern as POST. |
-| DELETE | `/users/{id}` | bearer | — | 200 (empty) | **Hard delete of a user record** — no BRD rule explicitly forbids deleting users (BR-006 says offboarding = deactivate, never delete), so this is a likely spec violation if wired up naively. |
-| GET | `/roles` | bearer | — | 200 (no example body) | "Get all roles with AR/EN translations for Firm Admins to assign" — matches BRD §6.2.2 role management, BR-004. |
-| GET | `/roles/permissions` | bearer | — | 200 (no example body) | "Get all available permissions (Bilingual)". |
+**Base URL:** collection variable `baseUrl = "/"` — still a placeholder, still no real dev/staging/prod host. **All paths below already include the `/api` prefix** — `ApiConfig.baseUrl` should point at the host only (e.g. `http://localhost:3000`), with `/api` prepended to every path, OR `/api` gets folded into the base URL itself (e.g. `http://localhost:3000/api`) — implementation detail to settle before any M2 code, not decided here.
+
+**Auth scheme:** unchanged — `Authorization: Bearer <token>` on all but `login`/`signup`/`refresh`/`forgot-password`/`reset-password`/`settings/public`. (Note: `GET /api/reviews/lawyer/{lawyerId}` no longer exists since `reviews` was removed — the no-auth-required list shrank by one for that reason alone.)
+
+**Naming convention:** still camelCase throughout.
 
 ---
 
-## 3. Public
+## 1. Auth — unchanged from M1 except path prefix
 
 | Method | Path | Auth | Notes |
 |---|---|---|---|
-| GET | `/public/lawyers` | **bearer** (despite name "public") | "Public directory of all Law Firms and Lawyers." **Not in spec/BRD — BRD §1.2 explicitly lists "public marketplace, lawyer discovery" as OUT OF SCOPE / future.** |
-| GET | `/public/lawyers/specializations` | bearer | Same concern. |
-| GET | `/settings/public` | none | `[{id, key, value, isPublic, createdAt, updatedAt, description?}]` — generic key/value settings, no defined keys. |
+| POST | `/api/auth/login` | none | `{email, password}` → `{accessToken, refreshToken, user: {}}`. Byte-identical to M1 version. |
+| POST | `/api/auth/signup` | none | Still exists, still contradicts BR-001. `{email, password, firstName, lastName, userType, firmName}` — note this request still uses `firstName`/`lastName` even though the `User` model itself moved to a single `fullName`; not reconciled in this collection. |
+| POST | `/api/auth/refresh` | none | `{refreshToken}` → `{accessToken, refreshToken, user: {}}`. |
+| POST | `/api/auth/logout` | bearer | `{refreshToken}` → 204. |
+| POST | `/api/auth/forgot-password` | none | `{email}` → 200. |
+| POST | `/api/auth/reset-password` | none | `{token, newPassword}` → 204. |
+| POST | `/api/auth/change-password` | bearer | `{oldPassword, newPassword}` → 204. |
 
----
+Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registration endpoint.
 
-## 4. Tenants (Firms)
+## 2. Users / Roles / Permissions — shape rebuilt (see breaking change #2)
 
-| Method | Path | Auth | Request | Response | Notes |
-|---|---|---|---|---|---|
-| GET | `/tenants/my-firm` | bearer | — | 200 (no example) | Closest match to spec's `firm` object in `/me`. |
-| PATCH | `/tenants/my-firm` | bearer | `{ name?, address?, publicContactEmail?, publicContactPhone?, website?, specializations[]? }` | 200 | `specializations[]` / `website` / marketplace-style fields not in BRD's tenant/firm data dictionary (§8.2) at all. |
-| POST | `/tenants/my-firm/logo` | bearer | multipart (fields not detailed in collection) | 200 | Matches BRD "Firm Admin adds firm name & image." |
-| GET | `/tenants` | bearer | — | 200 (no example) | "Get all firms on the platform (System Admin)" — a **Super-Admin-only, cross-tenant** endpoint sitting in the same flat collection as firm-scoped ones, with no distinguishing base URL or auth scope. The mobile app (firm users only, per spec line 5) must never call this. |
-| GET/PATCH/DELETE | `/tenants/{id}` | bearer | — | — | Same System-Admin-only concern. **DELETE hard-deletes a firm** — contradicts BR-013 (retention window, no abrupt deletion). |
-
----
-
-## 5. Notifications
-
-| Method | Path | Auth | Response |
+| Method | Path | Request | Response |
 |---|---|---|---|
-| GET | `/notifications/me` | bearer | `[{id, userId, title, message, isRead, type: SYSTEM_ALERT\|INVOICE_DUE\|..., createdAt}]` |
-| PATCH | `/notifications/{id}/read` | bearer | 200 Notification |
+| POST | `/api/users` | `{email, password, fullName, avatarUrl?, isSuperAdmin?, tenantId, roleIds[]}` | 201 User |
+| GET | `/api/users` | — | 200 User[] |
+| GET | `/api/users/me` | — | 200 User |
+| GET | `/api/users/{id}` | — | 200 User |
+| PATCH | `/api/users/{id}` | `{email?, fullName?, avatarUrl?, isSuperAdmin?, tenantId?, roleIds[]?}` | 200 User |
+| DELETE | `/api/users/{id}` | — | 200 (empty) |
+| GET | `/api/roles` | — | 200 (no example body — still undocumented) |
+| GET | `/api/roles/permissions` | — | 200 (no example body — still undocumented) |
 
-**Gap:** no `PATCH /me/notification_prefs` (spec §5.13 preferences screen) and no `/devices` register/unregister for FCM tokens anywhere in the collection.
+**User** = `{id, email, fullName, isSuperAdmin, status, mfaEnabled, createdAt, updatedAt, avatarUrl?, lastLoginAt?, roles: Role[], tenant: {id, name}}`
+**Role** = `{id, code, scope, permissions: Permission[]}`
+**Permission** = `{id, code}`
 
----
+`tenantId` is still client-suppliable in `POST`/`PATCH /users` bodies — same BR-003 concern as M1, unresolved.
 
-## 6. Clients
+## 3. Public / Tenants — unchanged (still present, still a BR-scope concern)
 
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST | `/clients` | bearer | `{ type: INDIVIDUAL\|COMPANY, name, email?, phone?, address?, taxId? }` | 201 Client |
-| GET | `/clients` | bearer | — | 200 Client[] |
-| GET/PATCH/DELETE | `/clients/{id}` | bearer | (PATCH: same fields, all optional) | 200 / 200 / 204 |
+`GET /api/public/lawyers`, `GET /api/public/lawyers/specializations` (bearer, despite the name) — still a marketplace-style directory the BRD lists as out-of-scope. `GET /api/settings/public` (none). `GET/PATCH /api/tenants/my-firm`, `POST /api/tenants/my-firm/logo`, and the System-Admin-only `GET/PATCH/DELETE /api/tenants`/`/api/tenants/{id}` — all unchanged from M1, all the same concerns (cross-tenant System-Admin endpoints sitting in the same flat collection as firm-scoped ones; hard `DELETE` on a tenant contradicts BR-013).
 
-Shape is far simpler than BRD §8.3 `clients` (no `client_code`, no `national_id`/`commercial_reg`, no multi-email/phone arrays with "primary" flag, no duplicate-detection response). **DELETE is a hard delete** — BRD only describes "Archive (soft delete)," no physical delete from any client (spec §5.4).
+## 4. Notifications — unchanged
 
----
+`GET /api/notifications/me` → `[{id, userId, title, message, isRead, type, createdAt}]`. `PATCH /api/notifications/{id}/read`. Same gap as before: no `/me/notification_prefs`, no device registration.
 
-## 7. Opponents
+## 5. Clients — shape rebuilt (see breaking change #4)
 
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST `/opponents` / GET `/opponents` / GET,PATCH,DELETE `/opponents/{id}` | bearer | `{ type: INDIVIDUAL\|COMPANY, name, email?, phone?, address?, notes? }` | Opponent object (id, type, name, createdAt, updatedAt, email, phone, address, notes) |
-
-No `representative_name`/`representative_contact` fields (BRD §8.3 `opponents`), no case-association/conflict-check endpoint.
-
----
-
-## 8. Employees (Staff)
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST | `/employees/onboard` | bearer | `{ email, password, firstName, lastName, roleIds[], position, hireDate, phone?, department }` | 201 `{id, userId, position, hireDate, department, createdAt, updatedAt, user:{id,email,firstName,lastName}}` |
-| GET | `/employees` | bearer | query: `position`, `department` | 200 Employee[] |
-| GET/PATCH/DELETE | `/employees/{id}` | bearer | — | Employee |
-
-**`position` enum:** `MANAGING_PARTNER, PARTNER, SENIOR_ASSOCIATE, ASSOCIATE, JUNIOR_LAWYER, PARALEGAL, LEGAL_ASSISTANT, LEGAL_RESEARCHER, SECRETARY, ACCOUNTANT, HR_MANAGER, IT_SUPPORT, GENERAL_MANAGER`.
-**`department` enum:** `LITIGATION, CORPORATE, REAL_ESTATE, INTELLECTUAL_PROPERTY, FAMILY_LAW, CRIMINAL_LAW, FINANCE, HR, ADMINISTRATION, GENERAL`.
-
-**Neither enum resembles the BRD's 5 firm roles** (Firm Admin, Lawyer, Legal Secretary, Legal Assistant, Accountant — BRD §3, §9). This looks like generic law-firm-HR modeling bolted onto a different role system than the one the RBAC matrix (spec §6, BRD §9) is built around. Also: `POST /employees/onboard` creates a password directly rather than an invite-token flow, contradicting BR-002/BR-006 (Firm Admin creates a user who then *activates* via one-time link — no plaintext password should transit from the creator).
-
----
-
-## 9. Courts
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST/GET `/courts`, GET/PATCH/DELETE `/courts/{id}` | bearer | `{ name, type: SUPREME\|FIRST_INSTANCE\|APPEAL\|..., location?, contactInfo? }` | Court object |
-
-**Gap:** no `court_circuits` endpoints at all (spec §5.8, BRD §8.4 `court_circuits` is a documented entity). `type` enum (SUPREME/FIRST_INSTANCE/APPEAL) differs from BRD's free-text `type` (e.g. "civil, criminal, commercial" — BRD §8.4 `courts`). **DELETE is a hard delete** — BRD §6.2.8 says "Deactivate rather than delete when referenced."
-
----
-
-## 10. Cases
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST | `/cases` | bearer | `{ title, caseNumber, type: FAMILY\|CIVIL\|COMMERCIAL\|LABOR\|..., clientId, filingDate?, status?, courtId?, description? }` | 201 Case incl. nested `client`, `court`, `assignments[]`, `notes[]` |
-| GET | `/cases` | bearer | — | 200 Case[] (same nested shape) |
-| GET/PATCH/DELETE | `/cases/{id}` | bearer | (PATCH same fields) | Case / Case / 204 |
-| POST | `/cases/{id}/assignments` | bearer | `{ employeeId, role: LEAD\|SUPPORT }` | 201 Assignment `{id, role, employee:{...}}` |
-| POST | `/cases/{id}/notes` | bearer | `{ content }` | 201 `{id, content, createdAt}` |
-
-**Major gaps vs spec/BRD:**
-- No `primary_lawyer_id`, no `priority`, no `agreed_fee` field anywhere on Case.
-- No case lifecycle actions (`/activate`, `/close`) — only a generic `status` field on PATCH, with no visible transition guard.
-- **No `GET /cases/{id}/timeline`** — BR-017 requires an immutable append-only timeline; nothing in this collection returns or writes timeline events. `case_timeline_events` (BRD §8.4) has no corresponding endpoint.
-- `assignments[].role` is `LEAD`/`SUPPORT`, not the BRD's `PRIMARY_LAWYER, LAWYER, SECRETARY, ASSISTANT` (§8.4 `case_team`).
-- **DELETE is a hard delete of a case** — directly contradicts BR-016 ("Cases are never physically deleted through normal operations... physical deletion is a Super-Admin-only, dual-approved, logged event").
-- `case_number` is **client-supplied** in the POST body, not backend-generated (BRD says `CASE-YYYY-#####` format, doesn't specify who generates it, but spec assumed backend-generated numbering).
-
----
-
-## 11. Tasks
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST/GET `/tasks`, GET/PATCH/DELETE `/tasks/{id}` | bearer | `{ title, description?, status: TODO\|IN_PROGRESS\|DONE, priority: LOW\|MEDIUM\|HIGH\|URGENT, dueDate?, caseId?, assignedTo? }` | Task object |
-
-`status` enum (`TODO/IN_PROGRESS/DONE`) differs from BRD's `NEW → IN_PROGRESS → WAITING → COMPLETED → CANCELLED` (§8.7 `tasks`, §6.2.11). No `entity_type`/generic entity linking — only `caseId`. DELETE is a hard delete (spec doesn't explicitly forbid task deletion, lower risk here).
-
----
-
-## 12. Documents
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST | `/documents/upload` | bearer | multipart: `file` (required), `caseId` (text) | 201 `{id, name, contentType, size, createdAt, updatedAt, caseId}` |
-| GET | `/documents/{id}/download` | bearer | — | 200 (binary/stream, no example) |
-| DELETE | `/documents/{id}` | bearer | — | 204 |
-| GET | `/documents` | bearer | — | 200 Document[] |
-
-**Major gaps:** no `category_id` (BR mandates a category from firm lookups — BRD §6.2.9), no `access_level`, no `entity_type`/polymorphic linking beyond `caseId` (spec allows case/client/hearing/user), **no versioning endpoints at all** (`GET .../versions`, `.../versions/{v}/restore` — BR-024 requires full version history + admin restore), no signed-URL download (spec's `download-url` with short TTL vs. this collection's direct `download` — re-check whether this streams through the backend or redirects, since BR-025 access control depends on that). **DELETE is a hard delete** — BR-024 says documents are not hard-deleted by standard users.
-
----
-
-## 13. Hearings
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST/GET `/hearings`, GET/PATCH/DELETE `/hearings/{id}` | bearer | `{ caseId, courtId, date, status: SCHEDULED\|COMPLETED\|POSTPONED\|..., notes? }` | Hearing object |
-
-No `circuit_id`, `hearing_type_id`, `judge_name`, `outcome_text` (≥50 chars per BR-020), `next_hearing_at`, no separate `/complete` action, no conflict-detection response. `status` includes `POSTPONED` rather than BRD's `ADJOURNED`. **DELETE is a hard delete** — BR-020 says completed hearings "remain permanently associated with their case," implying no deletion once meaningful.
-
----
-
-## 14. Finance
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST/GET `/finance/invoices`, GET/PATCH/DELETE `/finance/invoices/{id}` | bearer | `{ clientId, amount, issueDate, dueDate, caseId?, status: DRAFT\|ISSUED\|PAID\|CANCELLED, notes? }` | Invoice incl. nested `payments[]` |
-| POST/GET `/finance/payments`, GET/DELETE `/finance/payments/{id}` | bearer | `{ invoiceId, amount, paymentDate, method: CASH\|BANK_TRANSFER\|CARD\|CHEQUE\|ONLINE, referenceNumber? }` | Payment object |
-
-**Critical conflicts with BRD Finance rules:**
-- **`DELETE /finance/invoices/{id}` and `DELETE /finance/payments/{id}` both exist** — BR-028 ("payment... is immutable after recording") and BR-029 ("financial records are never physically deleted... corrections are compensating transactions") are directly violated by having a delete endpoint at all.
-- No reversal/compensating-transaction endpoint (spec assumed `POST /payments/{id}/reverse`).
-- `amount` is a flat number on Invoice with no line items (BRD §8.6 `invoice_line_items`, spec's `InvoiceLineItem` model) — no line-item endpoints exist.
-- No `agreed_fee`/case-fee paid-vs-remaining exposed on Case or via a dedicated endpoint (BR-026).
-- No expenses endpoints at all (`GET/POST /expenses` assumed by spec; BRD §6.2.12 "Expenses" feature) — **entirely missing from the collection.**
-
----
-
-## 15. Calendar
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| POST/GET `/calendar`, GET/PATCH/DELETE `/calendar/{id}` | bearer | `{ title, startTime, endTime, type: CUSTOM\|MEETING\|DEADLINE\|..., userId, description?, caseId? }` | Event object |
-| GET | `/calendar/timeline` | bearer | query: `startDate, endDate, caseId, userId` | 200 (no example body) |
-
-Generic single `calendar_events` model, not the spec's "hearings ∪ appointments ∪ task due dates ∪ reminders" composite (§5.7) — `/calendar` here appears to be its own event type rather than an aggregation of Hearing/Task/reminder records, while `/calendar/timeline` might be the aggregation endpoint (name suggests it) but has no documented response shape.
-
----
-
-## 16. Reports & Dashboard
-
-| Method | Path | Auth | Response |
+| Method | Path | Request | Response |
 |---|---|---|---|
-| GET | `/reports/dashboard` | bearer | `{totalActiveCases, pendingTasks, upcomingHearings}` |
-| GET | `/reports/export/cases` | bearer | 200 (CSV, no example) |
-| GET | `/reports/export/clients` | bearer | 200 (CSV, no example) |
-| GET | `/dashboard` | bearer | `{totalCases, activeCases, pendingTasks, upcomingHearings, totalInvoices, unpaidInvoices, recentActivity[]}` |
+| POST | `/api/clients` | `{tenantId, clientCode, type: INDIVIDUAL\|COMPANY, fullName, nationalId?, commercialReg?, emails[], phones[], addresses[]}` | 201 Client |
+| GET | `/api/clients` | — | 200 Client[] |
+| GET/PATCH/DELETE | `/api/clients/{id}` | (PATCH same fields, optional) | 200 / 200 / 204 |
 
-**Two separate, overlapping dashboard-metrics endpoints** (`/reports/dashboard` and `/dashboard`) with different shapes — needs clarification on which one the mobile Dashboard screen (spec §5.2) should call. Neither returns "today's hearings list," "top 3 notifications," or the finance-gated "Revenue widget" the spec's Dashboard screen needs — those will require assembling calls to `/hearings`, `/notifications/me`, and finance endpoints client-side, or asking the backend team to extend this response.
+**Client** = `{id, tenantId, clientCode, type, fullName, status, createdAt, updatedAt, nationalId?, commercialReg?, emails: string[], phones: string[], addresses: string[]}`. Note `emails`/`phones`/`addresses` are arrays of plain strings in the examples, not objects with a "primary" flag — BRD wanted one designated primary per array (§8.3); this collection doesn't show how (or if) that's represented. `DELETE` is still a hard delete (still contradicts spec's "archive only" expectation, still worth flagging before wiring a delete button to it).
 
----
+## 6. Opponents — minor shape change
 
-## 17. Settings
+`{type, name, phone?, address?}` — **`email` and `notes` fields are gone** compared to the M1 version. POST/GET/PATCH/DELETE all otherwise the same shape (`id, type, name, createdAt, updatedAt, phone?, address?`). Still no representative_name/representative_contact (BRD §8.3). DELETE still hard.
 
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| GET | `/settings/public` | none | — | Setting[] (key/value) |
-| POST/GET `/settings`, PATCH/DELETE `/settings/{key}` | bearer | `{ key, value, description?, isPublic }` | Setting object |
+## 7. Courts — shape adjusted
 
-Generic key-value store — none of the specific lookups the spec/BRD need (case types, hearing types, document categories, expense categories — BRD §8.7 `lookups`) have dedicated typed endpoints; they'd have to be encoded as opaque settings values, which loses the `label_en`/`label_ar` bilingual structure BR requires for lookups.
+`{name, type, city?, address?, isActive}` (was `location`/`contactInfo`, now `city`/`address`). Still no court_circuits endpoints. DELETE still hard (contradicts BR-021's "deactivate, don't delete").
 
----
+## 8. Cases — shape rebuilt (see breaking change #3)
 
-## 18. AI Assistant
-
-| Method | Path | Auth | Request/Response |
+| Method | Path | Request | Response |
 |---|---|---|---|
-| POST | `/ai/summarize` | bearer | No example body/response in collection. "Summarize a legal document using AI." |
-| POST | `/ai/research` | bearer | No example. "Perform legal research using AI." Not in spec at all (spec has "research" as an AI Assistant document action per BRD §6.2.13, but no dedicated `/ai/research` endpoint was assumed). |
-| POST | `/ai/chat` | bearer | No example. "Chat with AI Legal Assistant." |
+| POST | `/api/cases` | `{tenantId, caseNumber, clientId, caseTypeId, primaryLawyerId, defaultCourtId, status, openingDate?, closingDate?, outcomeSummary?, agreedFee?, priority}` | 201 Case |
+| GET | `/api/cases` | — | 200 Case[] |
+| GET | `/api/cases/{id}` | — | 200 Case |
+| PATCH | `/api/cases/{id}` | same fields as POST, all optional | 200 Case |
+| DELETE | `/api/cases/{id}` | — | 204 |
 
-**Critical gaps:** No `GET /ai/entitlement` (BR-031 credit metering preflight — spec's whole preflight-before-firing-AI-action flow, §5.12, has nothing to call). No classify/extract endpoints (spec's "Suggest category" / "Extract parties/dates/amounts" document actions). No streaming/SSE indication on `/ai/chat`. No `sources[]` citation shape visible (BR-030 per-firm RAG isolation is supposed to surface as citations the app renders — can't confirm the response includes them since there's no example). **This entire module is underspecified in the collection relative to what BR-030/031/032 and spec §5.12 require** — needs a real example call against a running environment before building the AI screens.
+**Case** = `{id, tenantId, caseNumber, status, clientId, caseTypeId, priority, createdAt, updatedAt, client: Client, primaryLawyerId, primaryLawyer: User, caseType: {id, name}, defaultCourtId, defaultCourt: Court, openingDate?, closingDate?, outcomeSummary?, agreedFee?, team: [{id, role, user: User}]}`.
+
+**No more `title`, no more free-text `description`, no more `assignments[]`/`notes[]`, no more `POST /cases/{id}/assignments` or `/notes` endpoints.** `status` examples seen: `DRAFT`, `ACTIVE`, `ARCHIVED` (still not a documented exhaustive list). `priority` examples seen: `NORMAL`, `HIGH`, `URGENT` (BRD's 4th value `LOW` not observed but plausible). This is much closer to BRD's case model than before, but the loss of any note-taking or hearings/documents sub-resources on the case itself means a Case Detail screen now has **less** to show than the previous (mock) version assumed, not more — only Overview + Team via `team[]`.
+
+## 9. Tasks — shape adjusted
+
+`{assignedById, assignedToId, title, caseId?, description?, priority, status, dueDate?}` request; response adds `completedAt?`. `status` enum now `PENDING/IN_PROGRESS/COMPLETED/CANCELLED` (was `TODO/IN_PROGRESS/DONE`). `priority` seen: `LOW/NORMAL/HIGH` (URGENT not observed but plausible given the pattern elsewhere). No `entity_type` polymorphic linking — only `caseId`, same limitation as before.
+
+## 10. Documents — shape adjusted
+
+`POST /api/documents/upload` (multipart: `file` required, `caseId` text) → `{id, title, fileType, sizeBytes, uploadedById, versionNumber, createdAt, updatedAt, description?, caseId?, folderId?, categoryId?}`. `GET /api/documents/{id}/download`, `DELETE /api/documents/{id}` (still hard delete), `GET /api/documents`. Still no versions-list/restore endpoints despite `versionNumber` existing on the model — you can see which version you're on, not browse or restore prior ones.
+
+## 11. Hearings — shape adjusted, now closer to BRD
+
+`{caseId, courtId, hearingTypeId?, scheduledAt, circuitId?, judgeName?, status, outcomeText?, nextHearingAt?}`. `status` enum now `SCHEDULED/COMPLETED/ADJOURNED` (was `SCHEDULED/COMPLETED/POSTPONED`) — matches BRD's hearings model (§8.4) almost exactly now, including `circuitId` (though still no nested circuit object or standalone circuits endpoint) and `outcomeText`/`nextHearingAt` (BR-020). Still no `/complete` action — just a raw `status` field via PATCH. DELETE still hard (BR-020 implies completed hearings should be permanent).
+
+## 12. Finance — shape adjusted
+
+**Invoices**: `{clientId, invoiceNumber, subtotal, taxTotal, grandTotal, issueDate, dueDate, caseId?, status, notes?}` + nested `payments[]`. `status` now includes `PARTIAL` (was `DRAFT/ISSUED/PAID/CANCELLED`, examples now show `PARTIAL/PAID/CANCELLED` — union unclear, not exhaustively documented). Still flat totals, no line-items endpoint (BRD's `invoice_line_items`). **Payments**: unchanged shape, `{invoiceId, amount, paymentDate, method, referenceNumber?}`. **`DELETE` still exists on both invoices and payments — still directly contradicts BR-028/BR-029 (no physical deletion of financial records).** Still no reversal/compensating-transaction endpoint. Still no expenses module at all.
+
+## 13. Calendar — shape adjusted, now closer to BRD's unified-calendar concept
+
+`{userId, title, eventType: CUSTOM|TASK_DEADLINE|..., startsAt, endsAt?, description?, referenceId?, location?, isAllDay}` + `tenantId` in the response. `eventType: TASK_DEADLINE` appearing in examples is a good sign this is meant to aggregate task due dates as the spec's Calendar screen wants (§5.7) — but there's still no confirmed value for a hearing-derived event type, so it's unclear whether `GET /calendar` alone will surface hearings too, or whether the mobile app still needs to separately merge `/hearings` in. `GET /calendar/timeline` (query: `startDate, endDate, caseId, userId`) still has no example response — still the best candidate for "the" aggregation endpoint, still unconfirmed. DELETE still hard.
+
+## 14. Reports & Dashboard — unchanged
+
+Both `GET /api/reports/dashboard` (`{totalActiveCases, pendingTasks, upcomingHearings}`) and `GET /api/dashboard` (`{totalCases, activeCases, pendingTasks, upcomingHearings, totalInvoices, unpaidInvoices, recentActivity[]}`) still exist, still overlapping, still unresolved which one the mobile Dashboard should call. `GET /reports/export/{cases,clients}` unchanged (CSV, no example).
+
+## 15. Settings — unchanged
+
+Generic key-value store, same as M1 version. Same limitation: no typed lookups endpoint for case types/hearing types/document categories/expense categories (though `caseType: {id, name}` appearing nested in Case responses now confirms **lookups do exist as real entities server-side** — there's just still no dedicated `GET /lookups?kind=...`-style endpoint exposed in this collection to fetch them standalone).
+
+## 16. AI Assistant — unchanged
+
+`POST /api/ai/summarize`, `/api/ai/research`, `/api/ai/chat` — still no example bodies, still no entitlement/credit-preflight endpoint, still no classify/extract actions. Same gaps as M1 version.
+
+## 17. Modules removed since M1 (see breaking change #5)
+
+`employees` (all 5 endpoints), `reviews` (2 endpoints), `consultations` (1 endpoint) — gone. `POST /cases/{id}/assignments` and `POST /cases/{id}/notes` also gone (folded into the Case rebuild above).
 
 ---
 
-## 19. Reviews & Consultations (not in spec or BRD scope)
+## Gap Analysis Summary (updated)
 
-| Method | Path | Auth | Request |
-|---|---|---|---|
-| POST | `/reviews` | bearer | `{ lawyerId, rating, comment?, caseId? }` — "Clients Only" per description |
-| GET | `/reviews/lawyer/{lawyerId}` | none | — |
-| POST | `/consultations` | bearer | `{ lawyerId, tenantId, type: OFFICE\|..., scheduledDate, duration, categoryId, notes? }` |
+### Resolved since the M1 version of this file
+- Marketplace reviews/consultations endpoints — removed entirely, no longer a concern.
+- Case model now has `agreed_fee`, `priority`, `opening_date`/`closing_date`, `primary_lawyer_id`, `case_type_id` as a lookup — all previously-flagged BRD gaps, now present.
+- Client model now has `client_code`, `national_id`/`commercial_reg`, multi-value contact arrays — previously-flagged BRD gaps, now present.
+- Hearings model now has `hearing_type_id`, `circuit_id`, `judge_name`, `outcome_text`, `next_hearing_at`, and the correct `SCHEDULED/COMPLETED/ADJOURNED` status enum — previously-flagged gaps, now present.
 
-**These two modules describe a public lawyer-marketplace with client-submitted reviews and consultation booking.** BRD §1.2 "Out of scope (future versions)" explicitly lists "Public marketplace, lawyer discovery, and consultation booking" and BRD §11 "Future Scope" repeats it. The mobile app per spec line 6 serves **firm users only** — clients never log in (BR-007). There is no scenario in v1 where this Flutter app calls these two modules. Flagged for exclusion, not implementation.
+### Still open (unchanged from M1 version)
+- No MFA endpoint, no invite-activation endpoint, no device/FCM registration, no `/me/notification_prefs`.
+- No subscription/billing/plan endpoint anywhere — `X-Subscription-Status` mechanism still has no data source.
+- No case-timeline endpoint (BR-017) — and now no case-notes endpoint either (removed this update).
+- No document-versions-list/restore endpoint (BR-024) despite `versionNumber` existing on the model.
+- No AI entitlement/credit-preflight endpoint (BR-031), no classify/extract actions.
+- No expenses module at all.
+- No payment-reversal/compensating-transaction endpoint (BR-029) — and `DELETE` still exists on invoices/payments, still contradicting BR-028/029.
+- Hard `DELETE` still present on cases, clients, documents, courts, opponents, invoices, payments, tenants, users, calendar events — still contradicts BR-016/024/028/029 for the entities those rules cover.
+- `tenantId` still client-suppliable on `POST/PATCH /users`, and now also on `POST/PATCH /cases` — still contradicts BR-003.
+- No error-envelope example anywhere in any of the 87 requests.
+- `auth/signup` still exists, still contradicts BR-001.
+- `public/lawyers` marketplace directory still exists, still a BR-scope concern (unlike reviews/consultations, this one was NOT removed).
 
----
-
-## Gap Analysis Summary
-
-### Spec/BRD features with NO matching endpoint in the collection
-- MFA verification (`/auth/mfa/verify`) — BRD §6.1.3 says mandatory for Super Admin/Firm Admin.
-- Invite-token account activation (`/auth/activate`) — BR-002, spec §4.2.
-- Device registration for push (`POST /devices`, `DELETE /devices/{id}`) — spec §11, BRD mobile push requirement.
-- `PATCH /me/notification_prefs` — spec §5.13.
-- Case timeline (`GET /cases/{id}/timeline`) — BR-017, a hard invariant.
-- Case lifecycle actions (`/activate`, `/close`) beyond a raw `status` field — BR-015.
-- Court circuits (`court_circuits` entity/endpoints) — BRD §8.4.
-- Document versioning + restore — BR-024.
-- Document category/access-level/entity-type richness — BR-023, BR-025.
-- Hearing completion action with outcome/minutes — BR-020.
-- Expenses (entire module) — BRD §6.2.12.
-- Payment reversal/compensating transaction — BR-029.
-- Case fee (agreed fee / paid / remaining) visibility — BR-026.
-- AI entitlement/credit preflight — BR-031.
-- AI classify/extract document actions — spec §5.12.
-- Any subscription/billing/plan endpoint — BR-009 through BR-013. **No way to read `subscription_status` from anywhere**, so the entire read-only-mode mechanism (BR-010, BR-012) the spec's `ReadOnlyGuard` depends on has no data source in this collection.
-- Any `X-Subscription-Status` response header, or tenant-scoping guarantee visible in any response.
-
-### Collection endpoints the spec/BRD did not anticipate
-- `POST /auth/signup` (public self-signup) — contradicts BR-001.
-- `GET /public/lawyers`, `GET /public/lawyers/specializations` — contradicts marketplace out-of-scope decision.
-- `GET/PATCH/DELETE /tenants`, `/tenants/{id}` (cross-tenant Super Admin operations mixed into the same flat collection).
-- `POST /reviews`, `GET /reviews/lawyer/{id}`, `POST /consultations` — marketplace features, explicitly out of scope.
-- `/employees` position/department taxonomy unrelated to the BRD's 5-role model.
-- Generic `/settings` key-value store instead of typed lookups.
-- Duplicate dashboard endpoints (`/dashboard` vs `/reports/dashboard`).
-- Hard `DELETE` on cases, documents, invoices, payments, courts, tenants, users — BR-016, BR-024, BR-028/029 all forbid physical deletion of the entities they cover.
-- Client-suppliable `tenantId` in `POST/PATCH /users` bodies — contradicts BR-003's core client-never-sends-tenant_id invariant.
-
-I've documented every endpoint above exactly as the collection defines it so the contract is usable, but roughly a third of the entries above represent a direct conflict with a numbered BR rule, not just a missing nice-to-have. See `CLAUDE.md` for how this should change our approach before M1.
+### New since this update
+- Employee/staff-management module removed entirely — BRD §6.2.3 now has zero backing (regression from M1's already-imperfect version, not an improvement).
+- Case note-taking capability removed entirely (both the `notes[]` field and the endpoint to add one).
+- Case-to-employee assignment endpoint removed (`team[]` is now presumably populated some other way not visible in this collection — unclear how a mobile client would ever add someone to a case's team, since no endpoint exists for it).
