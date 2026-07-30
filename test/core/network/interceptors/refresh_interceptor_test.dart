@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/network/interceptors/refresh_interceptor.dart';
@@ -36,7 +38,11 @@ void main() {
     tokenStorage = MockTokenStorage();
     sessionCubit = MockSessionCubit();
     handler = MockErrorInterceptorHandler();
-    interceptor = RefreshInterceptor.withDio(tokenStorage, sessionCubit, rawDio);
+    interceptor = RefreshInterceptor.withDio(
+      tokenStorage,
+      sessionCubit,
+      rawDio,
+    );
   });
 
   DioException unauthorizedError({bool alreadyRetried = false}) {
@@ -95,12 +101,12 @@ void main() {
       when(
         () => tokenStorage.readRefreshToken(),
       ).thenAnswer((_) async => 'old-refresh');
-      when(
-        () => tokenStorage.saveRefreshToken(any()),
-      ).thenAnswer((_) async {});
+      when(() => tokenStorage.saveRefreshToken(any())).thenAnswer((_) async {});
       when(() => sessionCubit.updateAccessToken(any())).thenReturn(null);
-      when(() => rawDio.post('/auth/refresh', data: {'refreshToken': 'old-refresh'}))
-          .thenAnswer(
+      when(
+        () =>
+            rawDio.post('/auth/refresh', data: {'refreshToken': 'old-refresh'}),
+      ).thenAnswer(
         (_) async => Response(
           requestOptions: RequestOptions(path: '/auth/refresh'),
           statusCode: 200,
@@ -123,12 +129,15 @@ void main() {
       await untilCalled(() => handler.resolve(any()));
 
       verify(
-        () => rawDio.post('/auth/refresh', data: {'refreshToken': 'old-refresh'}),
+        () =>
+            rawDio.post('/auth/refresh', data: {'refreshToken': 'old-refresh'}),
       ).called(1);
       verify(() => tokenStorage.saveRefreshToken('new-refresh')).called(1);
       verify(() => sessionCubit.updateAccessToken('new-access')).called(1);
 
-      final captured = verify(() => rawDio.fetch<dynamic>(captureAny())).captured;
+      final captured = verify(
+        () => rawDio.fetch<dynamic>(captureAny()),
+      ).captured;
       final retriedOptions = captured.single as RequestOptions;
       expect(retriedOptions.headers['Authorization'], 'Bearer new-access');
       expect(retriedOptions.extra['hoqooq_refresh_retried'], isTrue);
@@ -167,4 +176,67 @@ void main() {
       verifyNever(() => rawDio.fetch(any()));
     },
   );
+
+  test('retries a multipart FormData request (e.g. document upload) with a '
+      'freshly cloned FormData, not the original consumed instance', () async {
+    when(
+      () => tokenStorage.readRefreshToken(),
+    ).thenAnswer((_) async => 'old-refresh');
+    when(() => tokenStorage.saveRefreshToken(any())).thenAnswer((_) async {});
+    when(() => sessionCubit.updateAccessToken(any())).thenReturn(null);
+    when(
+      () => rawDio.post('/auth/refresh', data: {'refreshToken': 'old-refresh'}),
+    ).thenAnswer(
+      (_) async => Response(
+        requestOptions: RequestOptions(path: '/auth/refresh'),
+        statusCode: 200,
+        data: {
+          'accessToken': 'new-access',
+          'refreshToken': 'new-refresh',
+          'user': <String, dynamic>{},
+        },
+      ),
+    );
+
+    final tempFile = await File(
+      '${Directory.systemTemp.path}/hoqooq_refresh_interceptor_test.pdf',
+    ).writeAsBytes([1, 2, 3]);
+    addTearDown(() async {
+      if (await tempFile.exists()) await tempFile.delete();
+    });
+
+    final originalFormData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(tempFile.path),
+      'caseId': 'c1',
+    });
+    final options = RequestOptions(
+      path: '/documents/upload',
+      data: originalFormData,
+    );
+    final error = DioException(
+      requestOptions: options,
+      response: Response(requestOptions: options, statusCode: 401),
+      type: DioExceptionType.badResponse,
+    );
+
+    final retriedResponse = Response(
+      requestOptions: RequestOptions(path: '/documents/upload'),
+      statusCode: 200,
+      data: <String, dynamic>{},
+    );
+    when(() => rawDio.fetch(any())).thenAnswer((_) async => retriedResponse);
+
+    interceptor.onError(error, handler);
+    await untilCalled(() => handler.resolve(any()));
+
+    final captured = verify(() => rawDio.fetch<dynamic>(captureAny())).captured;
+    final retriedOptions = captured.single as RequestOptions;
+    final retriedData = retriedOptions.data;
+
+    expect(retriedData, isA<FormData>());
+    expect(identical(retriedData, originalFormData), isFalse);
+    expect((retriedData as FormData).fields, originalFormData.fields);
+    expect(retriedData.files, hasLength(1));
+    expect(retriedData.files.single.key, 'file');
+  });
 }

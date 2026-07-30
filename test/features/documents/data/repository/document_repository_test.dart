@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
@@ -99,6 +101,106 @@ void main() {
 
       result.fold(
         (failure) => expect(failure, isA<UnauthorizedFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('uploadDocument', () {
+    late File tempFile;
+
+    setUp(() async {
+      tempFile = await File(
+        '${Directory.systemTemp.path}/hoqooq_upload_test.pdf',
+      ).writeAsBytes([1, 2, 3]);
+    });
+
+    tearDown(() async {
+      if (await tempFile.exists()) await tempFile.delete();
+    });
+
+    test('POSTs multipart /documents/upload with file + caseId', () async {
+      when(
+        () => dio.post(
+          '/documents/upload',
+          data: any(named: 'data'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer(
+        (_) async => okResponse('/documents/upload', documentJson()),
+      );
+
+      final result = await repository.uploadDocument(
+        filePath: tempFile.path,
+        caseId: 'c1',
+      );
+
+      final captured = verify(
+        () => dio.post(
+          '/documents/upload',
+          data: captureAny(named: 'data'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).captured;
+      final formData = captured.single as FormData;
+      expect(formData.files, hasLength(1));
+      expect(formData.files.single.key, 'file');
+      final caseIdField = formData.fields.firstWhere((e) => e.key == 'caseId');
+      expect(caseIdField.value, 'c1');
+      result.fold(
+        (_) => fail('expected Right'),
+        (document) => expect(document.title, 'Motion.pdf'),
+      );
+    });
+
+    test('omits the caseId field entirely when not provided', () async {
+      when(
+        () => dio.post(
+          '/documents/upload',
+          data: any(named: 'data'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            okResponse('/documents/upload', documentJson(caseId: null)),
+      );
+
+      await repository.uploadDocument(filePath: tempFile.path);
+
+      final captured = verify(
+        () => dio.post(
+          '/documents/upload',
+          data: captureAny(named: 'data'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).captured;
+      final formData = captured.single as FormData;
+      expect(formData.fields, isEmpty);
+    });
+
+    test('maps a 400 to ValidationFailure', () async {
+      when(
+        () => dio.post(
+          '/documents/upload',
+          data: any(named: 'data'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/documents/upload'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/documents/upload'),
+            statusCode: 400,
+            data: {'message': 'No file provided'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      final result = await repository.uploadDocument(filePath: tempFile.path);
+
+      result.fold(
+        (failure) => expect(failure, isA<ValidationFailure>()),
         (_) => fail('expected Left'),
       );
     });

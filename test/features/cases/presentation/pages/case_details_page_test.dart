@@ -21,6 +21,7 @@ import 'package:hqooq/features/cases/presentation/pages/case_details_page.dart';
 import 'package:hqooq/features/clients/domain/entities/client.dart';
 import 'package:hqooq/features/clients/domain/entities/client_status.dart';
 import 'package:hqooq/features/clients/domain/entities/client_type.dart';
+import 'package:hqooq/features/documents/presentation/bloc/document_upload_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCaseDetailsBloc extends MockBloc<CaseDetailsEvent, CaseDetailsState>
@@ -33,6 +34,10 @@ class MockCaseHearingsBloc
 class MockCaseDocumentsBloc
     extends MockBloc<CaseDocumentsEvent, CaseDocumentsState>
     implements CaseDocumentsBloc {}
+
+class MockDocumentUploadBloc
+    extends MockBloc<DocumentUploadEvent, DocumentUploadState>
+    implements DocumentUploadBloc {}
 
 class MockSessionCubit extends MockCubit<SessionState>
     implements SessionCubit {}
@@ -60,6 +65,7 @@ void main() {
   late MockCaseDetailsBloc bloc;
   late MockCaseHearingsBloc hearingsBloc;
   late MockCaseDocumentsBloc documentsBloc;
+  late MockDocumentUploadBloc documentUploadBloc;
   late MockSessionCubit sessionCubit;
 
   final legalCase = LegalCase(
@@ -122,10 +128,12 @@ void main() {
     bloc = MockCaseDetailsBloc();
     hearingsBloc = MockCaseHearingsBloc();
     documentsBloc = MockCaseDocumentsBloc();
+    documentUploadBloc = MockDocumentUploadBloc();
     sessionCubit = MockSessionCubit();
     getIt.registerFactory<CaseDetailsBloc>(() => bloc);
     getIt.registerFactory<CaseHearingsBloc>(() => hearingsBloc);
     getIt.registerFactory<CaseDocumentsBloc>(() => documentsBloc);
+    getIt.registerFactory<DocumentUploadBloc>(() => documentUploadBloc);
     getIt.registerSingleton<SessionCubit>(sessionCubit);
     whenListen(
       bloc,
@@ -141,6 +149,11 @@ void main() {
       documentsBloc,
       const Stream<CaseDocumentsState>.empty(),
       initialState: const CaseDocumentsLoaded([]),
+    );
+    whenListen(
+      documentUploadBloc,
+      const Stream<DocumentUploadState>.empty(),
+      initialState: DocumentUploadInitial(),
     );
   });
 
@@ -244,6 +257,45 @@ void main() {
       expect(find.text('CASE-2026-00001'), findsOneWidget);
       expect(find.text('Unknown'), findsWidgets);
       expect(find.text('u2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'tapping the Documents upload icon shows Take Photo / Choose File '
+    'options',
+    (tester) async {
+      when(() => sessionCubit.state).thenReturn(const SessionUnknown());
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+
+      final uploadIcon = find.byIcon(Icons.add_circle_outline);
+      await tester.ensureVisible(uploadIcon);
+      await tester.pumpAndSettle();
+      await tester.tap(uploadIcon);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Take Photo'), findsOneWidget);
+      expect(find.text('Choose File'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shows a progress bar while DocumentUploadBloc reports an in-progress '
+    'upload',
+    (tester) async {
+      when(() => sessionCubit.state).thenReturn(const SessionUnknown());
+      whenListen(
+        documentUploadBloc,
+        const Stream<DocumentUploadState>.empty(),
+        initialState: const DocumentUploadInProgress(0.5),
+      );
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Uploading...'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
     },
   );
 }

@@ -1,7 +1,10 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -15,6 +18,7 @@ import '../../../../shared/widgets/error_view.dart';
 import '../../../authentication/domain/entities/user.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../../documents/domain/entities/document_item.dart';
+import '../../../documents/presentation/bloc/document_upload_bloc.dart';
 import '../../../hearings/domain/entities/hearing.dart';
 import '../../../hearings/presentation/hearing_display_helpers.dart';
 import '../../domain/entities/legal_case.dart';
@@ -22,6 +26,8 @@ import '../bloc/case_details_bloc.dart';
 import '../bloc/case_documents_bloc.dart';
 import '../bloc/case_hearings_bloc.dart';
 import '../case_display_helpers.dart';
+
+enum _UploadSource { camera, file }
 
 class CaseDetailsPage extends StatelessWidget {
   final String caseId;
@@ -46,29 +52,44 @@ class CaseDetailsPage extends StatelessWidget {
               getIt<CaseDocumentsBloc>()
                 ..add(FetchCaseDocumentsRequested(caseId)),
         ),
+        BlocProvider(create: (context) => getIt<DocumentUploadBloc>()),
       ],
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(title: Text(context.tr('case_details'))),
         body: SafeArea(
-          child: BlocBuilder<CaseDetailsBloc, CaseDetailsState>(
-            builder: (context, state) {
-              if (state is CaseDetailsLoading || state is CaseDetailsInitial) {
-                return const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
+          child: BlocListener<DocumentUploadBloc, DocumentUploadState>(
+            listener: (context, state) {
+              if (state is DocumentUploadSuccess) {
+                context.read<CaseDocumentsBloc>().add(
+                  FetchCaseDocumentsRequested(caseId),
                 );
-              } else if (state is CaseDetailsError) {
-                return ErrorView(
-                  message: state.message,
-                  onRetry: () => context.read<CaseDetailsBloc>().add(
-                    FetchCaseDetailsRequested(caseId),
-                  ),
-                );
-              } else if (state is CaseDetailsLoaded) {
-                return _buildContent(context, state.legalCase);
+              } else if (state is DocumentUploadFailure) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(state.message)));
               }
-              return const SizedBox();
             },
+            child: BlocBuilder<CaseDetailsBloc, CaseDetailsState>(
+              builder: (context, state) {
+                if (state is CaseDetailsLoading ||
+                    state is CaseDetailsInitial) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
+                } else if (state is CaseDetailsError) {
+                  return ErrorView(
+                    message: state.message,
+                    onRetry: () => context.read<CaseDetailsBloc>().add(
+                      FetchCaseDetailsRequested(caseId),
+                    ),
+                  );
+                } else if (state is CaseDetailsLoaded) {
+                  return _buildContent(context, state.legalCase);
+                }
+                return const SizedBox();
+              },
+            ),
           ),
         ),
       ),
@@ -118,8 +139,43 @@ class CaseDetailsPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.m),
           _buildHearingsSection(context),
           const SizedBox(height: AppSpacing.l),
-          Text(context.tr('documents'), style: AppTypography.h3),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(context.tr('documents'), style: AppTypography.h3),
+              GestureDetector(
+                onTap: () => _showUploadOptions(context, legalCase.id),
+                child: const Icon(
+                  Icons.add_circle_outline,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.m),
+          BlocBuilder<DocumentUploadBloc, DocumentUploadState>(
+            builder: (context, state) {
+              if (state is! DocumentUploadInProgress) return const SizedBox();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.m),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.tr('uploading'),
+                      style: AppTypography.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value: state.progress > 0 ? state.progress : null,
+                      color: AppColors.primary,
+                      backgroundColor: AppColors.surfaceLight,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           _buildDocumentsSection(context),
         ],
       ),
@@ -293,6 +349,53 @@ class CaseDetailsPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showUploadOptions(BuildContext context, String caseId) async {
+    final bloc = context.read<DocumentUploadBloc>();
+    final source = await showModalBottomSheet<_UploadSource>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: Text(sheetContext.tr('take_photo')),
+              onTap: () => Navigator.pop(sheetContext, _UploadSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.attach_file),
+              title: Text(sheetContext.tr('choose_file')),
+              onTap: () => Navigator.pop(sheetContext, _UploadSource.file),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+
+    String? filePath;
+    if (source == _UploadSource.camera) {
+      final granted = await Permission.camera.request();
+      if (!granted.isGranted) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('camera_permission_denied'))),
+          );
+        }
+        return;
+      }
+      final photo = await ImagePicker().pickImage(source: ImageSource.camera);
+      filePath = photo?.path;
+    } else {
+      final result = await FilePicker.platform.pickFiles();
+      filePath = result?.files.single.path;
+    }
+
+    if (filePath == null) return;
+    bloc.add(DocumentUploadRequested(filePath: filePath, caseId: caseId));
   }
 
   String _formatSize(int bytes) {

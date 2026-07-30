@@ -56,6 +56,14 @@ class RefreshInterceptor extends Interceptor {
       final retryOptions = err.requestOptions;
       retryOptions.extra[_retriedKey] = true;
       retryOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+      // A multipart FormData's file streams are consumed once sent — dio
+      // throws `StateError` if the same instance is resent as-is on retry.
+      // `.clone()` rebuilds fresh, re-openable file streams for exactly
+      // this use case (see dio's own FormData.clone() doc).
+      final requestData = retryOptions.data;
+      if (requestData is FormData) {
+        retryOptions.data = requestData.clone();
+      }
       final retryResponse = await _rawDio.fetch(retryOptions);
       handler.resolve(retryResponse);
     } on DioException catch (retryError) {

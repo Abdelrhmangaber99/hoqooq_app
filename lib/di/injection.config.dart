@@ -76,6 +76,8 @@ import 'package:hqooq/features/documents/data/repository/document_repository.dar
     as _i106;
 import 'package:hqooq/features/documents/domain/repository/i_document_repository.dart'
     as _i622;
+import 'package:hqooq/features/documents/presentation/bloc/document_upload_bloc.dart'
+    as _i51;
 import 'package:hqooq/features/hearings/data/repository/hearing_repository.dart'
     as _i506;
 import 'package:hqooq/features/hearings/domain/repository/i_hearing_repository.dart'
@@ -141,6 +143,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i194.CaseDocumentsBloc>(
       () => _i194.CaseDocumentsBloc(gh<_i622.IDocumentRepository>()),
+    );
+    gh.factory<_i51.DocumentUploadBloc>(
+      () => _i51.DocumentUploadBloc(gh<_i622.IDocumentRepository>()),
     );
     gh.lazySingleton<_i723.GetClientsUseCase>(
       () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
