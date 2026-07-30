@@ -339,7 +339,7 @@ New strings (hearing/document/task labels, status/priority labels, Dashboard's r
 
 # Milestone 4 — Writes (Cases/Hearings update, Clients/Tasks full CRUD-minus-delete, Document upload, Calendar custom events)
 
-**Status: DRAFT — awaiting review. No production code written yet.**
+**Status: COMPLETE.** Approved 2026-07-31 after the Write Readiness Review and a final Lookup-endpoint re-verification pass; implemented in full the same session across six commits (Clients, Cases, Hearings, Tasks, Documents, Calendar). See Definition of Done below for outcomes.
 
 ## Framing
 
@@ -433,14 +433,20 @@ New strings (Edit Case/Edit Hearing/Create-Edit Client/Create-Edit Task/Create E
 - `circuitId` on Hearings — no browsable endpoint; stays unset.
 - Fixing the Clients tenant-scoping gap — backend team's responsibility, not mobile's.
 
-## Definition of done (draft — to convert to checkboxes once implementation starts)
+## Definition of done
 
-- `Create*Request`/`Update*Request` models match each backend DTO's exact whitelisted field set (no extra keys, nothing that would trip `forbidNonWhitelisted`).
-- Repository write methods for Clients (create+update), Cases (update), Hearings (update), Tasks (create+update), Documents (upload), Calendar (create custom event) — `tenantId` sourced from `SessionCubit`, never a screen-level concern.
-- `ValidationFailure` finally wired into `mapDioError()` for 400s.
-- Explicit-refetch-after-write implemented consistently across every new write bloc.
-- Create/Edit screens for Clients, Tasks, Calendar events; Edit-only screens for Cases (type read-only) and Hearings (type read-only, status change covers "complete hearing"); Document upload flow with camera/file picker + progress.
-- Multipart + token-refresh interaction fixed (fresh `FormData` on retry, or excluded from auto-retry).
-- Repository + bloc + at least one widget test per new write path.
-- `flutter analyze` clean; `dart format` clean on every file touched.
-- `CLAUDE.md`/`PLAN.md`/`API_CONTRACT.md` updated with outcomes at milestone close.
+- [x] `Create*Request`/`Update*Request` models match each backend DTO's exact whitelisted field set (no extra keys, nothing that would trip `forbidNonWhitelisted`).
+- [x] Repository write methods for Clients (create+update), Cases (update), Hearings (update), Tasks (create+update), Documents (upload), Calendar (create custom event) — `tenantId` (Clients) sourced from `SessionCubit`, never a screen-level concern. Calendar's `userId` (a DTO-required field the backend does NOT override server-side, unlike `tenantId`) defaults to the current user inside `CalendarEventFormPage` instead, same non-editable-field pattern as Tasks' `assignedById`.
+- [x] `ValidationFailure` finally wired into `mapDioError()` for 400s.
+- [x] Explicit-refetch-after-write implemented consistently across every new write bloc. The plan's tentative "Task status toggles may update optimistically" exception was **not** taken — Tasks stayed on the uniform explicit-refetch pattern like every other module, since no inline "mark complete" quick-action was built (task edits go through the full form, not a list-row checkbox); revisit only if such a quick-action gets built later.
+- [x] Create/Edit screens for Clients, Tasks, Calendar events; Edit-only screens for Cases (type read-only) and Hearings (type read-only, status change covers "complete hearing"); Document upload flow with camera/file picker + progress.
+- [x] Multipart + token-refresh interaction fixed — `RefreshInterceptor` now calls `FormData.clone()` (dio 5.10+) before resending on a 401 retry, rather than replaying the original (already-finalized, single-use) instance. Regression test reproduces a 401 mid-upload and asserts the retried request carries a distinct, non-finalized clone.
+- [x] Repository + bloc + at least one widget test per new write path — 166 tests total (was 105 at M3 close), `flutter analyze` clean.
+- [x] `flutter analyze` clean; `dart format` clean on every file touched (two incidental formatter sweeps of untouched files — `case_details_page.dart`'s pre-existing Documents-section content in the Tasks pass, and `appointment_details_page.dart`/`new_appointment_page.dart` in the Calendar pass — were reverted to keep diffs scoped, same discipline as M1–M3).
+- [x] `CLAUDE.md`/`PLAN.md` updated with outcomes at milestone close (this pass). `API_CONTRACT.md` was not additionally amended this milestone — no new backend findings surfaced beyond what M3's pre-planning re-verification and this milestone's Write Readiness Review + Lookup re-verification already captured there.
+
+### Not in this pass, flagged not forgotten
+
+- A real, previously unknown bug was found and fixed as a byproduct of this milestone, not something introduced by it: `CasesPage`/`ClientsPage`'s search-bar `TextField.onChanged` called `context.read<XBloc>()` using the outer `build(BuildContext context)` parameter — an ancestor of, not a descendant of, that same build's own `BlocProvider` — so the read always threw `ProviderNotFoundException`. Fixed by wrapping each `Scaffold` in a `Builder`; the same fix was applied proactively to `CalendarPage`'s new FAB (`context.push`/`context.read` inside `onPressed`) rather than waiting to discover the identical bug there too.
+- Everything the M4 draft explicitly deferred (Case/Hearing creation, delete/archive, notification preferences, document metadata edit/download, `circuitId`) remains deferred — no new information arrived this milestone to revisit any of them; the Lookup-listing endpoint re-verification (final check before implementation) reconfirmed zero HTTP-exposed listing endpoint, 4 independent ways, so Case/Hearing creation stays blocked as planned.
+- Full EN/AR widget-test duplication for every M4 screen remains a known gap (English-only smoke coverage), consistent with the precedent M2/M3 already established — not a new gap this milestone introduced.

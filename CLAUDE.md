@@ -47,7 +47,7 @@ This repo already contains a working UI-only prototype (see `PROJECT_SUMMARY.md`
 | Routing | `go_router` | `go_router` ✓ (matches) |
 | HTTP | `dio` | `dio` ✓ (matches; as of M1, `dio_client.dart` uses `ApiConfig.baseUrl` + `AuthInterceptor` + `RefreshInterceptor`. `TenantInterceptor` has been removed — see M1 session log) |
 
-Originally, every feature (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) was wired to **mock repositories** returning fake data. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. As of M3, authentication/cases/clients/hearings/documents/tasks/calendar/dashboard are all real; notifications/profile remain static (untouched, out of scope so far).
+Originally, every feature (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) was wired to **mock repositories** returning fake data. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. As of M4, authentication/cases/clients/hearings/documents/tasks/calendar/dashboard are all real, and writes (create/update, upload) are implemented per module — see the M4 session log for exact per-module scope (Case/Hearing creation stay blocked on the missing `Lookup` endpoint; delete is deferred everywhere). notifications/profile remain static (untouched, out of scope so far).
 
 ---
 
@@ -118,35 +118,58 @@ lib/
         bloc/            # auth_bloc, auth_event, auth_state, session_cubit, session_state (session_cubit added M1)
         pages/           # login, splash (sign_up_page.dart kept but unrouted, see PLAN.md)
     calendar/
-      data/repository/    # calendar_repository.dart (real, added M3, replaces MockAppointmentRepository) — no mock left
+      data/
+        models/          # create_event_request.dart (added M4, POST /calendar)
+        repository/      # calendar_repository.dart (real, added M3, replaces MockAppointmentRepository; +createEvent M4) — no mock left
       domain/entities/    # calendar_event_entity, calendar_event_type, timeline_item (sealed union over CALENDAR_EVENT/HEARING/TASK, added M3)
       presentation/
-        bloc/            # calendar_bloc/event/state (rebuilt M3 against GET /calendar/timeline)
-        pages/           # calendar_page.dart (rebuilt M3); appointment_details_page.dart/new_appointment_page.dart kept but unrouted (fictional/write-only, same treatment sign_up_page.dart got in M1)
+        bloc/            # calendar_bloc/event/state (rebuilt M3 against GET /calendar/timeline); calendar_event_form_bloc/event/state (added M4, create-only, no reference-data step)
+        pages/           # calendar_page.dart (rebuilt M3, FAB added M4 wrapped in a Builder — see M4 session log); calendar_event_form_page.dart (added M4, userId always defaults to current user); appointment_details_page.dart/new_appointment_page.dart kept but unrouted (fictional/write-only, same treatment sign_up_page.dart got in M1)
         timeline_display_helpers.dart  # (added M3)
     cases/
-      data/repository/    # case_repository.dart (real, added M2) — no mock left
+      data/
+        models/          # update_case_request.dart (added M4, excludes caseTypeId/caseNumber/clientId)
+        repository/      # case_repository.dart (real, added M2; +updateCase M4) — no mock left
       domain/entities/    # legal_case, case_status, case_priority, case_type_lookup, court, case_team_member (added M2; corrected pre-M3 — caseType/primaryLawyer/team[].user are nullable, team[].role renamed to roleOnCase, see session log), case_summary (added M3 — thin case shape nested in Hearing/TaskItem/DocumentItem/TimelineItem)
       presentation/
-        bloc/            # cases_bloc/event/state, case_details_bloc/event/state (added M2); case_hearings_bloc/event/state, case_documents_bloc/event/state (added M3, sibling blocs to case_details_bloc)
-        pages/           # cases_page.dart (added M2), case_details_page.dart (rewritten M2, Hearings/Documents sections added M3)
+        bloc/            # cases_bloc/event/state, case_details_bloc/event/state (added M2); case_hearings_bloc/event/state, case_documents_bloc/event/state (added M3, sibling blocs to case_details_bloc); case_form_bloc/event/state (added M4, edit-only — caseType/caseNumber redisplayed read-only, loads Courts+Users as reference data)
+        pages/           # cases_page.dart (added M2), case_details_page.dart (rewritten M2, Hearings/Documents sections added M3, Edit button + Documents-upload UI added M4), case_form_page.dart (added M4)
         case_display_helpers.dart  # enum → label/color mapping (added M2)
     clients/
-      data/repository/    # client_repository.dart (real, added M2) — no mock left
+      data/
+        models/          # create_client_request.dart, update_client_request.dart (added M4)
+        repository/      # client_repository.dart (real, added M2; +createClient/+updateClient M4, tenantId sourced from SessionCubit at the wire boundary) — no mock left
       domain/entities/    # client (rebuilt M2), client_status, client_type (added M2)
       presentation/
-        bloc/            # clients_bloc/event/state, client_details_bloc/event/state (added M2)
-        pages/           # clients_page.dart (updated M2), client_profile_page.dart (rewritten M2)
+        bloc/            # clients_bloc/event/state, client_details_bloc/event/state (added M2); client_form_bloc/event/state (added M4)
+        pages/           # clients_page.dart (updated M2, FAB + search-bar-bug fix M4 — see M4 session log), client_profile_page.dart (rewritten M2, Edit button M4), client_form_page.dart (added M4, shared create/edit, diffs against original for minimal PATCH)
         client_display_helpers.dart  # (added M2)
+    courts/                # (added M4) data/repository, domain/repository — GET /courts only, reuses cases' existing Court entity; reference data for Case/Hearing edit forms
     dashboard/
       data/repository/    # dashboard_repository.dart (real, added M3, calls GET /reports/dashboard — never GET /dashboard)
       domain/entities/    # dashboard_metrics (added M3)
       presentation/
         bloc/            # dashboard_bloc/event/state (added M3)
-        pages/           # dashboard_page.dart (rebuilt M3 — was 100% static mock before)
-    documents/            # data/repository, domain/{entities,repository} (added M3) — no presentation/pages of its own, surfaces only inside case_details_page.dart's Documents section
-    hearings/             # data/repository, domain/{entities,repository}, presentation/hearing_display_helpers.dart (added M3) — no presentation/pages of its own, surfaces only inside case_details_page.dart's Hearings section
-    tasks/                # data/repository, domain/{entities,repository}, presentation/task_display_helpers.dart (added M3) — no presentation/pages of its own, surfaces via dashboard_page.dart's personal task list
+        pages/           # dashboard_page.dart (rebuilt M3 — was 100% static mock before; add-task button + tap-to-edit task rows added M4)
+    documents/
+      data/
+        repository/      # document_repository.dart (real, added M3; +uploadDocument M4, POST /documents/upload — file+caseId only, no description/category/folderId server-side)
+      domain/{entities,repository}  # (added M3)
+      presentation/bloc/  # document_upload_bloc/event/state (added M4) — no presentation/pages of its own, upload UI surfaces inside case_details_page.dart's Documents section
+    hearings/
+      data/
+        models/          # update_hearing_request.dart (added M4, excludes caseId/hearingTypeId/circuitId)
+      domain/{entities,repository}, presentation/hearing_display_helpers.dart  # (added M3)
+      presentation/bloc/  # hearing_form_bloc/event/state (added M4, edit-only, loads Courts as reference data)
+      presentation/pages/ # hearing_form_page.dart (added M4) — status change here covers "complete a hearing" (status: COMPLETED + outcomeText)
+    tasks/
+      data/
+        models/          # create_task_request.dart, update_task_request.dart (added M4)
+        repository/      # (added M3; +createTask/+updateTask M4)
+      domain/{entities,repository}, presentation/task_display_helpers.dart  # (added M3)
+      presentation/bloc/  # task_form_bloc/event/state (added M4, loads Users+Cases as reference data, no Lookup dependency unlike Cases/Hearings — assignedById always defaults to current user)
+      presentation/pages/ # task_form_page.dart (added M4, shared create/edit)
+    users/                 # (added M4) data/repository, domain/repository — GET /users only, reuses authentication's existing User entity; reference data for Case/Task edit forms
     notifications/        # still static UI — untouched, out of scope so far
     profile/              # still static UI — untouched, out of scope so far
   shared/
@@ -154,13 +177,14 @@ lib/
     widgets/              # empty_state.dart, error_view.dart (added M2 — neither existed before)
 l10n.yaml               # gen-l10n config (added M1)
 test/
-  core/network/interceptors/refresh_interceptor_test.dart
+  core/network/interceptors/refresh_interceptor_test.dart  # +FormData-clone-on-retry regression test (M4)
   features/authentication/{data/repository, domain/entities, presentation/{bloc,pages}}/*_test.dart
-  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ includes cases_page_test.dart (post-M2 retrospective); presentation/bloc/ includes case_hearings_bloc_test.dart/case_documents_bloc_test.dart (M3)
-  features/clients/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ (clients_page_test.dart, client_profile_page_test.dart) added post-M2 retrospective follow-up
-  features/{calendar,dashboard,documents,hearings,tasks}/  # M3: data/repository (all 5), presentation/bloc (calendar, dashboard), presentation/pages (calendar, dashboard)
+  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ includes cases_page_test.dart (post-M2 retrospective) and case_form_page_test.dart (M4); presentation/bloc/ includes case_hearings_bloc_test.dart/case_documents_bloc_test.dart (M3), case_form_bloc_test.dart (M4)
+  features/clients/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ (clients_page_test.dart, client_profile_page_test.dart) added post-M2 retrospective follow-up; client_form_page_test.dart added M4
+  features/{calendar,dashboard,documents,hearings,tasks}/  # M3: data/repository (all 5), presentation/bloc (calendar, dashboard), presentation/pages (calendar, dashboard). M4 additions: presentation/bloc (calendar_event_form, document_upload, hearing_form, task_form), presentation/pages (calendar_event_form_page, task_form_page, hearing_form_page)
+  features/{courts,users}/data/repository/  # (added M4)
 ```
-Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. As of M3: Auth, Cases, Clients, Hearings, Documents, Tasks, Calendar, and Dashboard are all real; only Notifications/Profile remain static, untouched so far.
+Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. As of M4: Auth, Cases, Clients, Hearings, Documents, Tasks, Calendar, and Dashboard are all real, with create/update writes now implemented per module (see BR-### table's context and the M4 session log below for exact per-module scope — Case/Hearing creation stay blocked on the missing `Lookup` endpoint, delete is deferred everywhere). Only Notifications/Profile remain static, untouched so far.
 
 ## Coding conventions
 
@@ -210,3 +234,18 @@ Each feature: `data/repository` → `domain/{entities,repository,usecases}` → 
   - Case Detail gained Hearings and Documents sections via two new sibling blocs (`CaseHearingsBloc`/`CaseDocumentsBloc`), both client-side-filtered by `caseId` — no server-side filter exists for either. Dashboard was rebuilt from 100%-static mock content into `DashboardBloc` calling `GET /reports/dashboard` (confirmed with the user: never `GET /dashboard`, which is the System/Super Admin's platform-wide view, not a per-tenant metric) plus a real personal pending-tasks list; the mock's "today's schedule"/"recent clients" sections were dropped rather than faked, flagged as deferred. Calendar was rebuilt against `GET /calendar/timeline` (the one endpoint anywhere in the API with real server-side filtering), replacing the mock `Appointment` model entirely; `AppointmentDetailsPage`/`NewAppointmentPage` were already unreachable (nothing navigated to them) and are fictional/write-only respectively, so they were unrouted rather than rebuilt against a still-read-only milestone — same treatment `sign_up_page.dart` got in M1.
   - Two pre-existing layout bugs surfaced by this milestone's first-ever widget test for `CalendarPage`: a vertical overflow that only reproduces at the test harness's unusually short default 800×600 surface (fixed by giving that test a phone-sized viewport, not by changing the real layout), and a genuine horizontal overflow in the month/year header at standard phone widths like 390px (fixed for real, since it would have reproduced on an actual device).
   - 105 tests total (was 70), all green; `flutter analyze` clean; `dart format` clean on every file touched — reverted a `dart format lib/features/calendar` sweep partway through after it caught two untouched files (`appointment_details_page.dart`/`new_appointment_page.dart`) in its formatting pass, same discipline as M1/M2. 6 commits this milestone (1 regression fix + 5 feature/test commits). M4 (writes) not started.
+
+- **2026-07-31 (M4 Write Readiness Review)** — User asked for a review-only pass, no code, before drafting M4: auth/refresh behavior under mutations, error/validation mapping, repository patterns for POST/PATCH/DELETE/multipart, permission gating, optimistic-vs-refetch, file-upload architecture. Source-verified against `Hoqooq-main/`, surfaced two things that shaped the M4 plan directly: (1) Clients module has no tenant scoping on `findOne`/`update`/`remove` (cross-tenant read/write/delete by ID confirmed) — user said the backend team already knows and will fix it server-side, proceed with Client writes without waiting; (2) no endpoint anywhere lists `Lookup` rows, which `caseTypeId`/`hearingTypeId` reference — a structural blocker for Case/Hearing *creation* specifically (update is fine, the type field just redisplays read-only). Also flagged (both fixed as part of this milestone, see below): `ValidationFailure` was defined but never wired into `mapDioError()` for 400s, and a genuine multipart-retry bug in `RefreshInterceptor` (would replay an already-consumed `FormData` on a 401 mid-upload).
+
+- **2026-07-31 (M4 planning)** — User confirmed the review's findings and asked for the M4 plan, keeping the established principles (dedicated Create/Update models, partial PATCH via per-field `@JsonKey(includeIfNull: false)`, explicit refetch after writes, don't guess undocumented shapes). Drafted the scope table: Clients create+update (no Lookup dependency), Cases/Hearings update-only (creation blocked), Tasks create+update (no Lookup dependency either — `assignedById`/`assignedToId` are real `User` refs), Documents upload-only (matches `POST /documents/upload` exactly), Calendar custom-event-create-only (`HEARING`/`TASK_DEADLINE` are server-derived, never user-created). Delete deferred across every module as a deliberate scope cut (own future milestone), not a backend gap — soft-delete works fine on Cases/Clients/Documents/Calendar-events, hard-delete works fine on Hearings/Tasks, no technical blocker either way. Plan approved; before writing code, did one more targeted check per the user's explicit instruction:
+
+- **2026-07-31 (Lookup re-verification)** — Confirmed via four independent methods (full `@Controller()` enumeration of all 19 controllers, tracing every `Lookup` entity reference, reading `RolesController` in full, a regex sweep of every route path for type/categor/lookup) that no HTTP-exposed `Lookup`-listing endpoint exists anywhere in the backend. Case and Hearing creation stay deferred exactly as planned — not hardcoding UUIDs or inventing a client-side lookup list, per explicit instruction. Proceeded straight into implementation.
+
+- **2026-07-31 (M4 execution)** — Implemented the full approved plan across six scoped commits, one per module, each following format→test→commit before moving to the next (same discipline as M1–M3):
+  - **Clients** (`feat(clients): create + update`) — `CreateClientRequest`/`UpdateClientRequest` (`UpdateClientRequest` uses per-field `@JsonKey(includeIfNull: false)`, not a class-level annotation — the latter produces duplicate/conflicting codegen when combined with `@freezed`, discovered and fixed here, then applied consistently to every other Update*Request this milestone); `tenantId` sourced from `SessionCubit.state.user.tenant.id` and merged into the wire body only inside `ClientRepository`, never exposed as a field. Found and fixed a real, previously unknown production bug as a byproduct: `CasesPage`/`ClientsPage`'s search-bar `TextField.onChanged` called `context.read<XBloc>()` using the outer `build(BuildContext context)` — an ancestor of, not descendant of, that same build's own `BlocProvider` — so it always threw `ProviderNotFoundException`. Fixed both pages by wrapping their `Scaffold` in a `Builder`; verified with a throwaway `enterText`-then-check-for-exception probe before and after, then added permanent regression tests.
+  - **Cases** (`feat(cases): update-only`) — Added `courts`/`users` as new thin feature folders (`GET /courts`/`GET /users` only, reusing the existing `Court`/`User` entities) since `CaseFormBloc` needs both as reference data (`primaryLawyerId`/`defaultCourtId` dropdowns). `caseType`/`caseNumber` redisplay read-only in the edit form. `agreedFee` field gated by `SessionCubit`'s `isFirmAdmin`, same BR-026 pattern as `CaseDetailsPage`.
+  - **Hearings** (`feat(hearings): update-only`) — `UpdateHearingRequest` excludes `caseId`/`hearingTypeId`/`circuitId` (`circuitId` has no browsable endpoint, stays unset). "Complete a hearing" is not a separate action — it's the same edit form with `status: COMPLETED` + `outcomeText` filled in.
+  - **Tasks** (`feat(tasks): create + update`) — No `Lookup` dependency at all, so create and update shipped together (unlike Cases/Hearings). `assignedById` always defaults to the current user via `SessionCubit` rather than being an editable field — the person filling out the form is the natural assigner. `TaskFormBloc` loads Users (assignee picker) + Cases (optional case-link picker), degrading to empty lists on failure.
+  - **Documents** (`feat(documents): upload`) — `IDocumentRepository.uploadDocument` mirrors `POST /documents/upload` exactly: `file` (multipart, required) + `caseId` (optional) are the *only* fields the real backend accepts, confirmed by reading `DocumentsController`/`DocumentsService` directly — no description/category/folderId despite the response DTO carrying (always-null) placeholders for them. Fixed the multipart-retry bug flagged in the Write Readiness Review: `RefreshInterceptor` now calls `FormData.clone()` (available in dio 5.10+, purpose-built for exactly this retry scenario) before resending on a 401, instead of replaying the original already-finalized (single-use) instance — regression test reproduces a 401 mid-upload and asserts the retry carries a distinct, non-finalized clone.
+  - **Calendar** (`feat(calendar): custom event creation`) — `CreateEventRequest.userId` is required by the backend DTO and, unlike `tenantId`, is **not** overridden server-side (`CalendarService.create` spreads the DTO as-is) — confirmed by reading the service directly. `CalendarEventFormPage` defaults it to the current user rather than exposing it as a field, same non-editable-field pattern as Tasks' `assignedById`. `CalendarPage` gained a FAB, wrapped in a `Builder` proactively (same fix class as the Clients/Cases search-bar bug) rather than waiting to discover the identical bug there too.
+  - 166 tests total (was 105 at M3 close), all green; `flutter analyze` clean; `dart format` clean on every file touched — an incidental formatter sweep of two untouched files (`appointment_details_page.dart`/`new_appointment_page.dart`, caught during the Calendar pass) was reverted to keep that commit's diff scoped, same discipline as M1–M3. See `PLAN.md`'s M4 section for the full Definition of Done and deferred-items list. M5 not started.
