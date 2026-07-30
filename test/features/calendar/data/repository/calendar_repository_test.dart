@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
+import 'package:hqooq/features/calendar/data/models/create_event_request.dart';
 import 'package:hqooq/features/calendar/data/repository/calendar_repository.dart';
 import 'package:hqooq/features/calendar/domain/entities/calendar_event_type.dart';
 import 'package:hqooq/features/calendar/domain/entities/timeline_item.dart';
@@ -181,6 +182,71 @@ void main() {
 
       result.fold(
         (failure) => expect(failure, isA<NetworkFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('createEvent', () {
+    test('POSTs /calendar with the full CreateEventDto-shaped body', () async {
+      when(() => dio.post('/calendar', data: any(named: 'data'))).thenAnswer(
+        (_) async => okResponse('/calendar', {
+          'id': 'e1',
+          'tenantId': 't1',
+          'userId': 'u1',
+          'title': 'Team sync',
+          'eventType': 'CUSTOM',
+          'startsAt': '2026-02-01T09:00:00.000Z',
+          'isAllDay': false,
+          'createdAt': '2026-01-01T00:00:00.000Z',
+          'updatedAt': '2026-01-01T00:00:00.000Z',
+        }),
+      );
+
+      final request = CreateEventRequest(
+        userId: 'u1',
+        title: 'Team sync',
+        startsAt: DateTime.utc(2026, 2, 1, 9),
+        isAllDay: false,
+      );
+      final result = await repository.createEvent(request);
+
+      final captured = verify(
+        () => dio.post('/calendar', data: captureAny(named: 'data')),
+      ).captured;
+      final body = captured.single as Map<String, dynamic>;
+      expect(body['userId'], 'u1');
+      expect(body['title'], 'Team sync');
+      expect(body['eventType'], 'CUSTOM');
+      expect(body['isAllDay'], false);
+      result.fold(
+        (_) => fail('expected Right'),
+        (event) => expect(event.title, 'Team sync'),
+      );
+    });
+
+    test('maps a 400 to ValidationFailure', () async {
+      when(() => dio.post('/calendar', data: any(named: 'data'))).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/calendar'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/calendar'),
+            statusCode: 400,
+            data: {'message': 'startsAt must be a valid ISO date string'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      final request = CreateEventRequest(
+        userId: 'u1',
+        title: 'Team sync',
+        startsAt: DateTime.utc(2026, 2, 1, 9),
+      );
+      final result = await repository.createEvent(request);
+
+      result.fold(
+        (failure) => expect(failure, isA<ValidationFailure>()),
         (_) => fail('expected Left'),
       );
     });

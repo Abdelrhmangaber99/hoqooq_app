@@ -4,6 +4,7 @@ import 'route_guards.dart';
 import '../../features/authentication/presentation/pages/splash_page.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../features/calendar/presentation/pages/calendar_event_form_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/cases/domain/entities/legal_case.dart';
 import '../../features/cases/presentation/pages/case_form_page.dart';
@@ -60,6 +61,12 @@ class AppRouter {
           GoRoute(
             path: calendar,
             builder: (context, state) => const CalendarPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const CalendarEventFormPage(),
+              ),
+            ],
           ),
           GoRoute(
             path: cases,

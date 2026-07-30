@@ -190,5 +190,11 @@
   "case": "Case",
   "edit_task": "Edit Task",
   "new_task": "New Task",
-  "create_task": "Create Task"
+  "create_task": "Create Task",
+  "new_event": "New Event",
+  "create_event": "Create Event",
+  "start_date": "Start Date",
+  "end_date": "End Date",
+  "location": "Location",
+  "all_day": "All Day"
 }

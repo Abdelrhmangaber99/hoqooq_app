@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -19,63 +21,78 @@ class CalendarPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => getIt<CalendarBloc>()..add(FetchTimelineRequested()),
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: BlocBuilder<CalendarBloc, CalendarState>(
-                  builder: (context, state) {
-                    if (state is CalendarLoading || state is CalendarInitial) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      );
-                    } else if (state is CalendarError) {
-                      return ErrorView(
-                        message: state.message,
-                        onRetry: () => context.read<CalendarBloc>().add(
-                          FetchTimelineRequested(),
-                        ),
-                      );
-                    } else if (state is CalendarLoaded) {
-                      return Column(
-                        children: [
-                          const SizedBox(height: AppSpacing.m),
-                          _buildHeader(
-                            context,
-                            state.selectedDate,
-                            state.viewMode,
+      child: Builder(
+        builder: (context) => Scaffold(
+          backgroundColor: AppColors.background,
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: AppColors.primary,
+            onPressed: () async {
+              final created = await context.push<bool>(
+                '${AppRouter.calendar}/new',
+              );
+              if (created == true && context.mounted) {
+                context.read<CalendarBloc>().add(FetchTimelineRequested());
+              }
+            },
+            child: const Icon(Icons.add, color: Colors.black),
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: BlocBuilder<CalendarBloc, CalendarState>(
+                    builder: (context, state) {
+                      if (state is CalendarLoading ||
+                          state is CalendarInitial) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
                           ),
-                          const SizedBox(height: AppSpacing.l),
-                          if (state.viewMode == CalendarViewMode.month)
-                            _buildCalendarGrid(
-                              context,
-                              state.items,
-                              state.selectedDate,
-                            ),
-                          if (state.viewMode == CalendarViewMode.week)
-                            _buildWeekView(context, state.selectedDate),
-                          if (state.viewMode == CalendarViewMode.day)
-                            _buildDayView(context, state.selectedDate),
-                          const SizedBox(height: AppSpacing.l),
-                          Expanded(
-                            child: _buildEventsSection(
-                              context,
-                              state.items,
-                              state.selectedDate,
-                            ),
+                        );
+                      } else if (state is CalendarError) {
+                        return ErrorView(
+                          message: state.message,
+                          onRetry: () => context.read<CalendarBloc>().add(
+                            FetchTimelineRequested(),
                           ),
-                        ],
-                      );
-                    }
-                    return const SizedBox();
-                  },
+                        );
+                      } else if (state is CalendarLoaded) {
+                        return Column(
+                          children: [
+                            const SizedBox(height: AppSpacing.m),
+                            _buildHeader(
+                              context,
+                              state.selectedDate,
+                              state.viewMode,
+                            ),
+                            const SizedBox(height: AppSpacing.l),
+                            if (state.viewMode == CalendarViewMode.month)
+                              _buildCalendarGrid(
+                                context,
+                                state.items,
+                                state.selectedDate,
+                              ),
+                            if (state.viewMode == CalendarViewMode.week)
+                              _buildWeekView(context, state.selectedDate),
+                            if (state.viewMode == CalendarViewMode.day)
+                              _buildDayView(context, state.selectedDate),
+                            const SizedBox(height: AppSpacing.l),
+                            Expanded(
+                              child: _buildEventsSection(
+                                context,
+                                state.items,
+                                state.selectedDate,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                      return const SizedBox();
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

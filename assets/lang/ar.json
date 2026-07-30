@@ -190,5 +190,11 @@
   "case": "القضية",
   "edit_task": "تعديل المهمة",
   "new_task": "مهمة جديدة",
-  "create_task": "إنشاء مهمة"
+  "create_task": "إنشاء مهمة",
+  "new_event": "حدث جديد",
+  "create_event": "إنشاء حدث",
+  "start_date": "تاريخ البدء",
+  "end_date": "تاريخ الانتهاء",
+  "location": "الموقع",
+  "all_day": "طوال اليوم"
 }

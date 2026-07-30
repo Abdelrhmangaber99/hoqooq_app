@@ -34,6 +34,8 @@ import 'package:hqooq/features/calendar/domain/repository/i_calendar_repository.
     as _i495;
 import 'package:hqooq/features/calendar/presentation/bloc/calendar_bloc.dart'
     as _i251;
+import 'package:hqooq/features/calendar/presentation/bloc/calendar_event_form_bloc.dart'
+    as _i99;
 import 'package:hqooq/features/cases/data/repository/case_repository.dart'
     as _i981;
 import 'package:hqooq/features/cases/domain/repository/i_case_repository.dart'
@@ -140,6 +142,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i251.CalendarBloc>(
       () => _i251.CalendarBloc(gh<_i495.ICalendarRepository>()),
+    );
+    gh.factory<_i99.CalendarEventFormBloc>(
+      () => _i99.CalendarEventFormBloc(gh<_i495.ICalendarRepository>()),
     );
     gh.factory<_i194.CaseDocumentsBloc>(
       () => _i194.CaseDocumentsBloc(gh<_i622.IDocumentRepository>()),

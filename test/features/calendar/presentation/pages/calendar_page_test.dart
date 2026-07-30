@@ -142,4 +142,19 @@ void main() {
 
     expect(find.text('No events for this day'), findsOneWidget);
   });
+
+  testWidgets('renders a FAB to create a new custom event', (tester) async {
+    setPhoneViewport(tester);
+    whenListen(
+      bloc,
+      const Stream<CalendarState>.empty(),
+      initialState: CalendarLoaded([item], selectedDate),
+    );
+
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+  });
 }
