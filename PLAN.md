@@ -243,3 +243,85 @@ None of these are documented as exhaustive (no OpenAPI schema backs this collect
 - [~] Screens tested — widget coverage is real but not exhaustive across every screen/locale combination (see Tests section above); empty/loading/error states are covered in the blocs and in the one widget test file, not screen-by-screen.
 - [x] `flutter analyze` clean; `dart format` clean on every file touched.
 - [x] `CLAUDE.md`/`PLAN.md` updated with outcomes (this pass).
+
+---
+
+# Milestone 3 — Read-only workspace: Hearings, Documents, Tasks, Dashboard, Calendar
+
+**Status: DRAFT — awaiting review. No code written yet.**
+
+## Framing
+
+Spec §15's "M2 — Read-only workspace" originally expected dashboard/cases/clients/hearings/calendar/documents/tasks all in one milestone. This project's actual M2 was scoped down to Cases + Clients only (per the M2-approval decision). M3, per your explicit direction, finishes what the spec's M2 described: **Hearings, Documents, Tasks, Dashboard, Calendar — all read-only.** Writes (create/edit case, schedule hearing, upload document, create task, etc.) move to M4, per spec's original M3 scope.
+
+Every contract claim below is source-verified against `Hoqooq-main/` (see `API_CONTRACT.md` finding I), not inferred from the Postman collection — that collection is stale for these five modules relative to source (e.g. it's missing `HearingStatus.CANCELLED`, `hearings/documents/tasks` real vs. dead-file enum divergences, and the `/calendar/timeline` endpoint's real shape).
+
+## Decisions — resolved (your answers, this session)
+
+1. **Dashboard endpoint**: `GET /reports/dashboard` only (`{totalActiveCases, pendingTasks, upcomingHearings}`), correctly user-scoped. **Not** `GET /dashboard` — confirmed by the user: that endpoint is the platform-wide view for the System/Super Admin who runs the whole system, not a per-tenant metric, and isn't meant for this mobile client at all (this app only ever serves tenant-scoped actors, BR-037). Dashboard screen for M3 is therefore 3 metrics, no `recentActivity`, no invoice counts — those live on the Super-Admin-only endpoint, out of scope for this app entirely, not a gap to fill later.
+2. **Hearings/Documents navigation**: sections inside `CaseDetailsPage` only, filtered client-side by `caseId` (fetch the full `/hearings`/`/documents` collection, filter locally — same pattern as `ClientDetailsBloc` filtering cases by `clientId`, since neither endpoint has a `caseId` query param). **No new bottom-nav tab, no firm-wide "all hearings"/"all documents" list screen this milestone.**
+3. **Tasks placement**: no new nav tab. A personal pending-tasks section on the Dashboard (`GET /tasks` filtered client-side to `assignedToId == current user.id`, since there's no `?assignedToId=` query param either) + a Tasks section inside `CaseDetailsPage` filtered by `caseId`.
+
+## Known backend issues to work around (not client bugs — flag, don't silently patch)
+
+- **Hearings and Tasks `DELETE` are hard deletes** (`hearingRepository.remove()`/`taskRepository.remove()`, not `.softRemove()`), unlike Cases/Clients/Documents/Calendar-events. Irrelevant to M3 itself (read-only), but note it now so a future M4 delete-button doesn't assume soft-delete parity across every module.
+- **`GET /documents/{id}` doesn't exist.** Document detail must come from the list response (`GET /documents`, filtered client-side to this case), not a dedicated fetch — same shape either way, just sourced differently than `CaseDetailsBloc`'s single-fetch pattern.
+- **`GET /documents/{id}/download` is a stub**, not real file bytes or a presigned URL (`{message: 'File download simulated', url: '/uploads/...'}`). A "Download"/"Preview" action in the Documents section can show metadata (title, fileType, sizeBytes, uploadedBy, versionNumber) but **cannot fetch or render actual file content** this milestone — surfacing a disabled/"not yet available" download affordance rather than a broken one is the plan, not a workaround to fake around the stub.
+- **Duplicate dead enum files exist for Hearings/Tasks/Calendar** (`enums/hearing-status.enum.ts`, `enums/task-status.enum.ts`, `enums/task-priority.enum.ts`, `enums/event-type.enum.ts`) with values that don't match the real (entity-file) enums actually used by the API. Building Dart enums from the entity-file values only, confirmed dead via `grep -rn` finding zero importers of the standalone files.
+- **Relations-vs-DTO uncertainty for Hearings/Documents/Tasks/Calendar-events**: each service loads full relations (`case`, `court`, `assignedTo`, `user`, etc.) but the response DTO's field list only declares ID fields (`caseId`, not `case`). Whether the live JSON response actually nests full objects or just IDs depends on whether a global `ClassSerializerInterceptor` is applied — not found in these controllers/modules during the source read. **Plan: write the Freezed models against the ID-only DTO shape (the documented contract) and add an `unknown`-safe fallback; if a real response turns out to include nested objects, that's additive (ignored extra JSON keys don't break `json_serializable` parsing) — verify against a running instance once available, don't block the plan on it.**
+- **Calendar's `/timeline` response is loosely typed (`any[]`)** and merges three different item shapes (`CALENDAR_EVENT`/`HEARING`/`TASK`) with different field sets sharing a `date` key. This needs a sum-type Freezed model (or a plain `itemType`-discriminated parse), not a single flat class — see Freezed section below.
+- **`/timeline`'s `userId` filter only restricts calendar events, not tasks** (confirmed via an explicit code comment in `calendar.service.ts`) — if the Calendar screen calls `/timeline?userId=...`, the tasks portion of the response is NOT actually scoped to that user despite the query param name suggesting otherwise. Don't rely on it for task filtering; keep task-scoping client-side same as the Dashboard's pending-tasks section.
+
+## Freezed models needed
+
+- `Hearing { id, caseId, courtId, circuitId?, hearingTypeId, scheduledAt, judgeName?, status: HearingStatus, outcomeText?, nextHearingAt?, createdAt, updatedAt }`. `HearingStatus { scheduled, completed, adjourned, cancelled, unknown }` (real enum — `ADJOURNED`/`CANCELLED`, not the dead file's `POSTPONED`).
+- `TaskItem { id, caseId?, assignedById, assignedToId, title, description?, priority: TaskPriority, status: TaskStatus, dueDate?, completedAt?, createdAt, updatedAt }` (named `TaskItem`, not `Task` — avoid clashing with `dart:async`'s `Task`-adjacent naming conventions/any future scheduler use, same reasoning as `LegalCase` vs `case`). `TaskStatus { pending, inProgress, completed, cancelled, unknown }`, `TaskPriority { low, normal, high, urgent, unknown }` (confirms `URGENT` exists, corrects `MEDIUM`→`NORMAL` versus the dead enum file).
+- `DocumentItem { id, title, description?, fileType, sizeBytes, caseId?, folderId?, categoryId?, uploadedById, versionNumber, createdAt, updatedAt }` (named to avoid clashing with `dart:io`'s `File`/potential `Document` ambiguity).
+- `CalendarEventEntity { id, tenantId, userId, title, description?, eventType: CalendarEventType, referenceId?, startsAt, endsAt?, location?, isAllDay, createdAt, updatedAt }` — replaces the mock `Appointment` model entirely (the mock conflates hearing+meeting+client-name into one flat shape that doesn't match anything real). `CalendarEventType { hearing, taskDeadline, custom, unknown }`.
+- `TimelineItem` — sum type over the three `/timeline` shapes: a shared `date`/`title` plus a discriminated payload (`CalendarEventPayload`/`HearingPayload{status, case: CaseTypeLookup-ish summary}`/`TaskPayload{status, priority, case}`). Parsed from `itemType` string, `unknown` fallback for anything else.
+- `DashboardMetrics { totalActiveCases, pendingTasks, upcomingHearings }` — thin, matches `GET /reports/dashboard` exactly (decision #1).
+
+## Repositories
+
+- `HearingRepository.getHearings()` → `GET /hearings` (full collection; `CaseDetailsBloc`-adjacent blocs filter client-side by `caseId`, same precedent as `ClientDetailsBloc`).
+- `DocumentRepository.getDocuments()` → `GET /documents` (same client-side `caseId` filtering; no `getDocumentById` — the endpoint doesn't exist, see known-issues above).
+- `TaskRepository.getTasks()` → `GET /tasks` (client-side filtered by `assignedToId` for Dashboard, by `caseId` for Case Detail — two different filters over the same fetched collection, same shape of decision as `CasesBloc`'s existing status/search dual-filter).
+- `CalendarRepository.getTimeline({startDate, endDate, caseId?, userId?})` → `GET /calendar/timeline` (the one endpoint with real server-side filtering — use it as designed, don't also fetch-all-and-filter client-side here).
+- `DashboardRepository.getMetrics()` → `GET /reports/dashboard` (decision #1).
+- All four reuse the existing `mapDioError()` helper (`lib/core/network/dio_error_mapper.dart`) — no new error-mapping logic needed, same precedent as `CaseRepository`/`ClientRepository` in M2.
+
+## Presentation
+
+- **`CaseDetailsPage`**: add a Hearings section (fetch all hearings, filter by `caseId`, render list — reuse `EmptyState`/`ErrorView`) and a Documents section (same pattern, metadata-only, download affordance disabled per known-issues above) below the existing Team section. `CaseDetailsBloc` either grows to fetch hearings+documents alongside the case (mirroring `ClientDetailsBloc`'s secondary-fetch-doesn't-fail-the-screen pattern for each), or two new sibling blocs are added to the same `BlocProvider` scope — leaning toward the latter (keeps `CaseDetailsBloc` from becoming a 3-way fetch-and-merge, matches the Rule-of-Three guidance from the M2 retrospective by keeping each concern in its own bloc) but open to reconsidering once the actual widget composition is in front of you.
+- **`DashboardPage`**: rebuilt from the current 100%-static mock into a real `DashboardBloc` calling `DashboardRepository.getMetrics()` + `TaskRepository.getTasks()` (filtered to the current user), replacing the 3 hardcoded summary cards and the hardcoded task list. The "today's schedule" and "recent clients" sections either get wired to `CalendarRepository.getTimeline()` (today's date range) and `ClientRepository.getClients()` (most-recently-created N) respectively, or are deferred — flagging this as a decision to confirm once we're implementing, not guessing the answer now.
+- **`CalendarPage`**: `CalendarBloc` rebuilt against `CalendarRepository.getTimeline()` instead of the mock `Appointment` repository; `AppointmentDetailsPage` becomes a detail view keyed by `TimelineItem.itemType` (routes to the right sub-detail depending on whether it's a hearing/task/custom event). `NewAppointmentPage` (a write action) is out of scope for M3 — either hidden/unrouted this milestone (same treatment `sign_up_page.dart` got in M1) or left as-is pending M4, to confirm during implementation.
+- Mock `Appointment`/`MockAppointmentRepository`/`GetAppointmentsUseCase` deleted once `CalendarBloc` no longer references them — same "no mock left" bar M1/M2 held to.
+
+## Localization
+
+New strings (hearing/document/task labels, status/priority labels, Dashboard's real metric labels) go to `assets/lang/*.json` — non-auth screens, same boundary M1/M2 established.
+
+## Tests
+
+- Repository tests (dio-mocked) for all four new repositories, same pattern as `case_repository_test.dart`/`client_repository_test.dart`, including unknown-enum-value fallback coverage for each new enum.
+- Bloc tests for the two new `CaseDetailsPage` sibling blocs (hearings/documents), the Dashboard bloc, and the rebuilt `CalendarBloc`.
+- At least one widget smoke test for the rebuilt `DashboardPage` and `CalendarPage` (loading/error/loaded, per the pattern `cases_page_test.dart`/`clients_page_test.dart` just established) — full EN/AR duplication across every screen remains a known, flagged gap rather than a blocking requirement, consistent with M2's precedent.
+
+## Out of scope for M3 (explicitly deferred, not forgotten)
+
+- Any write action anywhere (create/edit case, schedule/complete hearing, upload document, create/update task, notification preferences) — all of M4 per spec's original M3.
+- Firm-wide standalone Hearings/Documents/Tasks list screens and any new bottom-nav tab (decisions #2/#3).
+- Real file download/preview for Documents (backend stub, see known issues).
+- `GET /dashboard` entirely — it's the System/Super Admin's platform-wide view, not something this tenant-scoped mobile client should ever call.
+- `GET /reports/export/{cases,clients}` CSV export — no UI entry point planned before M4+.
+
+## Definition of done (draft — to convert to checkboxes once implementation starts)
+
+- `Hearing`/`TaskItem`/`DocumentItem`/`CalendarEventEntity`/`TimelineItem`/`DashboardMetrics` models match the source-verified contract in `API_CONTRACT.md` finding I, fallback-safe enums using the entity-file values (never the dead `enums/` files).
+- Mock `Appointment`/`MockAppointmentRepository` deleted; Dashboard's static mock content replaced with real data end-to-end.
+- Case Detail shows real Hearings and Documents sections, filtered client-side by `caseId`.
+- Dashboard shows real metrics from `GET /reports/dashboard` and a real personal task list; Calendar shows real data from `/calendar/timeline`.
+- Decisions #1-#3 implemented as specified above.
+- Repository + bloc tests for all new code; at least one widget smoke test for Dashboard and Calendar.
+- `flutter analyze` clean; `dart format` clean on every file touched.
+- `CLAUDE.md`/`PLAN.md` updated with outcomes at milestone close, same as M1/M2.
