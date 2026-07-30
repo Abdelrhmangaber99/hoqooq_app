@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Hoqooq needs camera access to attach photos of documents to a case.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Hoqooq needs photo library access to attach existing photos to a case.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
