@@ -178,5 +178,11 @@
   "edit_hearing": "Edit Hearing",
   "scheduled_at": "Scheduled At",
   "outcome_text": "Outcome",
-  "next_hearing_at": "Next Hearing At"
+  "next_hearing_at": "Next Hearing At",
+  "description": "Description",
+  "assigned_to": "Assigned To",
+  "case": "Case",
+  "edit_task": "Edit Task",
+  "new_task": "New Task",
+  "create_task": "Create Task"
 }

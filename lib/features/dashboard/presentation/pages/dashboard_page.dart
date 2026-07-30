@@ -70,7 +70,26 @@ class DashboardPage extends StatelessWidget {
       children: [
         _buildSummaryCards(context, state),
         const SizedBox(height: AppSpacing.l),
-        Text(context.tr('pending_tasks'), style: AppTypography.h3),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(context.tr('pending_tasks'), style: AppTypography.h3),
+            GestureDetector(
+              onTap: () async {
+                final created = await context.push<bool>(
+                  '${AppRouter.home}/tasks/new',
+                );
+                if (created == true && context.mounted) {
+                  context.read<DashboardBloc>().add(FetchDashboardRequested());
+                }
+              },
+              child: const Icon(
+                Icons.add_circle_outline,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.m),
         _buildTaskList(context, state.pendingTasks),
       ],
@@ -187,43 +206,54 @@ class DashboardPage extends StatelessWidget {
   }
 
   Widget _buildTaskItem(BuildContext context, TaskItem task) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(task.title, style: AppTypography.bodyMedium),
-                const SizedBox(height: 4),
-                Text(
-                  task.dueDate != null
-                      ? '${context.tr('due_date')}: ${task.dueDate!.toLocal().toString().split(' ').first}'
-                      : context.tr('no_due_date'),
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textHint,
+    return GestureDetector(
+      onTap: () async {
+        final updated = await context.push<bool>(
+          '${AppRouter.home}/tasks/${task.id}/edit',
+          extra: task,
+        );
+        if (updated == true && context.mounted) {
+          context.read<DashboardBloc>().add(FetchDashboardRequested());
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(task.title, style: AppTypography.bodyMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    task.dueDate != null
+                        ? '${context.tr('due_date')}: ${task.dueDate!.toLocal().toString().split(' ').first}'
+                        : context.tr('no_due_date'),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textHint,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: taskPriorityColor(task.priority).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              taskPriorityLabel(context, task.priority),
-              style: TextStyle(
-                color: taskPriorityColor(task.priority),
-                fontSize: 10,
+                ],
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: taskPriorityColor(task.priority).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                taskPriorityLabel(context, task.priority),
+                style: TextStyle(
+                  color: taskPriorityColor(task.priority),
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

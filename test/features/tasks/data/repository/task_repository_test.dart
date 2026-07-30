@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
+import 'package:hqooq/features/tasks/data/models/create_task_request.dart';
+import 'package:hqooq/features/tasks/data/models/update_task_request.dart';
 import 'package:hqooq/features/tasks/data/repository/task_repository.dart';
 import 'package:hqooq/features/tasks/domain/entities/task_priority.dart';
 import 'package:hqooq/features/tasks/domain/entities/task_status.dart';
@@ -124,6 +126,83 @@ void main() {
         (failure) => expect(failure, isA<ServerFailure>()),
         (_) => fail('expected Left'),
       );
+    });
+  });
+
+  group('createTask', () {
+    test('POSTs /tasks with the full request body', () async {
+      when(
+        () => dio.post('/tasks', data: any(named: 'data')),
+      ).thenAnswer((_) async => okResponse('/tasks', taskJson()));
+
+      const request = CreateTaskRequest(
+        assignedById: 'u1',
+        assignedToId: 'u2',
+        title: 'File motion',
+      );
+      await repository.createTask(request);
+
+      final captured = verify(
+        () => dio.post('/tasks', data: captureAny(named: 'data')),
+      ).captured;
+      final body = captured.single as Map<String, dynamic>;
+      // CreateTaskRequest is not partial like the Update*Request models --
+      // unset optional fields are sent as explicit null, which
+      // CreateTaskDto's @IsOptional() fields tolerate fine (whitelist only
+      // rejects undeclared keys, not null values for declared ones).
+      expect(body, {
+        'caseId': null,
+        'assignedById': 'u1',
+        'assignedToId': 'u2',
+        'title': 'File motion',
+        'description': null,
+        'priority': null,
+        'status': null,
+        'dueDate': null,
+      });
+    });
+
+    test('maps a 400 to ValidationFailure', () async {
+      when(() => dio.post('/tasks', data: any(named: 'data'))).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/tasks'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/tasks'),
+            statusCode: 400,
+            data: {'message': 'title should not be empty'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      const request = CreateTaskRequest(
+        assignedById: 'u1',
+        assignedToId: 'u2',
+        title: '',
+      );
+      final result = await repository.createTask(request);
+
+      result.fold(
+        (failure) => expect(failure, isA<ValidationFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('updateTask', () {
+    test('PATCHes /tasks/{id} with only the changed fields', () async {
+      when(
+        () => dio.patch('/tasks/t1', data: any(named: 'data')),
+      ).thenAnswer((_) async => okResponse('/tasks/t1', taskJson()));
+
+      const request = UpdateTaskRequest(status: TaskStatus.completed);
+      await repository.updateTask('t1', request);
+
+      final captured = verify(
+        () => dio.patch('/tasks/t1', data: captureAny(named: 'data')),
+      ).captured;
+      final body = captured.single as Map<String, dynamic>;
+      expect(body, {'status': 'COMPLETED'});
     });
   });
 }

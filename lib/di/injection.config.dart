@@ -86,6 +86,8 @@ import 'package:hqooq/features/tasks/data/repository/task_repository.dart'
     as _i23;
 import 'package:hqooq/features/tasks/domain/repository/i_task_repository.dart'
     as _i949;
+import 'package:hqooq/features/tasks/presentation/bloc/task_form_bloc.dart'
+    as _i521;
 import 'package:hqooq/features/users/data/repository/user_repository.dart'
     as _i867;
 import 'package:hqooq/features/users/domain/repository/i_user_repository.dart'
@@ -169,6 +171,13 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i165.ClientsBloc>(
       () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
+    );
+    gh.factory<_i521.TaskFormBloc>(
+      () => _i521.TaskFormBloc(
+        gh<_i949.ITaskRepository>(),
+        gh<_i141.IUserRepository>(),
+        gh<_i320.ICaseRepository>(),
+      ),
     );
     gh.lazySingleton<_i196.LoginUseCase>(
       () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),

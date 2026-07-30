@@ -17,6 +17,8 @@ import '../../features/clients/presentation/pages/clients_page.dart';
 import '../../features/clients/presentation/pages/client_profile_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/tasks/domain/entities/task_item.dart';
+import '../../features/tasks/presentation/pages/task_form_page.dart';
 import '../../shared/presentation/pages/main_layout.dart';
 
 class AppRouter {
@@ -43,6 +45,17 @@ class AppRouter {
           GoRoute(
             path: home,
             builder: (context, state) => const DashboardPage(),
+            routes: [
+              GoRoute(
+                path: 'tasks/new',
+                builder: (context, state) => const TaskFormPage(),
+              ),
+              GoRoute(
+                path: 'tasks/:taskId/edit',
+                builder: (context, state) =>
+                    TaskFormPage(existingTask: state.extra as TaskItem),
+              ),
+            ],
           ),
           GoRoute(
             path: calendar,

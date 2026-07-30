@@ -178,5 +178,11 @@
   "edit_hearing": "تعديل الجلسة",
   "scheduled_at": "موعد الجلسة",
   "outcome_text": "النتيجة",
-  "next_hearing_at": "موعد الجلسة القادمة"
+  "next_hearing_at": "موعد الجلسة القادمة",
+  "description": "الوصف",
+  "assigned_to": "مسند إلى",
+  "case": "القضية",
+  "edit_task": "تعديل المهمة",
+  "new_task": "مهمة جديدة",
+  "create_task": "إنشاء مهمة"
 }
