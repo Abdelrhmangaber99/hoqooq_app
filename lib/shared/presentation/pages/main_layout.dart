@@ -25,6 +25,11 @@ class MainLayout extends StatelessWidget {
             label: context.tr('home'),
           ),
           BottomNavigationBarItem(
+            icon: const Icon(Icons.folder_outlined),
+            activeIcon: const Icon(Icons.folder),
+            label: context.tr('cases'),
+          ),
+          BottomNavigationBarItem(
             icon: const Icon(Icons.calendar_today_outlined),
             activeIcon: const Icon(Icons.calendar_today),
             label: context.tr('calendar'),
@@ -46,7 +51,8 @@ class MainLayout extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: location == AppRouter.home || location == AppRouter.calendar
+      floatingActionButton:
+          location == AppRouter.home || location == AppRouter.calendar
           ? FloatingActionButton(
               onPressed: () {},
               backgroundColor: AppColors.primary,
@@ -59,10 +65,11 @@ class MainLayout extends StatelessWidget {
 
   int _calculateSelectedIndex(String location) {
     if (location.startsWith(AppRouter.home)) return 0;
-    if (location.startsWith(AppRouter.calendar)) return 1;
-    if (location.startsWith(AppRouter.clients)) return 2;
-    if (location.startsWith(AppRouter.alerts)) return 3;
-    if (location.startsWith(AppRouter.profile)) return 4;
+    if (location.startsWith(AppRouter.cases)) return 1;
+    if (location.startsWith(AppRouter.calendar)) return 2;
+    if (location.startsWith(AppRouter.clients)) return 3;
+    if (location.startsWith(AppRouter.alerts)) return 4;
+    if (location.startsWith(AppRouter.profile)) return 5;
     return 0;
   }
 
@@ -72,15 +79,18 @@ class MainLayout extends StatelessWidget {
         context.go(AppRouter.home);
         break;
       case 1:
-        context.go(AppRouter.calendar);
+        context.go(AppRouter.cases);
         break;
       case 2:
-        context.go(AppRouter.clients);
+        context.go(AppRouter.calendar);
         break;
       case 3:
-        context.go(AppRouter.alerts);
+        context.go(AppRouter.clients);
         break;
       case 4:
+        context.go(AppRouter.alerts);
+        break;
+      case 5:
         context.go(AppRouter.profile);
         break;
     }

@@ -1,51 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../di/injection.dart';
+import '../../../../shared/widgets/error_view.dart';
+import '../../../cases/domain/entities/legal_case.dart';
+import '../../../cases/presentation/case_display_helpers.dart';
+import '../../domain/entities/client.dart';
+import '../bloc/client_details_bloc.dart';
+import '../client_display_helpers.dart';
 
 class ClientProfilePage extends StatelessWidget {
-  const ClientProfilePage({super.key});
+  final String clientId;
+
+  const ClientProfilePage({super.key, required this.clientId});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(context.tr('client_profile')),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
+    return BlocProvider(
+      create: (context) =>
+          getIt<ClientDetailsBloc>()
+            ..add(FetchClientDetailsRequested(clientId)),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: Text(context.tr('client_profile'))),
+        body: SafeArea(
+          child: BlocBuilder<ClientDetailsBloc, ClientDetailsState>(
+            builder: (context, state) {
+              if (state is ClientDetailsLoading ||
+                  state is ClientDetailsInitial) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              } else if (state is ClientDetailsError) {
+                return ErrorView(
+                  message: state.message,
+                  onRetry: () => context.read<ClientDetailsBloc>().add(
+                    FetchClientDetailsRequested(clientId),
+                  ),
+                );
+              } else if (state is ClientDetailsLoaded) {
+                return _buildContent(context, state.client, state.cases);
+              }
+              return const SizedBox();
+            },
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.m),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeaderCard(context),
-            const SizedBox(height: AppSpacing.l),
-            _buildContactInfo(context),
-            const SizedBox(height: AppSpacing.l),
-            _buildSectionHeader(context.tr('active_cases'), badge: '2 cases'),
-            const SizedBox(height: AppSpacing.m),
-            _buildCaseItem('Hernandez v. State', '#2026-CR-4471', context.tr('active'), 'Criminal'),
-            const SizedBox(height: AppSpacing.m),
-            _buildCaseItem('Hernandez Property', '#2025-CV-3812', context.tr('active'), 'Civil'),
-            const SizedBox(height: AppSpacing.l),
-            _buildSectionHeader(context.tr('recent_appointments')),
-            const SizedBox(height: AppSpacing.m),
-            // ... more components
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildHeaderCard(BuildContext context) {
+  Widget _buildContent(
+    BuildContext context,
+    Client client,
+    List<LegalCase> cases,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeaderCard(context, client),
+          const SizedBox(height: AppSpacing.l),
+          Text(context.tr('contact_info'), style: AppTypography.h3),
+          const SizedBox(height: AppSpacing.m),
+          _buildContactInfo(context, client),
+          const SizedBox(height: AppSpacing.l),
+          Text(context.tr('cases'), style: AppTypography.h3),
+          const SizedBox(height: AppSpacing.m),
+          if (cases.isEmpty)
+            Text(
+              context.tr('no_cases_for_client'),
+              style: AppTypography.bodySmall,
+            )
+          else
+            ...cases.map((c) => _buildCaseItem(context, c)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderCard(BuildContext context, Client client) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.l),
@@ -62,153 +102,183 @@ class ClientProfilePage extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surfaceLight,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
-                'CH',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+                clientTypeLabel(context, client.type).substring(0, 1),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.m),
-          Text('Carlos Hernandez', style: AppTypography.h2),
+          Text(client.fullName, style: AppTypography.h2),
           const SizedBox(height: 4),
-          Text('Criminal Defense', style: AppTypography.bodyMedium.copyWith(color: AppColors.textSecondary)),
+          Text(
+            '${clientTypeLabel(context, client.type)} · ${client.clientCode}',
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('Client since 2024', style: AppTypography.bodySmall.copyWith(color: AppColors.primary, fontSize: 10)),
-          const SizedBox(height: AppSpacing.l),
-          Row(
-            children: [
-              _buildActionButton(Icons.phone_outlined, context.tr('call')),
-              const SizedBox(width: 12),
-              _buildActionButton(Icons.email_outlined, context.tr('email')),
-              const SizedBox(width: 12),
-              _buildActionButton(Icons.calendar_today_outlined, context.tr('book'), isPrimary: true),
-            ],
+          Text(
+            clientStatusLabel(context, client.status),
+            style: AppTypography.bodySmall.copyWith(
+              color: clientStatusColor(client.status),
+              fontSize: 10,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, {bool isPrimary = false}) {
-    return Expanded(
+  Widget _buildContactInfo(BuildContext context, Client client) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.medium,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (client.emails.isNotEmpty)
+            _buildInfoRow(
+              context,
+              Icons.email_outlined,
+              context.tr('emails'),
+              client.emails.join(', '),
+            ),
+          if (client.phones.isNotEmpty)
+            _buildInfoRow(
+              context,
+              Icons.phone_outlined,
+              context.tr('phones'),
+              client.phones.join(', '),
+            ),
+          if (client.addresses.isNotEmpty)
+            _buildInfoRow(
+              context,
+              Icons.location_on_outlined,
+              context.tr('addresses'),
+              client.addresses.join(', '),
+            ),
+          if (client.nationalId != null)
+            _buildInfoRow(
+              context,
+              Icons.badge_outlined,
+              context.tr('national_id'),
+              client.nationalId!,
+            ),
+          if (client.commercialReg != null)
+            _buildInfoRow(
+              context,
+              Icons.business_outlined,
+              context.tr('commercial_reg'),
+              client.commercialReg!,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.primary),
+          ),
+          const SizedBox(width: AppSpacing.m),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTypography.labelMedium.copyWith(
+                    fontSize: 10,
+                    color: AppColors.textHint,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(value, style: AppTypography.bodyMedium),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCaseItem(BuildContext context, LegalCase legalCase) {
+    return GestureDetector(
+      onTap: () => context.push('${AppRouter.cases}/${legalCase.id}'),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        margin: const EdgeInsets.only(bottom: AppSpacing.m),
+        padding: const EdgeInsets.all(AppSpacing.m),
         decoration: BoxDecoration(
-          color: isPrimary ? AppColors.primary : Colors.transparent,
+          color: AppColors.surface,
           borderRadius: AppRadius.medium,
-          border: isPrimary ? null : Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Column(
           children: [
-            Icon(icon, size: 16, color: isPrimary ? Colors.black : AppColors.primary),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: AppTypography.labelMedium.copyWith(
-                color: isPrimary ? Colors.black : AppColors.primary,
-                fontSize: 12,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(legalCase.caseType.name, style: AppTypography.labelLarge),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: caseStatusColor(
+                      legalCase.status,
+                    ).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    caseStatusLabel(context, legalCase.status),
+                    style: TextStyle(
+                      color: caseStatusColor(legalCase.status),
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  legalCase.caseNumber,
+                  style: AppTypography.bodySmall.copyWith(fontSize: 10),
+                ),
+              ],
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildContactInfo(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.medium,
-      ),
-      child: Column(
-        children: [
-          _buildInfoRow(Icons.phone_outlined, context.tr('phone'), '+1 (212) 555-0147'),
-          const Divider(color: AppColors.surfaceLight, height: 24),
-          _buildInfoRow(Icons.email_outlined, context.tr('email').toUpperCase(), 'carlos@hernandez.com'),
-          const Divider(color: AppColors.surfaceLight, height: 24),
-          _buildInfoRow(Icons.location_on_outlined, context.tr('address'), '88 Canal St, New York, NY'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 18, color: AppColors.primary),
-        ),
-        const SizedBox(width: AppSpacing.m),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: AppTypography.labelMedium.copyWith(fontSize: 10, color: AppColors.textHint)),
-            const SizedBox(height: 2),
-            Text(value, style: AppTypography.bodyMedium),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader(String title, {String? badge}) {
-    return Row(
-      children: [
-        Text(title, style: AppTypography.h3),
-        if (badge != null) ...[
-          const SizedBox(width: 8),
-          Text(
-            badge,
-            style: AppTypography.bodySmall.copyWith(color: AppColors.primary, fontSize: 10),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildCaseItem(String title, String id, String status, String type) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.medium,
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: AppTypography.labelLarge),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text('Active', style: TextStyle(color: Colors.green, fontSize: 10)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(id, style: AppTypography.bodySmall.copyWith(fontSize: 10)),
-              Text(type, style: AppTypography.bodySmall.copyWith(fontSize: 10)),
-            ],
-          ),
-        ],
       ),
     );
   }

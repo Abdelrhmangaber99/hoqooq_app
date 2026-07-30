@@ -8,8 +8,12 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../di/injection.dart';
-import '../bloc/clients_bloc.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_view.dart';
 import '../../domain/entities/client.dart';
+import '../../domain/entities/client_status.dart';
+import '../bloc/clients_bloc.dart';
+import '../client_display_helpers.dart';
 
 class ClientsPage extends StatelessWidget {
   const ClientsPage({super.key});
@@ -17,7 +21,7 @@ class ClientsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => getIt<ClientsBloc>()..add(const FetchClientsRequested()),
+      create: (context) => getIt<ClientsBloc>()..add(FetchClientsRequested()),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(
@@ -27,30 +31,34 @@ class ClientsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: AppSpacing.m),
-                _buildHeader(context),
+                Text(context.tr('clients'), style: AppTypography.h1),
                 const SizedBox(height: AppSpacing.l),
-                BlocBuilder<ClientsBloc, ClientsState>(
-                  builder: (context, state) {
-                    final query = state is ClientsLoaded ? state.searchQuery : '';
-                    final filter = state is ClientsLoaded ? state.activeFilter : 'All';
-                    return Column(
-                      children: [
-                        _buildSearchBar(context, query),
-                        const SizedBox(height: AppSpacing.m),
-                        _buildFilters(context, filter),
-                      ],
-                    );
-                  },
-                ),
+                _buildSearchBar(context),
+                const SizedBox(height: AppSpacing.m),
+                _buildStatusFilters(context),
                 const SizedBox(height: AppSpacing.m),
                 Expanded(
                   child: BlocBuilder<ClientsBloc, ClientsState>(
                     builder: (context, state) {
-                      if (state is ClientsLoading) {
-                        return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                      if (state is ClientsLoading || state is ClientsInitial) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        );
                       } else if (state is ClientsError) {
-                        return Center(child: Text(state.message, style: const TextStyle(color: AppColors.error)));
+                        return ErrorView(
+                          message: state.message,
+                          onRetry: () => context.read<ClientsBloc>().add(
+                            FetchClientsRequested(),
+                          ),
+                        );
                       } else if (state is ClientsLoaded) {
+                        if (state.clients.isEmpty) {
+                          return EmptyState(
+                            message: context.tr('no_clients_found'),
+                          );
+                        }
                         return _buildClientsList(context, state.clients);
                       }
                       return const SizedBox();
@@ -65,31 +73,7 @@ class ClientsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(context.tr('clients'), style: AppTypography.h1),
-            Text('7 total', style: AppTypography.bodySmall),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-          ),
-          child: const Icon(Icons.add, color: AppColors.primary, size: 20),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar(BuildContext context, String currentQuery) {
+  Widget _buildSearchBar(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -97,12 +81,16 @@ class ClientsPage extends StatelessWidget {
       ),
       child: TextField(
         onChanged: (value) {
-          context.read<ClientsBloc>().add(FetchClientsRequested(searchQuery: value));
+          context.read<ClientsBloc>().add(ClientsSearchChanged(value));
         },
         style: AppTypography.bodyMedium,
         decoration: InputDecoration(
           hintText: context.tr('search_clients'),
-          prefixIcon: const Icon(Icons.search, color: AppColors.textHint, size: 20),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: AppColors.textHint,
+            size: 20,
+          ),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -111,51 +99,60 @@ class ClientsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFilters(BuildContext context, String activeFilter) {
-    final filters = [
-      'All',
-      'Active',
-      'New',
-      'Closed'
-    ];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: List.generate(filters.length, (index) {
-          final filter = filters[index];
-          final isSelected = filter == activeFilter;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(context.tr(filter.toLowerCase())),
-              selected: isSelected,
-              onSelected: (_) {
-                context.read<ClientsBloc>().add(FetchClientsRequested(filter: filter));
-              },
-              backgroundColor: AppColors.surface,
-              selectedColor: AppColors.primary,
-              labelStyle: AppTypography.labelMedium.copyWith(
-                color: isSelected ? Colors.black : AppColors.textSecondary,
-                fontSize: 12,
-              ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              side: BorderSide.none,
-              showCheckmark: false,
-            ),
-          );
-        }),
-      ),
+  Widget _buildStatusFilters(BuildContext context) {
+    return BlocBuilder<ClientsBloc, ClientsState>(
+      builder: (context, state) {
+        final activeFilter = state is ClientsLoaded ? state.statusFilter : null;
+        final filters = <ClientStatus?>[
+          null,
+          ClientStatus.active,
+          ClientStatus.archived,
+          ClientStatus.inactive,
+        ];
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: filters.map((status) {
+              final isSelected = status == activeFilter;
+              final label = status == null
+                  ? context.tr('all')
+                  : clientStatusLabel(context, status);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(label),
+                  selected: isSelected,
+                  onSelected: (_) => context.read<ClientsBloc>().add(
+                    ClientsStatusFilterChanged(status),
+                  ),
+                  backgroundColor: AppColors.surface,
+                  selectedColor: AppColors.primary,
+                  labelStyle: AppTypography.labelMedium.copyWith(
+                    color: isSelected ? Colors.black : AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  side: BorderSide.none,
+                  showCheckmark: false,
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildClientsList(BuildContext context, List<Client> clients) {
     return ListView.separated(
       itemCount: clients.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.m),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.m),
       itemBuilder: (context, index) {
         final client = clients[index];
         return GestureDetector(
-          onTap: () => context.push('${AppRouter.clients}/profile'),
+          onTap: () => context.push('${AppRouter.clients}/${client.id}'),
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.m),
             decoration: BoxDecoration(
@@ -171,12 +168,16 @@ class ClientsPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.surfaceLight,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Center(
                     child: Text(
-                      _getInitials(client.name),
-                      style: AppTypography.labelLarge.copyWith(color: AppColors.primary),
+                      _getInitials(client.fullName),
+                      style: AppTypography.labelLarge.copyWith(
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -188,14 +189,27 @@ class ClientsPage extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(client.name, style: AppTypography.labelLarge),
-                          _buildStatusBadge(client.status, client.status == 'Active' ? Colors.green : Colors.orange),
+                          Expanded(
+                            child: Text(
+                              client.fullName,
+                              style: AppTypography.labelLarge,
+                            ),
+                          ),
+                          _buildStatusBadge(
+                            clientStatusLabel(context, client.status),
+                            clientStatusColor(client.status),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(client.area, style: AppTypography.bodySmall),
-                      const SizedBox(height: 4),
-                      Text(client.info, style: AppTypography.bodySmall.copyWith(fontSize: 10)),
+                      Text(client.clientCode, style: AppTypography.bodySmall),
+                      if (client.emails.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          client.emails.first,
+                          style: AppTypography.bodySmall.copyWith(fontSize: 10),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -208,11 +222,12 @@ class ClientsPage extends StatelessWidget {
   }
 
   String _getInitials(String name) {
-    List<String> parts = name.split(' ');
+    final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
-    return name.substring(0, 1).toUpperCase();
+    if (parts.isEmpty || parts[0].isEmpty) return '?';
+    return parts[0].substring(0, 1).toUpperCase();
   }
 
   Widget _buildStatusBadge(String text, Color color) {

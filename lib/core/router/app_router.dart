@@ -7,9 +7,10 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/calendar/presentation/pages/appointment_details_page.dart';
 import '../../features/calendar/presentation/pages/new_appointment_page.dart';
+import '../../features/cases/presentation/pages/cases_page.dart';
+import '../../features/cases/presentation/pages/case_details_page.dart';
 import '../../features/clients/presentation/pages/clients_page.dart';
 import '../../features/clients/presentation/pages/client_profile_page.dart';
-import '../../features/cases/presentation/pages/case_details_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../shared/presentation/pages/main_layout.dart';
@@ -21,6 +22,7 @@ class AppRouter {
   static const String login = '/login';
   static const String home = '/home';
   static const String calendar = '/calendar';
+  static const String cases = '/cases';
   static const String clients = '/clients';
   static const String alerts = '/alerts';
   static const String profile = '/profile';
@@ -29,14 +31,8 @@ class AppRouter {
     initialLocation: splash,
     redirect: RouteGuards.authGuard,
     routes: [
-      GoRoute(
-        path: splash,
-        builder: (context, state) => const SplashPage(),
-      ),
-      GoRoute(
-        path: login,
-        builder: (context, state) => const LoginPage(),
-      ),
+      GoRoute(path: splash, builder: (context, state) => const SplashPage()),
+      GoRoute(path: login, builder: (context, state) => const LoginPage()),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),
         routes: [
@@ -59,22 +55,30 @@ class AppRouter {
             ],
           ),
           GoRoute(
+            path: cases,
+            builder: (context, state) => const CasesPage(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) =>
+                    CaseDetailsPage(caseId: state.pathParameters['id']!),
+              ),
+            ],
+          ),
+          GoRoute(
             path: clients,
             builder: (context, state) => const ClientsPage(),
             routes: [
               GoRoute(
-                path: 'profile',
-                builder: (context, state) => const ClientProfilePage(),
+                path: ':id',
+                builder: (context, state) =>
+                    ClientProfilePage(clientId: state.pathParameters['id']!),
               ),
             ],
           ),
           GoRoute(
             path: alerts,
             builder: (context, state) => const NotificationsPage(),
-          ),
-          GoRoute(
-            path: '/case-details',
-            builder: (context, state) => const CaseDetailsPage(),
           ),
           GoRoute(
             path: profile,
