@@ -174,5 +174,9 @@
   "save_changes": "Save Changes",
   "edit_case": "Edit Case",
   "status": "Status",
-  "none": "None"
+  "none": "None",
+  "edit_hearing": "Edit Hearing",
+  "scheduled_at": "Scheduled At",
+  "outcome_text": "Outcome",
+  "next_hearing_at": "Next Hearing At"
 }

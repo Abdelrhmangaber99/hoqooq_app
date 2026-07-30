@@ -80,6 +80,8 @@ import 'package:hqooq/features/hearings/data/repository/hearing_repository.dart'
     as _i506;
 import 'package:hqooq/features/hearings/domain/repository/i_hearing_repository.dart'
     as _i844;
+import 'package:hqooq/features/hearings/presentation/bloc/hearing_form_bloc.dart'
+    as _i421;
 import 'package:hqooq/features/tasks/data/repository/task_repository.dart'
     as _i23;
 import 'package:hqooq/features/tasks/domain/repository/i_task_repository.dart'
@@ -158,6 +160,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i598.IAuthRepository>(
       () => _i494.AuthRepository(gh<_i361.Dio>()),
+    );
+    gh.factory<_i421.HearingFormBloc>(
+      () => _i421.HearingFormBloc(
+        gh<_i844.IHearingRepository>(),
+        gh<_i543.ICourtRepository>(),
+      ),
     );
     gh.factory<_i165.ClientsBloc>(
       () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),

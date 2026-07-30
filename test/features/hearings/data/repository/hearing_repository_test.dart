@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
+import 'package:hqooq/features/hearings/data/models/update_hearing_request.dart';
 import 'package:hqooq/features/hearings/data/repository/hearing_repository.dart';
 import 'package:hqooq/features/hearings/domain/entities/hearing_status.dart';
 import 'package:mocktail/mocktail.dart';
@@ -104,6 +105,46 @@ void main() {
 
       result.fold(
         (failure) => expect(failure, isA<NetworkFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('updateHearing', () {
+    test('PATCHes /hearings/{id} with only the changed fields', () async {
+      when(
+        () => dio.patch('/hearings/h1', data: any(named: 'data')),
+      ).thenAnswer((_) async => okResponse('/hearings/h1', hearingJson()));
+
+      const request = UpdateHearingRequest(status: HearingStatus.completed);
+      await repository.updateHearing('h1', request);
+
+      final captured = verify(
+        () => dio.patch('/hearings/h1', data: captureAny(named: 'data')),
+      ).captured;
+      final body = captured.single as Map<String, dynamic>;
+      // Only the one changed field -- unset fields are omitted entirely.
+      expect(body, {'status': 'COMPLETED'});
+    });
+
+    test('maps a 400 to ValidationFailure', () async {
+      when(() => dio.patch('/hearings/h1', data: any(named: 'data'))).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/hearings/h1'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/hearings/h1'),
+            statusCode: 400,
+            data: {'message': 'scheduledAt must be a valid date'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      const request = UpdateHearingRequest(judgeName: '');
+      final result = await repository.updateHearing('h1', request);
+
+      result.fold(
+        (failure) => expect(failure, isA<ValidationFailure>()),
         (_) => fail('expected Left'),
       );
     });

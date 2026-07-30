@@ -157,53 +157,69 @@ class CaseDetailsPage extends StatelessWidget {
 
   Widget _buildHearingItem(BuildContext context, Hearing hearing) {
     final dateFormat = DateFormat.yMMMd().add_jm();
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.s),
-      padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.medium,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                dateFormat.format(hearing.scheduledAt),
-                style: AppTypography.labelLarge,
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: hearingStatusColor(
-                    hearing.status,
-                  ).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
+    return GestureDetector(
+      onTap: () async {
+        final updated = await context.push<bool>(
+          '${AppRouter.cases}/${hearing.caseId}/hearings/${hearing.id}/edit',
+          extra: hearing,
+        );
+        if (updated == true && context.mounted) {
+          context.read<CaseHearingsBloc>().add(
+            FetchCaseHearingsRequested(caseId),
+          );
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.s),
+        padding: const EdgeInsets.all(AppSpacing.m),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadius.medium,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  dateFormat.format(hearing.scheduledAt),
+                  style: AppTypography.labelLarge,
                 ),
-                child: Text(
-                  hearingStatusLabel(context, hearing.status),
-                  style: TextStyle(
-                    color: hearingStatusColor(hearing.status),
-                    fontSize: 10,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: hearingStatusColor(
+                      hearing.status,
+                    ).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    hearingStatusLabel(context, hearing.status),
+                    style: TextStyle(
+                      color: hearingStatusColor(hearing.status),
+                      fontSize: 10,
+                    ),
                   ),
                 ),
+              ],
+            ),
+            if (hearing.court != null) ...[
+              const SizedBox(height: 4),
+              Text(hearing.court!.name, style: AppTypography.bodySmall),
+            ],
+            if (hearing.judgeName != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                '${context.tr('judge')}: ${hearing.judgeName}',
+                style: AppTypography.bodySmall,
               ),
             ],
-          ),
-          if (hearing.court != null) ...[
-            const SizedBox(height: 4),
-            Text(hearing.court!.name, style: AppTypography.bodySmall),
           ],
-          if (hearing.judgeName != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              '${context.tr('judge')}: ${hearing.judgeName}',
-              style: AppTypography.bodySmall,
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

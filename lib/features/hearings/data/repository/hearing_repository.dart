@@ -5,6 +5,7 @@ import '../../../../core/network/api_result.dart';
 import '../../../../core/network/dio_error_mapper.dart';
 import '../../domain/entities/hearing.dart';
 import '../../domain/repository/i_hearing_repository.dart';
+import '../models/update_hearing_request.dart';
 
 /// Real implementation of [IHearingRepository] against `GET /hearings`.
 @LazySingleton(as: IHearingRepository)
@@ -23,6 +24,22 @@ class HearingRepository implements IHearingRepository {
             .map((json) => Hearing.fromJson(json as Map<String, dynamic>))
             .toList(),
       );
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+
+  @override
+  ApiResult<Hearing> updateHearing(
+    String id,
+    UpdateHearingRequest request,
+  ) async {
+    try {
+      final response = await _dio.patch(
+        '/hearings/$id',
+        data: request.toJson(),
+      );
+      return Right(Hearing.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
     }

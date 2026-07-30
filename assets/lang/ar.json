@@ -174,5 +174,9 @@
   "save_changes": "حفظ التغييرات",
   "edit_case": "تعديل القضية",
   "status": "الحالة",
-  "none": "لا شيء"
+  "none": "لا شيء",
+  "edit_hearing": "تعديل الجلسة",
+  "scheduled_at": "موعد الجلسة",
+  "outcome_text": "النتيجة",
+  "next_hearing_at": "موعد الجلسة القادمة"
 }

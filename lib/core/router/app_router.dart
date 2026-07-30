@@ -9,6 +9,8 @@ import '../../features/cases/domain/entities/legal_case.dart';
 import '../../features/cases/presentation/pages/case_form_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
 import '../../features/cases/presentation/pages/case_details_page.dart';
+import '../../features/hearings/domain/entities/hearing.dart';
+import '../../features/hearings/presentation/pages/hearing_form_page.dart';
 import '../../features/clients/domain/entities/client.dart';
 import '../../features/clients/presentation/pages/client_form_page.dart';
 import '../../features/clients/presentation/pages/clients_page.dart';
@@ -59,6 +61,12 @@ class AppRouter {
                     path: 'edit',
                     builder: (context, state) =>
                         CaseFormPage(existingCase: state.extra as LegalCase),
+                  ),
+                  GoRoute(
+                    path: 'hearings/:hearingId/edit',
+                    builder: (context, state) => HearingFormPage(
+                      existingHearing: state.extra as Hearing,
+                    ),
                   ),
                 ],
               ),
