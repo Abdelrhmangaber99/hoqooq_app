@@ -171,5 +171,8 @@
   "client_type": "Client Type",
   "full_name": "Full Name",
   "field_required": "This field is required",
-  "save_changes": "Save Changes"
+  "save_changes": "Save Changes",
+  "edit_case": "Edit Case",
+  "status": "Status",
+  "none": "None"
 }

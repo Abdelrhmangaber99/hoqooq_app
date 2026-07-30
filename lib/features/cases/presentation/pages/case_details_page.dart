@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
@@ -86,6 +89,22 @@ class CaseDetailsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(context, legalCase),
+          const SizedBox(height: AppSpacing.m),
+          AppButton(
+            text: context.tr('edit_case'),
+            style: AppButtonStyle.outline,
+            onPressed: () async {
+              final updated = await context.push<bool>(
+                '${AppRouter.cases}/${legalCase.id}/edit',
+                extra: legalCase,
+              );
+              if (updated == true && context.mounted) {
+                context.read<CaseDetailsBloc>().add(
+                  FetchCaseDetailsRequested(caseId),
+                );
+              }
+            },
+          ),
           const SizedBox(height: AppSpacing.l),
           Text(context.tr('overview'), style: AppTypography.h3),
           const SizedBox(height: AppSpacing.m),

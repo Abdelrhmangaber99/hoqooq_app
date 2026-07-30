@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
+import 'package:hqooq/features/cases/data/models/update_case_request.dart';
 import 'package:hqooq/features/cases/data/repository/case_repository.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
@@ -162,6 +163,48 @@ void main() {
       result.fold(
         (_) => fail('expected Right'),
         (legalCase) => expect(legalCase.id, 'c1'),
+      );
+    });
+  });
+
+  group('updateCase', () {
+    test('PATCHes /cases/{id} with only the changed fields', () async {
+      when(
+        () => dio.patch('/cases/c1', data: any(named: 'data')),
+      ).thenAnswer((_) async => okResponse('/cases/c1', caseJson()));
+
+      const request = UpdateCaseRequest(status: CaseStatus.closed);
+      await repository.updateCase('c1', request);
+
+      final captured = verify(
+        () => dio.patch('/cases/c1', data: captureAny(named: 'data')),
+      ).captured;
+      final body = captured.single as Map<String, dynamic>;
+      // Only the one changed field -- unset fields are omitted entirely
+      // (not sent as null), so CasesService.update's merge() can't null
+      // out untouched columns.
+      expect(body, {'status': 'CLOSED'});
+    });
+
+    test('maps a 400 to ValidationFailure', () async {
+      when(() => dio.patch('/cases/c1', data: any(named: 'data'))).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/cases/c1'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/cases/c1'),
+            statusCode: 400,
+            data: {'message': 'agreedFee must be a number'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      const request = UpdateCaseRequest(agreedFee: -1);
+      final result = await repository.updateCase('c1', request);
+
+      result.fold(
+        (failure) => expect(failure, isA<ValidationFailure>()),
+        (_) => fail('expected Left'),
       );
     });
   });

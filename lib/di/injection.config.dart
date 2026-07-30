@@ -44,6 +44,8 @@ import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart'
     as _i995;
 import 'package:hqooq/features/cases/presentation/bloc/case_documents_bloc.dart'
     as _i194;
+import 'package:hqooq/features/cases/presentation/bloc/case_form_bloc.dart'
+    as _i728;
 import 'package:hqooq/features/cases/presentation/bloc/case_hearings_bloc.dart'
     as _i389;
 import 'package:hqooq/features/cases/presentation/bloc/cases_bloc.dart'
@@ -60,6 +62,10 @@ import 'package:hqooq/features/clients/presentation/bloc/client_form_bloc.dart'
     as _i730;
 import 'package:hqooq/features/clients/presentation/bloc/clients_bloc.dart'
     as _i165;
+import 'package:hqooq/features/courts/data/repository/court_repository.dart'
+    as _i150;
+import 'package:hqooq/features/courts/domain/repository/i_court_repository.dart'
+    as _i543;
 import 'package:hqooq/features/dashboard/data/repository/dashboard_repository.dart'
     as _i773;
 import 'package:hqooq/features/dashboard/domain/repository/i_dashboard_repository.dart'
@@ -78,6 +84,10 @@ import 'package:hqooq/features/tasks/data/repository/task_repository.dart'
     as _i23;
 import 'package:hqooq/features/tasks/domain/repository/i_task_repository.dart'
     as _i949;
+import 'package:hqooq/features/users/data/repository/user_repository.dart'
+    as _i867;
+import 'package:hqooq/features/users/domain/repository/i_user_repository.dart'
+    as _i141;
 import 'package:injectable/injectable.dart' as _i526;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -140,6 +150,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i320.ICaseRepository>(
       () => _i981.CaseRepository(gh<_i361.Dio>()),
     );
+    gh.lazySingleton<_i141.IUserRepository>(
+      () => _i867.UserRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i543.ICourtRepository>(
+      () => _i150.CourtRepository(gh<_i361.Dio>()),
+    );
     gh.lazySingleton<_i598.IAuthRepository>(
       () => _i494.AuthRepository(gh<_i361.Dio>()),
     );
@@ -154,6 +170,13 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i546.CasesBloc>(
       () => _i546.CasesBloc(gh<_i613.GetCasesUseCase>()),
+    );
+    gh.factory<_i728.CaseFormBloc>(
+      () => _i728.CaseFormBloc(
+        gh<_i320.ICaseRepository>(),
+        gh<_i543.ICourtRepository>(),
+        gh<_i141.IUserRepository>(),
+      ),
     );
     gh.factory<_i995.CaseDetailsBloc>(
       () => _i995.CaseDetailsBloc(gh<_i320.ICaseRepository>()),

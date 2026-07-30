@@ -5,6 +5,8 @@ import '../../features/authentication/presentation/pages/splash_page.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
+import '../../features/cases/domain/entities/legal_case.dart';
+import '../../features/cases/presentation/pages/case_form_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
 import '../../features/cases/presentation/pages/case_details_page.dart';
 import '../../features/clients/domain/entities/client.dart';
@@ -52,6 +54,13 @@ class AppRouter {
                 path: ':id',
                 builder: (context, state) =>
                     CaseDetailsPage(caseId: state.pathParameters['id']!),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) =>
+                        CaseFormPage(existingCase: state.extra as LegalCase),
+                  ),
+                ],
               ),
             ],
           ),

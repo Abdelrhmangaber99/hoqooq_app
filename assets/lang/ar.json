@@ -171,5 +171,8 @@
   "client_type": "نوع العميل",
   "full_name": "الاسم الكامل",
   "field_required": "هذا الحقل مطلوب",
-  "save_changes": "حفظ التغييرات"
+  "save_changes": "حفظ التغييرات",
+  "edit_case": "تعديل القضية",
+  "status": "الحالة",
+  "none": "لا شيء"
 }
