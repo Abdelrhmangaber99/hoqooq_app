@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
@@ -6,64 +7,99 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
+import '../../../../di/injection.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_view.dart';
+import '../../../authentication/presentation/bloc/session_cubit.dart';
+import '../../../tasks/domain/entities/task_item.dart';
+import '../../../tasks/presentation/task_display_helpers.dart';
+import '../bloc/dashboard_bloc.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: AppSpacing.l),
-              _buildSummaryCards(context),
-              const SizedBox(height: AppSpacing.l),
-              _buildSectionHeader(context, context.tr('todays_schedule'), showViewAll: true),
-              const SizedBox(height: AppSpacing.m),
-              _buildScheduleList(context),
-              const SizedBox(height: AppSpacing.l),
-              _buildSectionHeader(context, context.tr('priority_tasks'), badge: '3 pending'),
-              const SizedBox(height: AppSpacing.m),
-              _buildTaskList(),
-              const SizedBox(height: AppSpacing.l),
-              _buildSectionHeader(context, context.tr('recent_clients'), showViewAll: true),
-              const SizedBox(height: AppSpacing.m),
-              _buildClientsList(context),
-              const SizedBox(height: AppSpacing.xxl), // Space for FAB
-            ],
+    return BlocProvider(
+      create: (context) =>
+          getIt<DashboardBloc>()..add(FetchDashboardRequested()),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: AppSpacing.l),
+                BlocBuilder<DashboardBloc, DashboardState>(
+                  builder: (context, state) {
+                    if (state is DashboardLoading ||
+                        state is DashboardInitial) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      );
+                    } else if (state is DashboardError) {
+                      return ErrorView(
+                        message: state.message,
+                        onRetry: () => context.read<DashboardBloc>().add(
+                          FetchDashboardRequested(),
+                        ),
+                      );
+                    } else if (state is DashboardLoaded) {
+                      return _buildContent(context, state);
+                    }
+                    return const SizedBox();
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  Widget _buildContent(BuildContext context, DashboardLoaded state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSummaryCards(context, state),
+        const SizedBox(height: AppSpacing.l),
+        Text(context.tr('pending_tasks'), style: AppTypography.h3),
+        const SizedBox(height: AppSpacing.m),
+        _buildTaskList(context, state.pendingTasks),
+      ],
+    );
+  }
+
   Widget _buildHeader(BuildContext context) {
+    final sessionState = getIt<SessionCubit>().state;
+    final fullName = sessionState is SessionAuthenticated
+        ? sessionState.user.fullName
+        : '';
+    final firstName = fullName.isNotEmpty ? fullName.split(' ').first : '';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'WEDNESDAY, JULY 16',
-              style: AppTypography.labelMedium.copyWith(letterSpacing: 1.5),
-            ),
-            const SizedBox(height: AppSpacing.s),
-            Text.rich(
+        Text.rich(
+          TextSpan(
+            children: [
               TextSpan(
-                children: [
-                  TextSpan(text: '${context.tr('good_morning')}\n', style: AppTypography.h1),
-                  TextSpan(text: '${context.tr('james_reynolds').split(' ')[0]}.', style: AppTypography.h1.copyWith(color: AppColors.primary)),
-                ],
+                text: '${context.tr('good_morning')}\n',
+                style: AppTypography.h1,
               ),
-            ),
-          ],
+              TextSpan(
+                text: '$firstName.',
+                style: AppTypography.h1.copyWith(color: AppColors.primary),
+              ),
+            ],
+          ),
         ),
         GestureDetector(
           onTap: () => context.go(AppRouter.alerts),
@@ -73,22 +109,9 @@ class DashboardPage extends StatelessWidget {
               color: AppColors.surface,
               borderRadius: AppRadius.medium,
             ),
-            child: Stack(
-              children: [
-                const Icon(Icons.notifications_none, color: AppColors.textPrimary),
-                Positioned(
-                  right: 2,
-                  top: 2,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
+            child: const Icon(
+              Icons.notifications_none,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
@@ -96,14 +119,26 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCards(BuildContext context) {
+  Widget _buildSummaryCards(BuildContext context, DashboardLoaded state) {
     return Row(
       children: [
-        _buildSummaryCard('3', context.tr('appts'), Icons.calendar_today_outlined),
+        _buildSummaryCard(
+          '${state.metrics.totalActiveCases}',
+          context.tr('active_cases'),
+          Icons.business_center_outlined,
+        ),
         const SizedBox(width: AppSpacing.m),
-        _buildSummaryCard('14', context.tr('cases'), Icons.business_center_outlined),
+        _buildSummaryCard(
+          '${state.metrics.pendingTasks}',
+          context.tr('pending_tasks'),
+          Icons.check_circle_outline,
+        ),
         const SizedBox(width: AppSpacing.m),
-        _buildSummaryCard('5', context.tr('tasks'), Icons.check_circle_outline),
+        _buildSummaryCard(
+          '${state.metrics.upcomingHearings}',
+          context.tr('upcoming_hearings'),
+          Icons.gavel_outlined,
+        ),
       ],
     );
   }
@@ -130,122 +165,10 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, {bool showViewAll = false, String? badge}) {
-    return Row(
-      children: [
-        Text(title, style: AppTypography.h3),
-        if (badge != null) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              badge,
-              style: AppTypography.labelMedium.copyWith(color: AppColors.primary, fontSize: 10),
-            ),
-          ),
-        ],
-        const Spacer(),
-        if (showViewAll)
-          Text(
-            context.tr('view_all'),
-            style: AppTypography.bodySmall.copyWith(color: AppColors.primary),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildScheduleList(BuildContext context) {
-    return Column(
-      children: [
-        _buildScheduleItem(
-          context.tr('case_hernandez_v_state'),
-          context.tr('carlos_hernandez'),
-          '09:00 AM · 1h',
-          context.tr('district_court'),
-          context.tr('hearing'),
-          Colors.green.withValues(alpha: 0.2),
-        ),
-        const SizedBox(height: AppSpacing.m),
-        _buildScheduleItem(
-          context.tr('case_morrison_estate'),
-          context.tr('patricia_morrison'),
-          '11:30 AM · 45m',
-          context.tr('office'),
-          context.tr('client_meeting'),
-          Colors.purple.withValues(alpha: 0.2),
-        ),
-        const SizedBox(height: AppSpacing.m),
-        _buildScheduleItem(
-          context.tr('case_techcorp_ip'),
-          context.tr('techcorp_inc'),
-          '02:00 PM · 2h',
-          context.tr('federal_court'),
-          context.tr('deposition'),
-          Colors.orange.withValues(alpha: 0.2),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScheduleItem(
-    String title,
-    String subtitle,
-    String time,
-    String location,
-    String type,
-    Color typeColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.m),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.medium,
-        border: Border(left: BorderSide(color: typeColor.withValues(alpha: 0.8), width: 4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: AppTypography.labelLarge),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: typeColor,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  type,
-                  style: AppTypography.labelMedium.copyWith(fontSize: 10, color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(subtitle, style: AppTypography.bodySmall),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
-              const SizedBox(width: 4),
-              Text(time, style: AppTypography.bodySmall),
-              const SizedBox(width: 12),
-              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
-              const SizedBox(width: 4),
-              Text(location, style: AppTypography.bodySmall),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskList() {
+  Widget _buildTaskList(BuildContext context, List<TaskItem> tasks) {
+    if (tasks.isEmpty) {
+      return EmptyState(message: context.tr('no_tasks_found'));
+    }
     return Container(
       padding: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
@@ -254,105 +177,53 @@ class DashboardPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildTaskItem('File motion for Hernandez case', 'Today', isOverdue: true),
-          const Divider(color: AppColors.surfaceLight),
-          _buildTaskItem('Review Morrison estate documents', 'Today', isCompleted: true),
-          const Divider(color: AppColors.surfaceLight),
-          _buildTaskItem('Prepare TechCorp IP brief', 'Tomorrow'),
+          for (var i = 0; i < tasks.length; i++) ...[
+            if (i > 0) const Divider(color: AppColors.surfaceLight),
+            _buildTaskItem(context, tasks[i]),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildTaskItem(String title, String dueDate, {bool isOverdue = false, bool isCompleted = false}) {
+  Widget _buildTaskItem(BuildContext context, TaskItem task) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: isCompleted ? AppColors.primary : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: isCompleted ? AppColors.primary : AppColors.textHint),
-            ),
-            child: isCompleted ? const Icon(Icons.check, size: 16, color: Colors.black) : null,
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: AppTypography.bodyMedium.copyWith(
-                    decoration: isCompleted ? TextDecoration.lineThrough : null,
-                    color: isCompleted ? AppColors.textHint : AppColors.textPrimary,
-                  ),
-                ),
+                Text(task.title, style: AppTypography.bodyMedium),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    if (isOverdue) ...[
-                      const Icon(Icons.warning_amber_rounded, size: 12, color: Colors.red),
-                      const SizedBox(width: 4),
-                    ],
-                    Text(
-                      dueDate,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: isOverdue ? Colors.red : AppColors.textHint,
-                      ),
-                    ),
-                  ],
+                Text(
+                  task.dueDate != null
+                      ? '${context.tr('due_date')}: ${task.dueDate!.toLocal().toString().split(' ').first}'
+                      : context.tr('no_due_date'),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textHint,
+                  ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClientsList(BuildContext context) {
-    final clients = [
-      {'name': context.tr('carlos_hernandez').split(' ')[0], 'initials': 'CH'},
-      {'name': context.tr('patricia_morrison').split(' ')[0], 'initials': 'PM'},
-      {'name': context.tr('techcorp_inc').split(' ')[0], 'initials': 'TI'},
-      {'name': context.tr('sarah_chen').split(' ')[0], 'initials': 'SC'},
-      {'name': context.tr('david_park').split(' ')[0], 'initials': 'DP'},
-    ];
-
-    return SizedBox(
-      height: 100,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: clients.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.m),
-        itemBuilder: (context, index) {
-          final client = clients[index];
-          return Column(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                ),
-                child: Center(
-                  child: Text(
-                    client['initials']!,
-                    style: AppTypography.labelLarge.copyWith(color: AppColors.primary),
-                  ),
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: taskPriorityColor(task.priority).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              taskPriorityLabel(context, task.priority),
+              style: TextStyle(
+                color: taskPriorityColor(task.priority),
+                fontSize: 10,
               ),
-              const SizedBox(height: 8),
-              Text(client['name']!, style: AppTypography.bodySmall),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
