@@ -164,3 +164,83 @@ This is a bigger lift than it sounds, for a reason not obvious from the outside:
 ---
 
 Waiting for your review — either approve as-is (including the stated defaults for decisions #1-#3), or tell me what to change before I start.
+
+---
+
+# Milestone 2 — Cases & Clients (read-only), redraft v2
+
+**Status: proposed, awaiting your approval. No code changes have been made yet.** Same scope as the superseded draft above (Cases + Clients, read-only list + detail) — this version is rewritten against the Case/Client shapes confirmed in the current `API_CONTRACT.md` (post backend update). The framing/reasoning for why M2 stays narrow (documents/tasks don't exist as features, hearings/calendar aren't a real feature split from the mock `Appointment` model, `case_details_page.dart`/`client_profile_page.dart` are fully hardcoded with no id parameter) is unchanged from the superseded draft above and not repeated here.
+
+## What's real now (per `API_CONTRACT.md` §5, §8)
+
+| | Current `GET /cases` / `GET /cases/{id}` | Current `GET /clients` / `GET /clients/{id}` |
+|---|---|---|
+| Shape | `id, tenantId, caseNumber, status, clientId, caseTypeId, priority, createdAt, updatedAt, client: Client, primaryLawyerId, primaryLawyer: User, caseType: {id,name}, defaultCourtId, defaultCourt: Court, openingDate?, closingDate?, outcomeSummary?, agreedFee?, team: [{id, role, user: User}]` | `id, tenantId, clientCode, type, fullName, status, createdAt, updatedAt, nationalId?, commercialReg?, emails: string[], phones: string[], addresses: string[]` |
+| `status` values seen | `DRAFT`, `ACTIVE`, `ARCHIVED` | `ACTIVE`, `ARCHIVED`, `INACTIVE` |
+| `priority` values seen (Case only) | `NORMAL`, `HIGH`, `URGENT` (`LOW` not observed but plausible) | — |
+| `type` values seen (Client only) | — | `INDIVIDUAL`, `COMPANY` |
+
+None of these are documented as exhaustive (no OpenAPI schema backs this collection, only randomly-generated Postman examples) — same caveat as the superseded draft's decision #4, carried forward.
+
+**Notable regressions from the superseded draft's assumptions, not improvements:** the previous Case shape had `notes[]` and a `POST /cases/{id}/notes` endpoint; both are **gone** in the current backend. There's also no more `POST /cases/{id}/assignments` — `team[]` exists on the Case response, but nothing in this collection shows how a team member ever gets added to it. For a read-only milestone this doesn't block anything (M2 never writes), but it means Case Detail now has **less** to show than previously planned: no Notes tab is possible at all, not because of an M2 scoping choice but because the endpoint doesn't exist anymore.
+
+**Improvements:** `primaryLawyer` and `team[].user` are both full `User` objects — the exact same entity M1 just fixed (`fullName`/`status`/`roles[].code`/etc.). Case Detail's "Team" section reuses that entity directly rather than needing a separate lightweight user-reference type.
+
+## Decisions needed before/while building
+
+1. **Case Detail composition**: with `notes[]` gone and Timeline/Hearings/Documents still unbuilt, the only real content left is **Overview** (caseNumber, status, priority, caseType, openingDate/closingDate, outcomeSummary, agreedFee, client, defaultCourt) and **Team** (`team[]` → each member's `role` + `user`). No tabs beyond those two make sense to show. Confirm this is fine, or tell me if a different composition is wanted.
+2. **`agreedFee` visibility**: BR-026 restricts case-fee visibility to Firm Admin / `finance.read`-holders. `User.isFirmAdmin` is still hardcoded `false` (no confirmed `role.code` value — see `CLAUDE.md`), and no permission-code value is confirmed either. Options: (a) show `agreedFee` to everyone for M2 since there's no reliable way to gate it yet (defers the BR-026 enforcement to whenever `isFirmAdmin`/permission codes are confirmed) — flagged as a **known, temporary BR-026 gap**, not silently ignored; (b) hide it entirely until gating is possible. I'd lean (b) — showing financially-sensitive data to everyone by default because gating isn't ready yet is the wrong failure direction for a finance-gated field — but this is your call, not mine to assume.
+3. **Client's `emails[]`/`phones[]`/`addresses[]` — no "primary" flag**: the response gives plain string arrays with no indication of which (if any) is primary, unlike the BRD's intent (§8.3: "one primary" per array). Default: show all values in each array (e.g. a small list under "Emails", "Phones", "Addresses" rather than a single row), not guess at which one is primary.
+4. **Client Detail's case list**: same limitation as before — no `GET /clients/{id}/cases` and no documented `?clientId=` filter on `GET /cases`. Default: fetch the full case list and filter client-side by `clientId`, same as the superseded draft's decision #2, still flagged as not scaling.
+5. **Pagination/search**: still no query parameters documented on `GET /cases` or `GET /clients`. Same default as before: client-side search/filter over the full fetched list.
+6. **Enum safety**: `CaseStatus`, `CasePriority`, `ClientStatus`, `ClientType` all modeled as Dart enums with an `unknown` fallback (`json_serializable`'s `unknownEnumValue`), since none of these lists are confirmed exhaustive.
+
+## Checklist
+
+### 1. Freezed models (per `API_CONTRACT.md` §5, §8)
+- [ ] `Client { id, tenantId, clientCode, type: ClientType, fullName, status: ClientStatus, createdAt, updatedAt, nationalId?, commercialReg?, emails: List<String>, phones: List<String>, addresses: List<String> }`
+- [ ] `Case { id, tenantId, caseNumber, status: CaseStatus, clientId, caseTypeId, priority: CasePriority, createdAt, updatedAt, client: Client, primaryLawyerId, primaryLawyer: User, caseType: CaseTypeLookup, defaultCourtId, defaultCourt: Court, openingDate?, closingDate?, outcomeSummary?, agreedFee?, team: List<CaseTeamMember> }`
+- [ ] `CaseTypeLookup { id, name }` (nested-only — matches what `caseType` returns; no standalone lookups endpoint exists to back a separate feature)
+- [ ] `Court { id, name, type, city?, address?, isActive }` (nested-only for M2, same as before — updated field names per the rebuilt shape)
+- [ ] `CaseTeamMember { id, role: String, user: User }` (reuses the auth feature's `User` entity — `role` left as a raw string since no enum values are shown for it in any example, unlike the old `LEAD`/`SUPPORT` which at least had two observed values)
+- [ ] `CaseStatus`/`CasePriority`/`ClientStatus`/`ClientType` enums with `unknown` fallback.
+
+### 2. Repositories
+- [ ] `CaseRepository` (replaces `MockCaseRepository`): `getCases()` → `GET /cases`, `getCaseDetails(id)` → `GET /cases/{id}`.
+- [ ] `ClientRepository` (replaces `MockClientRepository`): `getClients()` → `GET /clients`, `getClientDetails(id)` → `GET /clients/{id}`.
+- [ ] Repository tests (`mocktail`-mocked `Dio`), same pattern as `auth_repository_test.dart`.
+
+### 3. Presentation
+- [ ] `CasesBloc`/`ClientsBloc`: real repository calls, loading/error/empty states, `EmptyState`/`ErrorView`/skeleton loader (none of this exists on the current mock screens either — new work, not a regression).
+- [ ] New `CaseDetailsBloc`/`ClientDetailsBloc` to fetch by id (don't exist today).
+- [ ] `case_details_page.dart`/`client_profile_page.dart` rewritten to accept a real id from routing; `app_router.dart` routes updated to actually pass one.
+- [ ] Case Detail: Overview + Team only, per decision #1. `agreedFee` handling per decision #2.
+- [ ] Client Detail: `clientCode`, `type`, `status`, and the three contact arrays per decision #3. Case list per decision #4.
+- [ ] List screens: client-side search/filter per decision #5.
+
+### 4. Localization
+- [ ] New strings in ARB, same convention as M1.
+
+### 5. Tests
+- [ ] Repository tests (dio-mocked, exact request shape against `API_CONTRACT.md`).
+- [ ] Bloc tests for list + detail blocs.
+- [ ] Widget tests in EN/LTR and AR/RTL, following the pumpAndSettle/localization-preload patterns documented in `CLAUDE.md`.
+
+### Out of scope for M2 (unchanged from the superseded draft)
+- Hearings, calendar, documents, tasks, dashboard.
+- Any write action.
+- Case timeline, case notes (notes capability didn't just stay missing — it was actively removed this update).
+- Server-side search/filter/pagination.
+
+## Definition of done
+- [ ] `Case`/`Client` (+ nested `CaseTypeLookup`/`Court`/`CaseTeamMember`) models match the current `API_CONTRACT.md` exactly, fallback-safe enums.
+- [ ] `MockCaseRepository`/`MockClientRepository` deleted.
+- [ ] Case Detail and Client Detail take a real id from routing, render real data.
+- [ ] Decisions #1-#6 resolved by your review (or your answers, where you want something other than the stated defaults — #2 in particular, where I stated a preference rather than a neutral default).
+- [ ] All new/changed screens tested EN/LTR + AR/RTL; empty/loading/error states covered.
+- [ ] `flutter analyze` clean; `dart format` clean on every file touched.
+- [ ] `CLAUDE.md`/`PLAN.md` updated with outcomes.
+
+---
+
+Waiting for your review of this redraft — approve as-is (including stated defaults/preferences for decisions #1, #3, #4, #5, #6, and my *preference* — not default — for #2), or tell me what to change before I start.
