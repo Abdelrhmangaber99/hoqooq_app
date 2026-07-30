@@ -59,11 +59,4 @@ void main() {
       expect(user.hasPerm('cases.delete'), isFalse);
     });
   });
-
-  test(
-    'isFirmAdmin is always false for now (no confirmed role.code value — see CLAUDE.md)',
-    () {
-      expect(buildUser().isFirmAdmin, isFalse);
-    },
-  );
 }

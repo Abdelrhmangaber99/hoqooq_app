@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
 import 'package:hqooq/core/storage/token_storage.dart';
 import 'package:hqooq/features/authentication/data/models/auth_response.dart';
+import 'package:hqooq/features/authentication/domain/entities/my_firm.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/domain/repository/i_auth_repository.dart';
@@ -44,6 +45,14 @@ void main() {
     refreshToken: 'refresh-456',
   );
 
+  // ownerUserId deliberately does not match `user.id` — isFirmAdmin should
+  // resolve false by default in tests that don't care about it.
+  const notOwnerFirm = MyFirm(
+    id: 't1',
+    name: 'Reynolds & Associates',
+    ownerUserId: 'someone-else',
+  );
+
   setUpAll(() {
     registerFallbackValue(user);
   });
@@ -57,8 +66,17 @@ void main() {
     when(() => tokenStorage.saveRefreshToken(any())).thenAnswer((_) async {});
     when(() => tokenStorage.clear()).thenAnswer((_) async {});
     when(() => sessionCubit.updateAccessToken(any())).thenReturn(null);
-    when(() => sessionCubit.authenticated(any(), any())).thenReturn(null);
+    when(
+      () => sessionCubit.authenticated(
+        any(),
+        any(),
+        isFirmAdmin: any(named: 'isFirmAdmin'),
+      ),
+    ).thenReturn(null);
     when(() => sessionCubit.unauthenticated()).thenReturn(null);
+    when(
+      () => authRepository.getMyFirm(),
+    ).thenAnswer((_) async => const Right(notOwnerFirm));
   });
 
   AuthBloc buildBloc() =>
@@ -85,7 +103,79 @@ void main() {
       verify: (_) {
         verify(() => tokenStorage.saveRefreshToken('refresh-456')).called(1);
         verify(() => sessionCubit.updateAccessToken('access-123')).called(1);
-        verify(() => sessionCubit.authenticated(user, 'access-123')).called(1);
+        verify(
+          () => sessionCubit.authenticated(
+            user,
+            'access-123',
+            isFirmAdmin: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'emits [Loading, Authenticated] and marks isFirmAdmin true when '
+      'GET /tenants/my-firm.ownerUserId matches the user id',
+      build: () {
+        when(
+          () => loginUseCase.execute(
+            email: 'lawyer@firm.com',
+            password: 'secret123',
+          ),
+        ).thenAnswer((_) async => const Right(authResponse));
+        when(
+          () => authRepository.getCurrentUser(),
+        ).thenAnswer((_) async => Right(user));
+        when(() => authRepository.getMyFirm()).thenAnswer(
+          (_) async => Right(
+            MyFirm(
+              id: 't1',
+              name: 'Reynolds & Associates',
+              ownerUserId: user.id,
+            ),
+          ),
+        );
+        return buildBloc();
+      },
+      act: (bloc) =>
+          bloc.add(const LoginRequested('lawyer@firm.com', 'secret123')),
+      expect: () => [isA<AuthLoading>(), AuthAuthenticated(user)],
+      verify: (_) {
+        verify(
+          () =>
+              sessionCubit.authenticated(user, 'access-123', isFirmAdmin: true),
+        ).called(1);
+      },
+    );
+
+    blocTest<AuthBloc, AuthState>(
+      'defaults isFirmAdmin to false (not everyone) when GET /tenants/my-firm fails',
+      build: () {
+        when(
+          () => loginUseCase.execute(
+            email: 'lawyer@firm.com',
+            password: 'secret123',
+          ),
+        ).thenAnswer((_) async => const Right(authResponse));
+        when(
+          () => authRepository.getCurrentUser(),
+        ).thenAnswer((_) async => Right(user));
+        when(
+          () => authRepository.getMyFirm(),
+        ).thenAnswer((_) async => const Left(ServerFailure()));
+        return buildBloc();
+      },
+      act: (bloc) =>
+          bloc.add(const LoginRequested('lawyer@firm.com', 'secret123')),
+      expect: () => [isA<AuthLoading>(), AuthAuthenticated(user)],
+      verify: (_) {
+        verify(
+          () => sessionCubit.authenticated(
+            user,
+            'access-123',
+            isFirmAdmin: false,
+          ),
+        ).called(1);
       },
     );
 

@@ -150,18 +150,30 @@ void main() {
   testWidgets('hides agreedFee for an authenticated non-Firm-Admin user '
       '(BR-026 — never shown to everyone by default)', (tester) async {
     final user = legalCase.primaryLawyer;
-    when(() => sessionCubit.state).thenReturn(SessionAuthenticated(user));
+    when(
+      () => sessionCubit.state,
+    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: false));
 
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    // isFirmAdmin is hardcoded false today (no confirmed role.code value
-    // — see CLAUDE.md), so this is the only reachable branch right now.
-    // If isFirmAdmin ever becomes real, this test should be extended
-    // with a case where it's true and agreedFee IS expected to show.
-    expect(user.isFirmAdmin, isFalse);
     expect(find.text('5000.00'), findsNothing);
     expect(find.text('Agreed Fee'), findsNothing);
+  });
+
+  testWidgets('shows agreedFee for an authenticated Firm Admin', (
+    tester,
+  ) async {
+    final user = legalCase.primaryLawyer;
+    when(
+      () => sessionCubit.state,
+    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: true));
+
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('5000.00'), findsOneWidget);
+    expect(find.text('Agreed Fee'), findsOneWidget);
   });
 
   testWidgets('renders the case overview and team', (tester) async {
