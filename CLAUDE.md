@@ -142,8 +142,8 @@ l10n.yaml               # gen-l10n config (added M1)
 test/
   core/network/interceptors/refresh_interceptor_test.dart
   features/authentication/{data/repository, domain/entities, presentation/{bloc,pages}}/*_test.dart
-  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart
-  features/clients/{data/repository, presentation/bloc}/*_test.dart
+  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ includes cases_page_test.dart (added post-M2 retrospective follow-up)
+  features/clients/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ (clients_page_test.dart, client_profile_page_test.dart) added post-M2 retrospective follow-up
 ```
 Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. Auth, Cases, and Clients are now fully real; calendar/dashboard/notifications/profile remain mock-or-static until their own milestone.
 
@@ -182,3 +182,5 @@ Each feature: `data/repository` → `domain/{entities,repository,usecases}` → 
   - **Base URL confirmed:** `http://localhost:3005` (docker-compose host port), `/api` global prefix from `src/main.ts`.
   - **Pagination/filtering confirmed permanent:** `cases.controller.ts`/`clients.controller.ts` have zero `@Query()` params — client-side filtering (the app's existing implementation) is the real, permanent design, not a stopgap.
   - Updated `case_details_page_test.dart` (isFirmAdmin moved from a `User` getter to `SessionAuthenticated` field — also newly exercises the "shown to Firm Admin" branch for the first time, previously untestable since it was hardcoded false), `auth_bloc_test.dart` (two new blocTest cases for the `getMyFirm()` success/failure paths), `user_test.dart` (removed the now-obsolete `isFirmAdmin` getter test). 57 tests total (was 55), all green; `flutter analyze` clean. `Hoqooq-main/` added to `.gitignore` — it's reference material, not app code, and shouldn't live in this repo's git history. `API_CONTRACT.md` rewritten with the backend-source findings and corrected delete-semantics claims (see its top section). M3 planning and the still-pending M2-retrospective widget-smoke-test follow-up have not started.
+
+- **2026-07-30 (M2-retrospective follow-up: list-screen smoke tests)** — Per the retrospective's approved decision, added basic widget smoke tests for the three list-based M2 screens that had none before this: `CasesPage`, `ClientsPage`, `ClientProfilePage` (`CaseDetailsPage` already had dedicated coverage from M2 itself). Each covers loading/error/loaded states plus, for the list pages, an explicit empty-state case; `ClientProfilePage` also covers its secondary case-list section rendering both populated and empty. Same `MockBloc` + preloaded-`AppLocalizations`-delegate pattern as `case_details_page_test.dart`. One gotcha hit and fixed: `getIt.reset()` must be `await`ed in `setUp`/`tearDown` for these three new files — omitting it (as `case_details_page_test.dart` already does, untouched) caused an intermittent "type X is not registered inside GetIt" failure when running a new test file in isolation, because the async reset hadn't completed before the next `registerFactory` call. 12 new tests, 69 total (was 57), all green; `flutter analyze` clean. This closes the last item from the M2 retrospective; M3 planning can now proceed.
