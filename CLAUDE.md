@@ -3,10 +3,11 @@
 Flutter (iOS + Android) client for the Hoqooq Legal Practice Management SaaS. This file is the persistent memory for this project across sessions — keep it tight, update it at the end of every milestone.
 
 **Source documents (in priority order when they conflict):**
-1. `hoqooq-postman-import.json` — wins on endpoint paths, request/response shapes, auth mechanism.
-2. `Hoqooq_BRD_v1.docx` — wins on BR-### business rules, RBAC matrix, data dictionary intent.
-3. `hoqooq_mobile_spec.md` — architecture/screens/milestones guidance; overridden by the above two where they disagree.
-4. **`API_CONTRACT.md`** (repo root) — the parsed, annotated version of the Postman collection. **All `dio` calls go through this contract. No ad-hoc endpoint strings in features.**
+1. **`Hoqooq-main/`** (gitignored, reference-only — the real NestJS backend source, given direct filesystem access 2026-07-30) — wins on everything: endpoint paths, request/response shapes, auth mechanism, error/envelope format, delete semantics. Supersedes the Postman collection wherever they disagree.
+2. `hoqooq-postman-import.json` — secondary/illustrative now; still useful for example payloads, but not trusted over the source above.
+3. `Hoqooq_BRD_v1.docx` — wins on BR-### business rules, RBAC matrix, data dictionary intent.
+4. `hoqooq_mobile_spec.md` — architecture/screens/milestones guidance; overridden by the above where they disagree.
+5. **`API_CONTRACT.md`** (repo root) — the parsed, annotated contract, now reconciled against the real backend source. **All `dio` calls go through this contract. No ad-hoc endpoint strings in features.**
 
 ---
 
@@ -57,8 +58,8 @@ Originally, every feature (`lib/features/`: authentication, calendar, cases, cli
 | BR-003 | Tenant isolation, row-scoped | Never send `tenant_id`/`tenantId` from the client (backend derives it from the JWT). `TenantInterceptor`'s client-side header injection was removed in M1 for this reason — **still note the collection's `POST/PATCH /users` request bodies accept a client-supplied `tenantId` field; don't populate it from any future staff-management screen.** Cross-tenant fetch → 404 rendered as "Not found," never "Forbidden." |
 | BR-005 | Firm Admin full CRUD, non-restrictable | Never hide a module from Firm Admin in UI gating. |
 | BR-010 | Subscription lifecycle → read-only mode | On `SUSPENDED`/`PAST_DUE`, disable all create/update/delete UI with a banner. **No data source for this in the current API contract — flagged above.** |
-| BR-016/BR-024/BR-028/BR-029 | No hard delete (cases, documents, financial records) | Never wire a destructive "delete" UI action straight to the collection's `DELETE` endpoints for these entities without confirming with the user first — those endpoints being present doesn't make using them correct. |
-| BR-026 | Case-fee visibility restricted to Firm Admin / `finance.read` | **Precedent set in M2:** `agreedFee` on `LegalCase` is hidden unless `SessionCubit`'s authenticated user reports `isFirmAdmin` — never shown to everyone as a fallback just because gating isn't fully wired yet (`isFirmAdmin` is still hardcoded `false`). Apply the same hide-by-default pattern to any other finance-gated field before a real permission-code check exists. |
+| BR-016/BR-024/BR-028/BR-029 | No hard delete (cases, documents, financial records) | **Confirmed satisfied (2026-07-30, backend-source re-sync):** every `DELETE` endpoint is TypeORM soft-delete (`@DeleteDateColumn`/`isArchived` via `.softRemove()` — see `API_CONTRACT.md` finding C). Earlier versions of this file wrongly claimed hard delete, inferred from the Postman collection's lack of implementation visibility; that inference was wrong. Still use a confirmation dialog for destructive-looking UI actions as normal UX, but it is not a BR violation. |
+| BR-026 | Case-fee visibility restricted to Firm Admin / `finance.read` | **Fixed 2026-07-30:** `agreedFee` on `LegalCase` is hidden unless `SessionCubit`'s authenticated user reports `isFirmAdmin`, now computed for real via `Tenant.ownerUserId == user.id` (see `API_CONTRACT.md` finding D) instead of a hardcoded `false`. Apply the same hide-by-default pattern (default `false` on any failure/ambiguity) to any other finance-gated field. |
 | BR-030 | Per-firm isolated RAG | AI chat renders only `sources[]` the backend returns; never merge/cache across tenants. |
 | BR-032 | AI is advisory | Every AI output shows "AI-generated — verify before use"; human edits always win over AI output. |
 | BR-033 | Auth | Access token short-lived, in memory only; refresh token in `flutter_secure_storage` only, never plain SharedPreferences/Hive. |
@@ -73,17 +74,21 @@ Full rule set: BRD §7 (BR-001 – BR-037). Ask before writing code that could v
 
 **Localization:** two systems now coexist, deliberately. Existing screens (dashboard, calendar, clients, etc.) use the original `assets/lang/*.json` + `context.tr()` extension. New auth-flow strings added in M1 use Flutter's official ARB pipeline (`lib/l10n/app_en.arb` / `app_ar.arb` → generated `GeneratedAppLocalizations`, imported as `gen_l10n.GeneratedAppLocalizations` in `main.dart` to avoid a name clash with the existing custom `AppLocalizations` class). Finishing the migration for non-auth screens is a later-milestone task, not done.
 
-**Environments:** dev/local only for now; staging and prod base URLs don't exist yet. `--dart-define=API_BASE_URL=...` per spec §14, defaulting to the dev URL until staging/prod are stood up.
+**Environments:** dev/local only for now; staging and prod base URLs don't exist yet. `--dart-define=API_BASE_URL=...` per spec §14, defaulting to `http://localhost:3005` (confirmed 2026-07-30 from `Hoqooq-main/docker-compose.yml`'s `3005:3000` port mapping) until staging/prod are stood up. `/api` is appended by `ApiConfig` itself (`src/main.ts`'s global prefix), not part of the base URL.
 
 **Push notifications:** deferred to M6 per spec — no Firebase project wiring before then.
 
 **Open items still needing your input before they block a later milestone:**
-- Actual dev/local base URL value — `ApiConfig.baseUrl` (`lib/core/network/api_config.dart`) defaults to `http://localhost:3000` via `--dart-define=API_BASE_URL`; replace with your real value whenever available.
 - iOS/Android minimum versions — defaulting to spec's iOS 14+ / Android 8 (API 26)+ until told otherwise.
 - Package name / bundle ID — `pubspec.yaml` still has `name: hqooq`; Android is still `com.example.hqooq` (Flutter's default placeholder, never customized). Not touched — a build/deploy-milestone concern.
 - Endpoints with no example response in the collection (`/roles`, `/roles/permissions`, `/ai/*`, `/calendar/timeline`, download endpoints) — treated as "real but undocumented"; build against best-guess shapes and revisit against a running environment when reached in a later milestone.
-- **`User.isFirmAdmin` is hardcoded `false`** (`lib/features/authentication/domain/entities/user.dart`) — no example anywhere in `API_CONTRACT.md` shows a real `role.name` value for Firm Admin. Confirm the actual value against a live login response before any milestone that gates UI on Firm Admin status.
 - `AuthResponse.user` (login/refresh) is typed `Map<String, dynamic>?`, not `User` — every worked example shows `"user": {}`. The app always re-fetches via `GET /users/me` instead of trusting this field; revisit if a real response ever shows a populated shape here.
+
+**Resolved 2026-07-30 (backend-source re-sync — see session log entry below and `API_CONTRACT.md`):**
+- Base URL — confirmed `http://localhost:3005` from `docker-compose.yml`.
+- `isFirmAdmin` — no longer a `User` property (was hardcoded `false`); computed in `AuthBloc._resolveIsFirmAdmin()` from `Tenant.ownerUserId == user.id` via a new `GET /tenants/my-firm` call, stored on `SessionAuthenticated.isFirmAdmin`.
+- Response envelope (`{success, statusCode, message, data}`) and error shape (`{success:false, statusCode, message, error, timestamp}`) — previously invisible, now unwrapped/parsed by `EnvelopeInterceptor` and `mapDioError()` respectively.
+- Delete semantics — confirmed soft-delete throughout, not hard delete (see BR table above).
 
 ## Folder structure (as it exists today)
 
@@ -93,7 +98,7 @@ lib/
     auth/               # user_role.dart (unused by auth now; still referenced nowhere outside itself)
     errors/             # failures.dart
     localization/       # app_localizations.dart (JSON-based), locale_bloc/event/state
-    network/            # api_config.dart, dio_client.dart, interceptors/{auth,refresh}_interceptor.dart, api_result.dart
+    network/            # api_config.dart, dio_client.dart, dio_error_mapper.dart, interceptors/{auth,refresh,envelope}_interceptor.dart (envelope added in the backend-source fix pass), api_result.dart
     router/             # app_router.dart, route_guards.dart
     storage/            # token_storage.dart (added M1)
     theme/              # app_colors/radius/spacing/typography, theme_bloc/event/state
@@ -106,7 +111,7 @@ lib/
         models/         # login_request, refresh_request, forgot/reset/change_password_request, auth_response (added M1)
         repository/      # auth_repository.dart (real, added M1) — no mock left
       domain/
-        entities/       # user, role, permission, tenant_ref (rebuilt M1 to match API_CONTRACT.md)
+        entities/       # user, role, permission, tenant_ref (rebuilt M1 to match API_CONTRACT.md), my_firm (added in the backend-source fix pass, backs isFirmAdmin derivation only)
         repository/      # i_auth_repository.dart
         usecases/        # login_use_case.dart
       presentation/
@@ -165,3 +170,15 @@ Each feature: `data/repository` → `domain/{entities,repository,usecases}` → 
 - **2026-07-30 (M1 patch + M2 redraft)** — User confirmed: patch M1's `User`/`Role`/`Permission` now as a standalone fix, and redraft the M2 plan. Patched: `ApiConfig.baseUrl` now appends `/api` (picked up automatically by both the main `Dio` and `RefreshInterceptor`'s internal raw `Dio`, since both read the same constant); `User`/`Role`/`Permission` rebuilt to the new shape (`fullName`/`status`/`isSuperAdmin`/`mfaEnabled` on `User`; `{id,code,scope}` on `Role`; `{id,code}` on `Permission`); `hasPerm()` signature changed from `(resource, action)` to a single `permissionCode` string. Updated the three M1 test files that built `User`/`Role`/`Permission` fixtures against the old shape — no test logic changed, only fixtures. 31 tests still green, analyzer clean. Redrafted `PLAN.md`'s M2 section (superseded draft kept above for history, not deleted) against the current `Case`/`Client` shapes: `agreedFee`/`priority`/`primaryLawyer`(`User`)/`caseType`/`defaultCourt`/`team[]` for Case, `clientCode`/`nationalId`/`commercialReg`/`emails[]`/`phones[]`/`addresses[]` for Client. Flagged that the new backend actually has **less** for Case Detail to show than the old mock assumed (notes/note-endpoint removed, no team-assignment endpoint), and a new BR-026 question (whether to show `agreedFee` to everyone given `isFirmAdmin` still can't be detected) that didn't exist in the superseded draft. Still just a plan — awaiting approval before M2 code.
 
 - **2026-07-30 (M2 execution)** — User approved the redraft with one explicit instruction on decision #2: `agreedFee` hidden unless the user is positively identified as Firm Admin, never shown to everyone as a fallback (BR-026). Implemented M2 in full per `PLAN.md`'s checklist — see that file for the itemized breakdown. Highlights not obvious from a diff: discovered mid-implementation that no Cases list screen existed at all (`CasesBloc` was dead code referenced by nothing) — built `CasesPage` from scratch and added a Cases bottom-nav tab, since list+detail isn't reachable without one; extracted `mapDioError()` into a shared helper once a third repository needed the identical logic; `ClientDetailsBloc` fetches the full case list and filters by `clientId` client-side (no server-side filter/sub-resource exists), and degrades to an empty case list rather than failing the whole screen if that secondary fetch fails. Widget-test coverage is real but intentionally not exhaustive — one focused widget-test file for `CaseDetailsPage` locks in the `agreedFee` gating specifically (the security-sensitive behavior from this session's explicit instruction), not full EN/AR coverage for every M2 screen; flagged as a known gap, not silently called complete. 55 tests total (was 31), all green; `flutter analyze` clean; `dart format` clean on every file touched — reverted a `dart format lib/` run partway through this session after it swept in ~15 unrelated pre-existing files outside M2's scope (same discipline as M1: format only what you actually touched). 6 commits this milestone. M3 not started.
+
+- **2026-07-30 (M2 retrospective)** — User asked for a review-only retrospective before M3 planning: architecture health, technical debt, duplicated code, pattern consistency across M1/M2, outstanding TODOs/ambiguities, and confirmation no mock implementations remained in Cases/Clients. No code changed. User approved the report with explicit decisions: don't extract generic list blocs/scaffolds yet (Rule of Three — revisit once a third list-based feature exists); keep repositories/display helpers unchanged; add widget smoke tests for `CasesPage`/`ClientsPage`/`ClientProfilePage` before M3 (still pending as of this entry); verify pagination/filtering against the live backend before adding more list modules rather than assuming client-side filtering is permanent (this was resolved definitively in the next entry below — it is permanent, confirmed from source); keep treating undocumented backend behavior as unknown, not guessed.
+
+- **2026-07-30 (backend-source access + critical fix pass)** — User gave direct filesystem access to the real NestJS backend source (`Hoqooq-main/`, gitignored — reference-only, not part of this repo) and asked to review it and make the best decisions. This resolved several previously-open ambiguities and surfaced one previously-invisible, severity-critical bug:
+  - **Response envelope (critical):** every backend response is wrapped `{success, statusCode, message, data}` (`src/core/interceptors/transform.interceptor.ts`) — every repository parsing `response.data` as the resource shape directly was broken against a real server since M1. Fixed with a new `EnvelopeInterceptor` unwrapping `data` before any repository sees it.
+  - **Error shape (critical):** confirmed `{success:false, statusCode, message, error, timestamp}` (`src/core/filters/http-exception.filter.ts`) — `mapDioError()` now surfaces the real backend `message` in `Failure`s shown to the user, instead of only generic per-status strings.
+  - **Soft delete confirmed, not hard delete:** `@DeleteDateColumn`/`isArchived` + `.softRemove()` throughout (`src/core/entities/base.entity.ts` and every service). This corrects a standing wrong claim in `API_CONTRACT.md` and this file's BR table — BR-016/024/028/029 were never actually violated; that was a wrong inference from the Postman collection's lack of implementation visibility.
+  - **`isFirmAdmin` resolved for real:** no `firm_admin` role exists in seed data; the mechanism is `Tenant.ownerUserId == user.id` (`src/modules/tenants/entities/tenant.entity.ts`, seeds at `src/infrastructure/database/seeds/seed.ts`). Moved `isFirmAdmin` off `User` entirely (it was a hardcoded `false` getter) onto `SessionAuthenticated`, computed once per login/session-restore by a new `AuthBloc._resolveIsFirmAdmin()` calling a new `IAuthRepository.getMyFirm()` (`GET /tenants/my-firm`). Defaults to `false` on any failure — same secure-default direction as the original BR-026 instruction.
+  - **`CaseStatus` completed:** added `SUSPENDED`/`CLOSED` (confirmed exhaustive from `src/modules/cases/entities/case.entity.ts`), previously only `DRAFT/ACTIVE/ARCHIVED` had ever been observed in Postman examples.
+  - **Base URL confirmed:** `http://localhost:3005` (docker-compose host port), `/api` global prefix from `src/main.ts`.
+  - **Pagination/filtering confirmed permanent:** `cases.controller.ts`/`clients.controller.ts` have zero `@Query()` params — client-side filtering (the app's existing implementation) is the real, permanent design, not a stopgap.
+  - Updated `case_details_page_test.dart` (isFirmAdmin moved from a `User` getter to `SessionAuthenticated` field — also newly exercises the "shown to Firm Admin" branch for the first time, previously untestable since it was hardcoded false), `auth_bloc_test.dart` (two new blocTest cases for the `getMyFirm()` success/failure paths), `user_test.dart` (removed the now-obsolete `isFirmAdmin` getter test). 57 tests total (was 55), all green; `flutter analyze` clean. `Hoqooq-main/` added to `.gitignore` — it's reference material, not app code, and shouldn't live in this repo's git history. `API_CONTRACT.md` rewritten with the backend-source findings and corrected delete-semantics claims (see its top section). M3 planning and the still-pending M2-retrospective widget-smoke-test follow-up have not started.

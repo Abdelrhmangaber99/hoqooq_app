@@ -1,8 +1,48 @@
 # Hoqooq API Contract
 
-**Source:** `hoqooq-postman-import.json` (87 requests, Postman Collection v2.1, `_postman_id: 0d05367b-0d3a-4c07-a99e-248fd3ff53b5`). Regenerated 2026-07-30 after the user replaced the file with an updated export — this is a **second, structurally different** version of the contract. See "Breaking changes since the M1 version" immediately below before assuming anything from the previous contract still holds.
+**Source (superseded 2026-07-30):** `hoqooq-postman-import.json` (87 requests, Postman Collection v2.1, `_postman_id: 0d05367b-0d3a-4c07-a99e-248fd3ff53b5`).
 
-Per project instructions, this file is the source of truth for all HTTP calls.
+**Current primary source of truth (2026-07-30, same day): the real NestJS backend source at `Hoqooq-main/`** (gitignored — reference-only, not part of this Flutter repo). The user gave direct filesystem access to the actual backend. Where the Postman collection and the TypeScript source disagree, **the source wins** — the collection is now a secondary/illustrative artifact, not ground truth. `swagger.json`/`swagger2.json` in `Hoqooq-main/` are empty (0 bytes); `swagger-spec.json` is stale (matches the pre-re-sync collection) — neither is used as ground truth.
+
+Per project instructions, this file is the source of truth for all HTTP calls (as informed by the backend source above).
+
+---
+
+## ⚠️ Findings from the backend-source re-sync (2026-07-30) — read before touching networking code
+
+Confirmed directly from `Hoqooq-main/` TypeScript source, superseding assumptions made when only the Postman collection was available:
+
+### A. Global response envelope (previously invisible — broke every repository's parsing against a real server)
+`src/core/interceptors/transform.interceptor.ts` wraps **every successful response** in:
+```json
+{ "success": true, "statusCode": 200, "message": "...", "data": <actual payload> }
+```
+The Postman collection's example bodies show the *unwrapped* `data` value directly, which is why this was missed for two milestones. Every repository parsing `response.data` directly as the resource shape was broken until this fix. **Fixed:** `EnvelopeInterceptor` (`lib/core/network/interceptors/envelope_interceptor.dart`) now unwraps `data` for every response before it reaches a repository, registered on both the main `Dio` (`dio_client.dart`) and `RefreshInterceptor`'s internal raw `Dio`.
+
+### B. Error response shape (previously undocumented — "no error-envelope example anywhere" is now resolved)
+`src/core/filters/http-exception.filter.ts` confirms every 4xx/5xx response is:
+```json
+{ "success": false, "statusCode": 400, "message": "...", "error": "...", "timestamp": "..." }
+```
+**Fixed:** `mapDioError()` (`lib/core/network/dio_error_mapper.dart`) now extracts the real backend `message` field for `Failure` messages shown in the UI, instead of only generic per-status-code strings.
+
+### C. Soft delete, not hard delete — corrects a standing wrong claim in this file and in CLAUDE.md
+`src/core/entities/base.entity.ts` gives every entity a TypeORM `@DeleteDateColumn` (`archivedAt`) + `isArchived` boolean, and service methods (e.g. `cases.service.ts`, `clients.service.ts`, `tenants.service.ts`, `documents.service.ts`, `calendar.service.ts`) call `.softRemove()`. **Every previous claim in this file that `DELETE` endpoints are hard deletes contradicting BR-016/024/028/029 was wrong** — it was an inference from the Postman collection's lack of implementation visibility, not a confirmed fact. BR-016/024/028/029 are **not violated**; `DELETE` is safe to wire to destructive UI actions subject to normal confirmation-dialog UX, same as any other soft-delete/archive action.
+
+### D. `isFirmAdmin` — the real mechanism, not a role code
+There is **no `firm_admin` role** in the seed data (`src/infrastructure/database/seeds/seed.ts` seeds only `admin` (SYSTEM scope), `lawyer`/`secretary`/`assistant`/`accountant`/`client` (TENANT scope)). The real mechanism: `Tenant.ownerUserId` (`src/modules/tenants/entities/tenant.entity.ts`) — a user is Firm Admin **iff** `tenant.ownerUserId == user.id`. `GET /tenants/my-firm` (`src/modules/tenants/controllers/tenants.controller.ts`) returns the raw entity (no DTO filtering), which does expose `ownerUserId`. **Fixed:** `MyFirm` entity + `IAuthRepository.getMyFirm()` added; `AuthBloc._resolveIsFirmAdmin()` calls it after login/session-restore and defers to `SessionCubit.authenticated(..., isFirmAdmin: ...)`. Defaults to `false` (secure direction) if the call fails for any reason.
+
+### E. `CaseStatus` enum was incomplete
+`src/modules/cases/entities/case.entity.ts` confirms the real enum is `DRAFT, ACTIVE, SUSPENDED, CLOSED, ARCHIVED` — the app's enum was missing `SUSPENDED`/`CLOSED` (only ever saw `DRAFT/ACTIVE/ARCHIVED` in Postman examples). Fixed in `case_status.dart` + `case_display_helpers.dart` + the `CasesPage` filter chips.
+
+### F. Base URL confirmed
+`Hoqooq-main/docker-compose.yml` maps host port `3005` → container `3000`; `src/main.ts` sets `app.setGlobalPrefix('api', { exclude: ['health'] })`. **Confirmed dev value:** `http://localhost:3005` (docker-compose), `/api` appended by `ApiConfig`.
+
+### G. Pagination/filtering — no change, now confirmed from source rather than inferred
+`cases.controller.ts` / `clients.controller.ts` have zero `@Query()` params on their list endpoints (`findAll(@CurrentUser() user)` only) — client-side filtering, already the app's implementation, is confirmed as the actual permanent backend design, not a stopgap awaiting a future server-side filter.
+
+### H. Everything else already in this file — reconfirmed unchanged
+`User`/`Role`/`Permission` shapes (`src/modules/users/dtos/user-response.dto.ts`), `Client` shape (`src/modules/clients/dtos/client-response.dto.ts`), login/refresh embedded `user` being a lighter shape than `/users/me` (`src/modules/identity/dtos/auth-response.dto.ts`), and the permission code format `<module>.<action>` (`src/core/constants/permissions.constant.ts`) all match this file's existing documentation exactly — no further changes needed there.
 
 ---
 
@@ -109,7 +149,7 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 
 ## 3. Public / Tenants — unchanged (still present, still a BR-scope concern)
 
-`GET /api/public/lawyers`, `GET /api/public/lawyers/specializations` (bearer, despite the name) — still a marketplace-style directory the BRD lists as out-of-scope. `GET /api/settings/public` (none). `GET/PATCH /api/tenants/my-firm`, `POST /api/tenants/my-firm/logo`, and the System-Admin-only `GET/PATCH/DELETE /api/tenants`/`/api/tenants/{id}` — all unchanged from M1, all the same concerns (cross-tenant System-Admin endpoints sitting in the same flat collection as firm-scoped ones; hard `DELETE` on a tenant contradicts BR-013).
+`GET /api/public/lawyers`, `GET /api/public/lawyers/specializations` (bearer, despite the name) — still a marketplace-style directory the BRD lists as out-of-scope. `GET /api/settings/public` (none). `GET/PATCH /api/tenants/my-firm`, `POST /api/tenants/my-firm/logo`, and the System-Admin-only `GET/PATCH/DELETE /api/tenants`/`/api/tenants/{id}` — all unchanged from M1, all the same concerns (cross-tenant System-Admin endpoints sitting in the same flat collection as firm-scoped ones; `DELETE` on a tenant is confirmed soft-delete, see finding C — does not contradict BR-013).
 
 ## 4. Notifications — unchanged
 
@@ -123,15 +163,15 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 | GET | `/api/clients` | — | 200 Client[] |
 | GET/PATCH/DELETE | `/api/clients/{id}` | (PATCH same fields, optional) | 200 / 200 / 204 |
 
-**Client** = `{id, tenantId, clientCode, type, fullName, status, createdAt, updatedAt, nationalId?, commercialReg?, emails: string[], phones: string[], addresses: string[]}`. Note `emails`/`phones`/`addresses` are arrays of plain strings in the examples, not objects with a "primary" flag — BRD wanted one designated primary per array (§8.3); this collection doesn't show how (or if) that's represented. `DELETE` is still a hard delete (still contradicts spec's "archive only" expectation, still worth flagging before wiring a delete button to it).
+**Client** = `{id, tenantId, clientCode, type, fullName, status, createdAt, updatedAt, nationalId?, commercialReg?, emails: string[], phones: string[], addresses: string[]}`. Note `emails`/`phones`/`addresses` are arrays of plain strings in the examples, not objects with a "primary" flag — BRD wanted one designated primary per array (§8.3); this collection doesn't show how (or if) that's represented. `DELETE` is confirmed soft-delete (TypeORM `@DeleteDateColumn`/`isArchived` via `.softRemove()` — see backend-source finding C above), matching the spec's "archive only" expectation.
 
 ## 6. Opponents — minor shape change
 
-`{type, name, phone?, address?}` — **`email` and `notes` fields are gone** compared to the M1 version. POST/GET/PATCH/DELETE all otherwise the same shape (`id, type, name, createdAt, updatedAt, phone?, address?`). Still no representative_name/representative_contact (BRD §8.3). DELETE still hard.
+`{type, name, phone?, address?}` — **`email` and `notes` fields are gone** compared to the M1 version. POST/GET/PATCH/DELETE all otherwise the same shape (`id, type, name, createdAt, updatedAt, phone?, address?`). Still no representative_name/representative_contact (BRD §8.3). DELETE confirmed soft (see finding C).
 
 ## 7. Courts — shape adjusted
 
-`{name, type, city?, address?, isActive}` (was `location`/`contactInfo`, now `city`/`address`). Still no court_circuits endpoints. DELETE still hard (contradicts BR-021's "deactivate, don't delete").
+`{name, type, city?, address?, isActive}` (was `location`/`contactInfo`, now `city`/`address`). Still no court_circuits endpoints. DELETE confirmed soft (see finding C) — matches BR-021's "deactivate, don't delete".
 
 ## 8. Cases — shape rebuilt (see breaking change #3)
 
@@ -153,19 +193,19 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 
 ## 10. Documents — shape adjusted
 
-`POST /api/documents/upload` (multipart: `file` required, `caseId` text) → `{id, title, fileType, sizeBytes, uploadedById, versionNumber, createdAt, updatedAt, description?, caseId?, folderId?, categoryId?}`. `GET /api/documents/{id}/download`, `DELETE /api/documents/{id}` (still hard delete), `GET /api/documents`. Still no versions-list/restore endpoints despite `versionNumber` existing on the model — you can see which version you're on, not browse or restore prior ones.
+`POST /api/documents/upload` (multipart: `file` required, `caseId` text) → `{id, title, fileType, sizeBytes, uploadedById, versionNumber, createdAt, updatedAt, description?, caseId?, folderId?, categoryId?}`. `GET /api/documents/{id}/download`, `DELETE /api/documents/{id}` (confirmed soft-delete, see finding C), `GET /api/documents`. Still no versions-list/restore endpoints despite `versionNumber` existing on the model — you can see which version you're on, not browse or restore prior ones.
 
 ## 11. Hearings — shape adjusted, now closer to BRD
 
-`{caseId, courtId, hearingTypeId?, scheduledAt, circuitId?, judgeName?, status, outcomeText?, nextHearingAt?}`. `status` enum now `SCHEDULED/COMPLETED/ADJOURNED` (was `SCHEDULED/COMPLETED/POSTPONED`) — matches BRD's hearings model (§8.4) almost exactly now, including `circuitId` (though still no nested circuit object or standalone circuits endpoint) and `outcomeText`/`nextHearingAt` (BR-020). Still no `/complete` action — just a raw `status` field via PATCH. DELETE still hard (BR-020 implies completed hearings should be permanent).
+`{caseId, courtId, hearingTypeId?, scheduledAt, circuitId?, judgeName?, status, outcomeText?, nextHearingAt?}`. `status` enum now `SCHEDULED/COMPLETED/ADJOURNED` (was `SCHEDULED/COMPLETED/POSTPONED`) — matches BRD's hearings model (§8.4) almost exactly now, including `circuitId` (though still no nested circuit object or standalone circuits endpoint) and `outcomeText`/`nextHearingAt` (BR-020). Still no `/complete` action — just a raw `status` field via PATCH. DELETE confirmed soft (see finding C) — consistent with BR-020's expectation that completed hearings aren't permanently erasable.
 
 ## 12. Finance — shape adjusted
 
-**Invoices**: `{clientId, invoiceNumber, subtotal, taxTotal, grandTotal, issueDate, dueDate, caseId?, status, notes?}` + nested `payments[]`. `status` now includes `PARTIAL` (was `DRAFT/ISSUED/PAID/CANCELLED`, examples now show `PARTIAL/PAID/CANCELLED` — union unclear, not exhaustively documented). Still flat totals, no line-items endpoint (BRD's `invoice_line_items`). **Payments**: unchanged shape, `{invoiceId, amount, paymentDate, method, referenceNumber?}`. **`DELETE` still exists on both invoices and payments — still directly contradicts BR-028/BR-029 (no physical deletion of financial records).** Still no reversal/compensating-transaction endpoint. Still no expenses module at all.
+**Invoices**: `{clientId, invoiceNumber, subtotal, taxTotal, grandTotal, issueDate, dueDate, caseId?, status, notes?}` + nested `payments[]`. `status` now includes `PARTIAL` (was `DRAFT/ISSUED/PAID/CANCELLED`, examples now show `PARTIAL/PAID/CANCELLED` — union unclear, not exhaustively documented). Still flat totals, no line-items endpoint (BRD's `invoice_line_items`). **Payments**: unchanged shape, `{invoiceId, amount, paymentDate, method, referenceNumber?}`. `DELETE` on both invoices and payments is confirmed soft-delete (see finding C) — does not contradict BR-028/BR-029. Still no reversal/compensating-transaction endpoint (a real gap, distinct from the delete-semantics question). Still no expenses module at all.
 
 ## 13. Calendar — shape adjusted, now closer to BRD's unified-calendar concept
 
-`{userId, title, eventType: CUSTOM|TASK_DEADLINE|..., startsAt, endsAt?, description?, referenceId?, location?, isAllDay}` + `tenantId` in the response. `eventType: TASK_DEADLINE` appearing in examples is a good sign this is meant to aggregate task due dates as the spec's Calendar screen wants (§5.7) — but there's still no confirmed value for a hearing-derived event type, so it's unclear whether `GET /calendar` alone will surface hearings too, or whether the mobile app still needs to separately merge `/hearings` in. `GET /calendar/timeline` (query: `startDate, endDate, caseId, userId`) still has no example response — still the best candidate for "the" aggregation endpoint, still unconfirmed. DELETE still hard.
+`{userId, title, eventType: CUSTOM|TASK_DEADLINE|..., startsAt, endsAt?, description?, referenceId?, location?, isAllDay}` + `tenantId` in the response. `eventType: TASK_DEADLINE` appearing in examples is a good sign this is meant to aggregate task due dates as the spec's Calendar screen wants (§5.7) — but there's still no confirmed value for a hearing-derived event type, so it's unclear whether `GET /calendar` alone will surface hearings too, or whether the mobile app still needs to separately merge `/hearings` in. `GET /calendar/timeline` (query: `startDate, endDate, caseId, userId`) still has no example response — still the best candidate for "the" aggregation endpoint, still unconfirmed. DELETE confirmed soft (see finding C).
 
 ## 14. Reports & Dashboard — unchanged
 
@@ -200,8 +240,8 @@ Generic key-value store, same as M1 version. Same limitation: no typed lookups e
 - No document-versions-list/restore endpoint (BR-024) despite `versionNumber` existing on the model.
 - No AI entitlement/credit-preflight endpoint (BR-031), no classify/extract actions.
 - No expenses module at all.
-- No payment-reversal/compensating-transaction endpoint (BR-029) — and `DELETE` still exists on invoices/payments, still contradicting BR-028/029.
-- Hard `DELETE` still present on cases, clients, documents, courts, opponents, invoices, payments, tenants, users, calendar events — still contradicts BR-016/024/028/029 for the entities those rules cover.
+- No payment-reversal/compensating-transaction endpoint (BR-029) — note `DELETE` on invoices/payments is confirmed soft-delete (see finding C above), so this gap is about the missing reversal workflow, not physical deletion.
+- ~~Hard `DELETE`~~ **Resolved (2026-07-30, backend-source re-sync):** all `DELETE` endpoints are TypeORM soft-delete (`@DeleteDateColumn`/`isArchived` via `.softRemove()`), confirmed from `Hoqooq-main/` source — cases, clients, documents, courts, opponents, invoices, payments, tenants, users, calendar events do **not** violate BR-016/024/028/029. This was a wrong inference in earlier versions of this file, not a real backend gap.
 - `tenantId` still client-suppliable on `POST/PATCH /users`, and now also on `POST/PATCH /cases` — still contradicts BR-003.
 - No error-envelope example anywhere in any of the 87 requests.
 - `auth/signup` still exists, still contradicts BR-001.
