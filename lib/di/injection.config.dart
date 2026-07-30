@@ -28,12 +28,10 @@ import 'package:hqooq/features/authentication/presentation/bloc/auth_bloc.dart'
     as _i1026;
 import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart'
     as _i81;
-import 'package:hqooq/features/calendar/data/repository/mock_appointment_repository.dart'
-    as _i456;
-import 'package:hqooq/features/calendar/domain/repository/i_appointment_repository.dart'
-    as _i588;
-import 'package:hqooq/features/calendar/domain/usecases/get_appointments_use_case.dart'
-    as _i266;
+import 'package:hqooq/features/calendar/data/repository/calendar_repository.dart'
+    as _i225;
+import 'package:hqooq/features/calendar/domain/repository/i_calendar_repository.dart'
+    as _i495;
 import 'package:hqooq/features/calendar/presentation/bloc/calendar_bloc.dart'
     as _i251;
 import 'package:hqooq/features/cases/data/repository/case_repository.dart'
@@ -44,6 +42,10 @@ import 'package:hqooq/features/cases/domain/usecases/get_cases_use_case.dart'
     as _i613;
 import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart'
     as _i995;
+import 'package:hqooq/features/cases/presentation/bloc/case_documents_bloc.dart'
+    as _i194;
+import 'package:hqooq/features/cases/presentation/bloc/case_hearings_bloc.dart'
+    as _i389;
 import 'package:hqooq/features/cases/presentation/bloc/cases_bloc.dart'
     as _i546;
 import 'package:hqooq/features/clients/data/repository/client_repository.dart'
@@ -56,6 +58,24 @@ import 'package:hqooq/features/clients/presentation/bloc/client_details_bloc.dar
     as _i283;
 import 'package:hqooq/features/clients/presentation/bloc/clients_bloc.dart'
     as _i165;
+import 'package:hqooq/features/dashboard/data/repository/dashboard_repository.dart'
+    as _i773;
+import 'package:hqooq/features/dashboard/domain/repository/i_dashboard_repository.dart'
+    as _i1072;
+import 'package:hqooq/features/dashboard/presentation/bloc/dashboard_bloc.dart'
+    as _i548;
+import 'package:hqooq/features/documents/data/repository/document_repository.dart'
+    as _i106;
+import 'package:hqooq/features/documents/domain/repository/i_document_repository.dart'
+    as _i622;
+import 'package:hqooq/features/hearings/data/repository/hearing_repository.dart'
+    as _i506;
+import 'package:hqooq/features/hearings/domain/repository/i_hearing_repository.dart'
+    as _i844;
+import 'package:hqooq/features/tasks/data/repository/task_repository.dart'
+    as _i23;
+import 'package:hqooq/features/tasks/domain/repository/i_task_repository.dart'
+    as _i949;
 import 'package:injectable/injectable.dart' as _i526;
 
 extension GetItInjectableX on _i174.GetIt {
@@ -73,9 +93,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i404.AuthInterceptor>(
       () => _i404.AuthInterceptor(gh<_i81.SessionCubit>()),
     );
-    gh.lazySingleton<_i588.IAppointmentRepository>(
-      () => _i456.MockAppointmentRepository(),
-    );
     gh.factory<_i722.RefreshInterceptor>(
       () => _i722.RefreshInterceptor(
         gh<_i23.TokenStorage>(),
@@ -88,11 +105,26 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i722.RefreshInterceptor>(),
       ),
     );
-    gh.lazySingleton<_i266.GetAppointmentsUseCase>(
-      () => _i266.GetAppointmentsUseCase(gh<_i588.IAppointmentRepository>()),
+    gh.lazySingleton<_i495.ICalendarRepository>(
+      () => _i225.CalendarRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i949.ITaskRepository>(
+      () => _i23.TaskRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i622.IDocumentRepository>(
+      () => _i106.DocumentRepository(gh<_i361.Dio>()),
     );
     gh.factory<_i251.CalendarBloc>(
-      () => _i251.CalendarBloc(gh<_i266.GetAppointmentsUseCase>()),
+      () => _i251.CalendarBloc(gh<_i495.ICalendarRepository>()),
+    );
+    gh.factory<_i194.CaseDocumentsBloc>(
+      () => _i194.CaseDocumentsBloc(gh<_i622.IDocumentRepository>()),
+    );
+    gh.lazySingleton<_i1072.IDashboardRepository>(
+      () => _i773.DashboardRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i844.IHearingRepository>(
+      () => _i506.HearingRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i320.ICaseRepository>(
       () => _i981.CaseRepository(gh<_i361.Dio>()),
@@ -123,8 +155,18 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i23.TokenStorage>(),
       ),
     );
+    gh.factory<_i389.CaseHearingsBloc>(
+      () => _i389.CaseHearingsBloc(gh<_i844.IHearingRepository>()),
+    );
     gh.lazySingleton<_i723.GetClientsUseCase>(
       () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
+    );
+    gh.factory<_i548.DashboardBloc>(
+      () => _i548.DashboardBloc(
+        gh<_i1072.IDashboardRepository>(),
+        gh<_i949.ITaskRepository>(),
+        gh<_i81.SessionCubit>(),
+      ),
     );
     gh.factory<_i283.ClientDetailsBloc>(
       () => _i283.ClientDetailsBloc(

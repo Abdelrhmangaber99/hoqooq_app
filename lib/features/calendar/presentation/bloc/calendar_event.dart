@@ -9,13 +9,7 @@ abstract class CalendarEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class FetchAppointmentsRequested extends CalendarEvent {
-  final DateTime? date;
-  const FetchAppointmentsRequested({this.date});
-
-  @override
-  List<Object?> get props => [date];
-}
+class FetchTimelineRequested extends CalendarEvent {}
 
 class SelectDateRequested extends CalendarEvent {
   final DateTime date;
@@ -25,9 +19,9 @@ class SelectDateRequested extends CalendarEvent {
   List<Object?> get props => [date];
 }
 
-class ChangeViewModeRequested extends CalendarViewModeRequested {
+class ChangeViewModeRequested extends CalendarEvent {
   final CalendarViewMode mode;
-   ChangeViewModeRequested(this.mode);
+  const ChangeViewModeRequested(this.mode);
 
   @override
   List<Object?> get props => [mode];
@@ -40,6 +34,3 @@ class ChangeYearRequested extends CalendarEvent {
   @override
   List<Object?> get props => [year];
 }
-
-// Keeping compatibility with existing code while transitioning
-abstract class CalendarViewModeRequested extends CalendarEvent {}

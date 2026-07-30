@@ -5,8 +5,6 @@ import '../../features/authentication/presentation/pages/splash_page.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
-import '../../features/calendar/presentation/pages/appointment_details_page.dart';
-import '../../features/calendar/presentation/pages/new_appointment_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
 import '../../features/cases/presentation/pages/case_details_page.dart';
 import '../../features/clients/presentation/pages/clients_page.dart';
@@ -43,16 +41,6 @@ class AppRouter {
           GoRoute(
             path: calendar,
             builder: (context, state) => const CalendarPage(),
-            routes: [
-              GoRoute(
-                path: 'details',
-                builder: (context, state) => const AppointmentDetailsPage(),
-              ),
-              GoRoute(
-                path: 'new',
-                builder: (context, state) => const NewAppointmentPage(),
-              ),
-            ],
           ),
           GoRoute(
             path: cases,
