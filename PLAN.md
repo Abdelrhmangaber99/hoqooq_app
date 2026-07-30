@@ -334,3 +334,113 @@ New strings (hearing/document/task labels, status/priority labels, Dashboard's r
 ### Not in this pass, flagged not forgotten
 - A pre-existing M2 regression was found and fixed during this milestone's pre-planning re-verification (see session log) — `LegalCase.caseType`/`.primaryLawyer`/`CaseTeamMember.user` were wrongly `required`, and `CaseTeamMember.role` didn't match the real `roleOnCase` field. Fixed as its own commit before M3 feature work started, not folded into M3's own scope.
 - Full EN/AR widget-test duplication for every M3 screen remains a known gap (English-only smoke coverage), consistent with the precedent M2 already established.
+
+---
+
+# Milestone 4 — Writes (Cases/Hearings update, Clients/Tasks full CRUD-minus-delete, Document upload, Calendar custom events)
+
+**Status: DRAFT — awaiting review. No production code written yet.**
+
+## Framing
+
+Spec §15's original M3 ("Writes") assumed M2 already covered the full read-only workspace. This project's M2 covered Cases+Clients only, and M3 (just completed) filled in the rest (Hearings/Documents/Tasks/Calendar/Dashboard, read-only). M4 is now the actual "writes" milestone.
+
+Before drafting, a Write Readiness Review (source-verified against `Hoqooq-main/`, not guessed) covered: auth/refresh behavior for mutations, error/validation mapping, repository patterns for POST/PATCH/DELETE/multipart, permission gating, optimistic-vs-refetch, and file upload architecture. Two things came out of that review that shape this plan directly:
+
+1. **Clients module has no tenant scoping on `findOne`/`update`/`remove`** (confirmed cross-tenant read/write/delete by ID). **Per the user: the backend team is already aware and will fix this server-side — M4 proceeds with Client writes without waiting on it.** Documented in `API_CONTRACT.md` finding J for traceability, not treated as a client-side problem to solve.
+2. **No endpoint anywhere lists `Lookup` rows** (`caseTypeId`/`hearingTypeId` reference this entity, and nothing exposes it — confirmed by grepping every controller, see finding J). This is a genuine, structural blocker: a Create-Case or Create-Hearing form has no way to populate a valid type dropdown. **Case and Hearing creation are out of scope for M4** — not a guess-around, an actual missing capability. Update for both is unaffected (the type field is just redisplayed read-only, never re-selected).
+
+## Scope decisions (recommended — confirm before implementation)
+
+| Module | Create | Update | Delete | Notes |
+|---|---|---|---|---|
+| **Clients** | ✅ | ✅ | — (deferred) | No Lookup dependency at all — every `CreateClientDto` field is free-form or an enum (`type`). Known tenant-scoping bug, proceeding per the user's instruction. |
+| **Cases** | ❌ blocked | ✅ | — (deferred) | Create blocked on missing Lookup endpoint (`caseTypeId` required, unbrowsable). Update covers status/priority/dates/outcomeSummary/agreedFee/`defaultCourtId` (real via `GET /courts`)/`primaryLawyerId` (real via `GET /users`) — `caseTypeId` stays read-only in the edit form. |
+| **Hearings** | ❌ blocked | ✅ | — (deferred) | Same Lookup blocker (`hearingTypeId`). Update covers status (this *is* "complete hearing" — PATCH `status: COMPLETED` + `outcomeText`), `scheduledAt`, `judgeName`, `nextHearingAt`, `courtId` (real). `circuitId` stays unset — optional field, but `CourtCircuit` has no controller either. |
+| **Tasks** | ✅ | ✅ | — (deferred) | No Lookup dependency — `assignedById`/`assignedToId` are real `User` references via `GET /users`, not `Lookup` rows. |
+| **Documents** | ✅ (upload only) | — (doesn't exist) | — (deferred) | Matches backend capability exactly: `POST /documents/upload` takes `file` + optional `caseId`, nothing else. No `PATCH`, no `GET /documents/{id}` — metadata can't be edited or individually re-fetched after upload, only re-read from the list. |
+| **Calendar** | ✅ (`CUSTOM` events only) | — (not needed) | — (deferred) | `HEARING`/`TASK_DEADLINE` events aren't user-created — they're how `/timeline` aggregates real hearings/tasks server-side. The only meaningful calendar write is a custom personal event (title, description, start/end, location, all-day). |
+
+**Delete is deferred across every module, not just where a backend blocker exists** — a deliberate scope cut, not a capability gap:
+- Confirmed available: soft-delete on Cases/Clients/Documents/Calendar-events; hard-delete on Hearings/Tasks (both real, both callable) — no technical blocker either way.
+- Reason for deferring anyway: delete needs its own confirmation-UX pass per module (hard vs. soft delete carries different messaging — "this cannot be undone" is only true for Hearings/Tasks), and spec's own original M3 wording ("create/edit case, schedule hearing, complete hearing, upload document, create/update task") never mentions delete at all. Keeping M4 to create/update keeps it focused; delete becomes its own follow-up milestone.
+
+**Notification preferences (also in spec's original M3 wording) are also deferred** — no real endpoint exists for them. The generic `Settings` key-value store (`GET/POST/PATCH/DELETE /settings`) is a *different* entity than notification prefs would need, and using it for that purpose would be guessing an undocumented convention, not reading a documented one. Flagged, not built around.
+
+## Known backend issues to work around (see `API_CONTRACT.md` finding J for full detail)
+
+- Clients cross-tenant `findOne`/`update`/`remove` — known, backend team fixing, not blocking M4.
+- No `Lookup`-listing endpoint — blocks Case/Hearing *create* specifically (not update). Revisit once available.
+- `CourtCircuit` has no controller — `circuitId` stays unset in the Hearing form (optional field, not a blocker).
+- `ValidationPipe`'s `forbidNonWhitelisted: true` — request bodies must contain **exactly** each DTO's field set, nothing extra, or the whole request 400s.
+- `HttpExceptionFilter` collapses multi-field validation errors to the first one only (`message[0]`) — users fixing a form with several invalid fields will only see one error per submit attempt. Client-side pre-validation (required fields, date/UUID format) before submit reduces how often this bites.
+- DELETE response status is inconsistent across modules (only Clients has a real `@HttpCode(204)`; everything else's documented 204 is Swagger-only, real default is 200) — moot for M4 (delete is deferred) but worth remembering whenever delete is picked up later: treat any 2xx as success, don't branch on the exact code.
+- Seed data only grants permissions to the `admin` role (`lawyer`/`secretary`/`assistant`/`accountant` get none) — worth confirming a real test login can actually exercise permission-gated writes before assuming M4's screens are testable end-to-end in the current environment. Not a code-architecture concern.
+
+## Freezed request models needed
+
+Dedicated `Create*Request`/`Update*Request` models per module — never reusing a response entity's generated `toJson()` (it includes `id`/`createdAt`/nested objects that aren't on any DTO and would 400 under `forbidNonWhitelisted`). Field sets mirror each backend DTO exactly:
+
+- `CreateClientRequest { clientCode, type: ClientType, fullName, nationalId?, commercialReg?, emails?, phones?, addresses? }` (no `tenantId` field client-side at all — see decision below), `UpdateClientRequest` — all fields optional, same set.
+- `UpdateCaseRequest { primaryLawyerId?, defaultCourtId?, status?, openingDate?, closingDate?, outcomeSummary?, agreedFee?, priority? }` — deliberately **excludes** `caseTypeId`/`caseNumber`/`clientId` (immutable in this milestone's edit form; `caseNumber`/`clientId` aren't meant to change after creation regardless).
+- `UpdateHearingRequest { courtId?, scheduledAt?, judgeName?, status?, outcomeText?, nextHearingAt? }` — excludes `caseId`/`hearingTypeId`/`circuitId`.
+- `CreateTaskRequest { caseId?, assignedById, assignedToId, title, description?, priority?, status?, dueDate? }`, `UpdateTaskRequest` — same fields, all optional.
+- `CreateEventRequest { userId, title, description?, eventType: CalendarEventType (always .custom here), startsAt, endsAt?, location?, isAllDay? }`.
+- Document upload has no Freezed request model — built directly as `dio.FormData.fromMap({'file': MultipartFile.fromFile(path), if (caseId != null) 'caseId': caseId})`.
+
+**`tenantId` decision:** `CreateCaseDto`/`CreateClientDto` both require a `tenantId` field server-side (validated for presence, `CasesService` discards and overrides it with the JWT-derived value; `ClientsService` does not override it at all — see finding J). Since the Flutter request models above don't expose a `tenantId` field to callers, the repository layer sources it once from `SessionCubit`'s current user (`user.tenant.id`, already available from `GET /users/me`) and injects it only at the wire-serialization boundary — never as a field a screen/bloc has to know about or supply. Confirm this approach before implementation: it satisfies the DTO's required-field validation without making any screen responsible for tenant plumbing.
+
+## Repository additions
+
+- `IClientRepository`: `+ createClient(CreateClientRequest)`, `+ updateClient(id, UpdateClientRequest)`.
+- `ICaseRepository`: `+ updateCase(id, UpdateCaseRequest)`. No `createCase` this milestone.
+- `IHearingRepository`: `+ updateHearing(id, UpdateHearingRequest)`. No `createHearing` this milestone.
+- `ITaskRepository`: `+ createTask(CreateTaskRequest)`, `+ updateTask(id, UpdateTaskRequest)`.
+- `IDocumentRepository`: `+ uploadDocument({required File file, String? caseId})`.
+- `ICalendarRepository`: `+ createEvent(CreateEventRequest)`.
+- All reuse `mapDioError()`; 400s specifically map to the already-defined-but-currently-dead `ValidationFailure` (finally wired up) instead of the generic `ServerFailure`, so write-failure UI can distinguish "fix your input" from "something broke."
+
+## Presentation / bloc pattern for writes
+
+- **Explicit refetch is the standard**, confirmed in the Write Readiness Review: no local cache exists to reconcile against, every list screen already does whole-collection-fetch-then-filter, and the backend's error-message collapsing makes a briefly-optimistic-then-reverted UI more confusing than it's worth here. After a successful create/update, the bloc re-dispatches the same fetch event the screen already uses (e.g., `CaseDetailsBloc` re-fetches after `UpdateCaseRequested` succeeds; `ClientsBloc` re-fetches the list after a create).
+- Each write action gets its own bloc event (e.g., `UpdateCaseRequested(id, request)`) and a transient submission state (`CaseUpdateInProgress`/`CaseUpdateSuccess`/`CaseUpdateFailure`) layered onto the existing read state machine, not a replacement of it — mirrors how `AuthBloc`'s `LoginRequested` already coexists with session state in M1.
+- One exception worth allowing, per the review: Task status toggles (marking complete) may update optimistically given how low-risk/reversible that single interaction is — to confirm as an explicit exception, not the default.
+- Permission gating: hide create/edit affordances via `user.hasPerm('cases.update')` etc.; always handle a 403 gracefully regardless (BR-034) since UI gating is cosmetic only, especially given the `admin`/`client` role bypass and empty-permissions-for-other-roles findings above mean the actual authorization boundary is entirely server-side judgement, not something the UI can fully predict.
+
+## File upload architecture (Documents)
+
+- New dependencies needed (none currently in `pubspec.yaml`): `image_picker` (camera + gallery), `file_picker` (arbitrary file types), `permission_handler` (camera/photo-library runtime permissions on iOS/Android).
+- Upload only — matches backend capability exactly. **Download/preview stays explicitly out of scope**: `GET /documents/{id}/download` is a confirmed non-functional stub (`{message: 'File download simulated', url: '/uploads/...'}`, no real bytes, no S3 wiring) — not something to build a UI around pretending it works.
+- `dio`'s `onSendProgress` callback drives an upload-progress indicator — no existing convention for this in the codebase (nothing has needed progress reporting before), this introduces it as a new but expected pattern for a file-upload feature.
+- Multipart + the refresh-retry interceptor: a 401 mid-upload would currently replay the same `FormData` instance via `RefreshInterceptor`'s retry path — `dio.MultipartFile.fromFile(...)`'s underlying stream is single-use, so this needs a fix (rebuild `FormData` fresh on retry when `requestOptions.data is FormData`, or exclude multipart requests from auto-retry and surface the error for a manual re-upload instead). Flagging as an implementation detail to get right, not a scope question.
+
+## Localization
+
+New strings (Edit Case/Edit Hearing/Create-Edit Client/Create-Edit Task/Create Event form labels, validation messages, upload progress/status text) go to `assets/lang/*.json`, same boundary M1–M3 established.
+
+## Tests
+
+- Repository tests for every new write method (dio-mocked): request-body shape asserted field-for-field against the exact DTO (catches `forbidNonWhitelisted` mismatches before they'd 400 for real), plus a 400→`ValidationFailure` mapping test (new coverage, since this path has been dead code until now).
+- Bloc tests for each write event: submission state sequence (`...InProgress` → `...Success`/`...Failure`), and confirmation that success triggers the expected refetch dispatch.
+- Widget tests for the new Create/Edit forms: field validation before submit, loading state during submission, error display on failure, success navigation/refresh — at least one per screen, following the established loading/error/loaded smoke-test pattern rather than full form-permutation coverage.
+
+## Out of scope for M4 (explicitly deferred, not forgotten)
+
+- Case creation, Hearing creation — blocked on the missing `Lookup`-listing endpoint. Revisit the moment one exists.
+- Delete/archive for every module — deliberate scope cut (see above), not a backend gap. Own milestone.
+- Notification preferences — no real backend endpoint exists yet.
+- Document metadata edit, single-document re-fetch, document download/preview — none are supported server-side (see finding I/J).
+- `circuitId` on Hearings — no browsable endpoint; stays unset.
+- Fixing the Clients tenant-scoping gap — backend team's responsibility, not mobile's.
+
+## Definition of done (draft — to convert to checkboxes once implementation starts)
+
+- `Create*Request`/`Update*Request` models match each backend DTO's exact whitelisted field set (no extra keys, nothing that would trip `forbidNonWhitelisted`).
+- Repository write methods for Clients (create+update), Cases (update), Hearings (update), Tasks (create+update), Documents (upload), Calendar (create custom event) — `tenantId` sourced from `SessionCubit`, never a screen-level concern.
+- `ValidationFailure` finally wired into `mapDioError()` for 400s.
+- Explicit-refetch-after-write implemented consistently across every new write bloc.
+- Create/Edit screens for Clients, Tasks, Calendar events; Edit-only screens for Cases (type read-only) and Hearings (type read-only, status change covers "complete hearing"); Document upload flow with camera/file picker + progress.
+- Multipart + token-refresh interaction fixed (fresh `FormData` on retry, or excluded from auto-retry).
+- Repository + bloc + at least one widget test per new write path.
+- `flutter analyze` clean; `dart format` clean on every file touched.
+- `CLAUDE.md`/`PLAN.md`/`API_CONTRACT.md` updated with outcomes at milestone close.
