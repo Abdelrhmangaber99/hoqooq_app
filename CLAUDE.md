@@ -46,7 +46,7 @@ This repo already contains a working UI-only prototype (see `PROJECT_SUMMARY.md`
 | Routing | `go_router` | `go_router` ✓ (matches) |
 | HTTP | `dio` | `dio` ✓ (matches; as of M1, `dio_client.dart` uses `ApiConfig.baseUrl` + `AuthInterceptor` + `RefreshInterceptor`. `TenantInterceptor` has been removed — see M1 session log) |
 
-Existing features (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) are wired to **mock repositories** (`mock_auth_repository.dart`, `mock_case_repository.dart`, etc.) returning fake data — no real network calls yet. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. M1 adapts to this stack rather than migrating away from it.
+Originally, every feature (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) was wired to **mock repositories** returning fake data. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. As of M2, authentication/cases/clients are real; calendar/dashboard/notifications/profile remain mock-or-static.
 
 ---
 
@@ -58,6 +58,7 @@ Existing features (`lib/features/`: authentication, calendar, cases, clients, da
 | BR-005 | Firm Admin full CRUD, non-restrictable | Never hide a module from Firm Admin in UI gating. |
 | BR-010 | Subscription lifecycle → read-only mode | On `SUSPENDED`/`PAST_DUE`, disable all create/update/delete UI with a banner. **No data source for this in the current API contract — flagged above.** |
 | BR-016/BR-024/BR-028/BR-029 | No hard delete (cases, documents, financial records) | Never wire a destructive "delete" UI action straight to the collection's `DELETE` endpoints for these entities without confirming with the user first — those endpoints being present doesn't make using them correct. |
+| BR-026 | Case-fee visibility restricted to Firm Admin / `finance.read` | **Precedent set in M2:** `agreedFee` on `LegalCase` is hidden unless `SessionCubit`'s authenticated user reports `isFirmAdmin` — never shown to everyone as a fallback just because gating isn't fully wired yet (`isFirmAdmin` is still hardcoded `false`). Apply the same hide-by-default pattern to any other finance-gated field before a real permission-code check exists. |
 | BR-030 | Per-firm isolated RAG | AI chat renders only `sources[]` the backend returns; never merge/cache across tenants. |
 | BR-032 | AI is advisory | Every AI output shows "AI-generated — verify before use"; human edits always win over AI output. |
 | BR-033 | Auth | Access token short-lived, in memory only; refresh token in `flutter_secure_storage` only, never plain SharedPreferences/Hive. |
@@ -111,20 +112,35 @@ lib/
       presentation/
         bloc/            # auth_bloc, auth_event, auth_state, session_cubit, session_state (session_cubit added M1)
         pages/           # login, splash (sign_up_page.dart kept but unrouted, see PLAN.md)
-    calendar/            # still mock-backed, untouched since M1 is auth-only
-    cases/               # still mock-backed
-    clients/             # still mock-backed
-    dashboard/
-    notifications/
-    profile/
+    calendar/            # still mock-backed — not touched, out of M2 scope
+    cases/
+      data/repository/    # case_repository.dart (real, added M2) — no mock left
+      domain/entities/    # legal_case, case_status, case_priority, case_type_lookup, court, case_team_member (added M2)
+      presentation/
+        bloc/            # cases_bloc/event/state, case_details_bloc/event/state (added M2)
+        pages/           # cases_page.dart (added M2 — no list screen existed before), case_details_page.dart (rewritten M2)
+        case_display_helpers.dart  # enum → label/color mapping (added M2)
+    clients/
+      data/repository/    # client_repository.dart (real, added M2) — no mock left
+      domain/entities/    # client (rebuilt M2), client_status, client_type (added M2)
+      presentation/
+        bloc/            # clients_bloc/event/state, client_details_bloc/event/state (added M2)
+        pages/           # clients_page.dart (updated M2), client_profile_page.dart (rewritten M2)
+        client_display_helpers.dart  # (added M2)
+    dashboard/            # still static UI, no data layer — out of M2 scope
+    notifications/        # still static UI — out of M2 scope
+    profile/              # still static UI — out of M2 scope
   shared/
-    presentation/pages/main_layout.dart
+    presentation/pages/main_layout.dart  # Cases tab added M2
+    widgets/              # empty_state.dart, error_view.dart (added M2 — neither existed before)
 l10n.yaml               # gen-l10n config (added M1)
 test/
   core/network/interceptors/refresh_interceptor_test.dart
   features/authentication/{data/repository, domain/entities, presentation/{bloc,pages}}/*_test.dart
+  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart
+  features/clients/{data/repository, presentation/bloc}/*_test.dart
 ```
-Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. Auth is now fully real; calendar/cases/clients remain mock-backed until their own milestone.
+Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. Auth, Cases, and Clients are now fully real; calendar/dashboard/notifications/profile remain mock-or-static until their own milestone.
 
 ## Coding conventions
 
@@ -147,3 +163,5 @@ Each feature: `data/repository` → `domain/{entities,repository,usecases}` → 
 - **2026-07-30 (backend re-sync, before M2 implementation)** — User replaced `hoqooq-postman-import.json` with a new export and asked for a full re-scan before any M2 code: re-read the updated collection end-to-end, diffed every one of the 87 endpoints (was 97) against the previous version, rewrote `API_CONTRACT.md` with a "Breaking changes" section at the top. No backend source code or Swagger/OpenAPI file exists anywhere on disk in this environment (checked `~/development` to depth 2) — re-sync was Postman-collection-only, as that's the only artifact available. Key findings: global `/api` path prefix added everywhere; `Cases` and `Clients` shapes completely rebuilt to match the BRD's actual data dictionary (agreed_fee/priority/opening-closing dates/primary_lawyer_id/case_type_id for cases; client_code/national_id/commercial_reg/multi-value contact arrays for clients) — meaning the M2 `PLAN.md` draft from the previous entry is void, not just stale; `User`/`Role`/`Permission` shapes also changed (fullName replaces firstName+lastName, status replaces isActive, roles now `{id,code,scope}` not `{id,name,displayNameEn,displayNameAr}`) — this broke M1's shipped `User.fromJson`; employees/reviews/consultations modules removed entirely (resolves the reviews/consultations BR flag, but employees now has zero backing, a regression). Auth endpoints themselves confirmed byte-for-byte unchanged aside from the prefix. No code changed this pass — presented the breaking-changes list and asked the user how to proceed.
 
 - **2026-07-30 (M1 patch + M2 redraft)** — User confirmed: patch M1's `User`/`Role`/`Permission` now as a standalone fix, and redraft the M2 plan. Patched: `ApiConfig.baseUrl` now appends `/api` (picked up automatically by both the main `Dio` and `RefreshInterceptor`'s internal raw `Dio`, since both read the same constant); `User`/`Role`/`Permission` rebuilt to the new shape (`fullName`/`status`/`isSuperAdmin`/`mfaEnabled` on `User`; `{id,code,scope}` on `Role`; `{id,code}` on `Permission`); `hasPerm()` signature changed from `(resource, action)` to a single `permissionCode` string. Updated the three M1 test files that built `User`/`Role`/`Permission` fixtures against the old shape — no test logic changed, only fixtures. 31 tests still green, analyzer clean. Redrafted `PLAN.md`'s M2 section (superseded draft kept above for history, not deleted) against the current `Case`/`Client` shapes: `agreedFee`/`priority`/`primaryLawyer`(`User`)/`caseType`/`defaultCourt`/`team[]` for Case, `clientCode`/`nationalId`/`commercialReg`/`emails[]`/`phones[]`/`addresses[]` for Client. Flagged that the new backend actually has **less** for Case Detail to show than the old mock assumed (notes/note-endpoint removed, no team-assignment endpoint), and a new BR-026 question (whether to show `agreedFee` to everyone given `isFirmAdmin` still can't be detected) that didn't exist in the superseded draft. Still just a plan — awaiting approval before M2 code.
+
+- **2026-07-30 (M2 execution)** — User approved the redraft with one explicit instruction on decision #2: `agreedFee` hidden unless the user is positively identified as Firm Admin, never shown to everyone as a fallback (BR-026). Implemented M2 in full per `PLAN.md`'s checklist — see that file for the itemized breakdown. Highlights not obvious from a diff: discovered mid-implementation that no Cases list screen existed at all (`CasesBloc` was dead code referenced by nothing) — built `CasesPage` from scratch and added a Cases bottom-nav tab, since list+detail isn't reachable without one; extracted `mapDioError()` into a shared helper once a third repository needed the identical logic; `ClientDetailsBloc` fetches the full case list and filters by `clientId` client-side (no server-side filter/sub-resource exists), and degrades to an empty case list rather than failing the whole screen if that secondary fetch fails. Widget-test coverage is real but intentionally not exhaustive — one focused widget-test file for `CaseDetailsPage` locks in the `agreedFee` gating specifically (the security-sensitive behavior from this session's explicit instruction), not full EN/AR coverage for every M2 screen; flagged as a known gap, not silently called complete. 55 tests total (was 31), all green; `flutter analyze` clean; `dart format` clean on every file touched — reverted a `dart format lib/` run partway through this session after it swept in ~15 unrelated pre-existing files outside M2's scope (same discipline as M1: format only what you actually touched). 6 commits this milestone. M3 not started.

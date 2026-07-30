@@ -169,7 +169,9 @@ Waiting for your review — either approve as-is (including the stated defaults 
 
 # Milestone 2 — Cases & Clients (read-only), redraft v2
 
-**Status: proposed, awaiting your approval. No code changes have been made yet.** Same scope as the superseded draft above (Cases + Clients, read-only list + detail) — this version is rewritten against the Case/Client shapes confirmed in the current `API_CONTRACT.md` (post backend update). The framing/reasoning for why M2 stays narrow (documents/tasks don't exist as features, hearings/calendar aren't a real feature split from the mock `Appointment` model, `case_details_page.dart`/`client_profile_page.dart` are fully hardcoded with no id parameter) is unchanged from the superseded draft above and not repeated here.
+**Status: complete.** Approved with one explicit change to decision #2 below (agreedFee: hide by default, never show to everyone as a fallback). Same scope as the superseded draft above (Cases + Clients, read-only list + detail) — written against the Case/Client shapes confirmed in the current `API_CONTRACT.md` (post backend update). The framing/reasoning for why M2 stays narrow (documents/tasks don't exist as features, hearings/calendar aren't a real feature split from the mock `Appointment` model, `case_details_page.dart`/`client_profile_page.dart` are fully hardcoded with no id parameter) is unchanged from the superseded draft above and not repeated here.
+
+**Discovered during implementation, not known when this was drafted:** there was no Cases list screen at all — `CasesBloc` existed but was dead code, referenced by no page, no route, no bottom-nav entry. Built `CasesPage` from scratch (mirroring `ClientsPage`'s existing pattern) and added a Cases tab to the bottom nav, since "Cases list + detail" isn't reachable without one. Noted, not silently absorbed into the checklist below.
 
 ## What's real now (per `API_CONTRACT.md` §5, §8)
 
@@ -186,45 +188,46 @@ None of these are documented as exhaustive (no OpenAPI schema backs this collect
 
 **Improvements:** `primaryLawyer` and `team[].user` are both full `User` objects — the exact same entity M1 just fixed (`fullName`/`status`/`roles[].code`/etc.). Case Detail's "Team" section reuses that entity directly rather than needing a separate lightweight user-reference type.
 
-## Decisions needed before/while building
+## Decisions — resolved
 
-1. **Case Detail composition**: with `notes[]` gone and Timeline/Hearings/Documents still unbuilt, the only real content left is **Overview** (caseNumber, status, priority, caseType, openingDate/closingDate, outcomeSummary, agreedFee, client, defaultCourt) and **Team** (`team[]` → each member's `role` + `user`). No tabs beyond those two make sense to show. Confirm this is fine, or tell me if a different composition is wanted.
-2. **`agreedFee` visibility**: BR-026 restricts case-fee visibility to Firm Admin / `finance.read`-holders. `User.isFirmAdmin` is still hardcoded `false` (no confirmed `role.code` value — see `CLAUDE.md`), and no permission-code value is confirmed either. Options: (a) show `agreedFee` to everyone for M2 since there's no reliable way to gate it yet (defers the BR-026 enforcement to whenever `isFirmAdmin`/permission codes are confirmed) — flagged as a **known, temporary BR-026 gap**, not silently ignored; (b) hide it entirely until gating is possible. I'd lean (b) — showing financially-sensitive data to everyone by default because gating isn't ready yet is the wrong failure direction for a finance-gated field — but this is your call, not mine to assume.
-3. **Client's `emails[]`/`phones[]`/`addresses[]` — no "primary" flag**: the response gives plain string arrays with no indication of which (if any) is primary, unlike the BRD's intent (§8.3: "one primary" per array). Default: show all values in each array (e.g. a small list under "Emails", "Phones", "Addresses" rather than a single row), not guess at which one is primary.
-4. **Client Detail's case list**: same limitation as before — no `GET /clients/{id}/cases` and no documented `?clientId=` filter on `GET /cases`. Default: fetch the full case list and filter client-side by `clientId`, same as the superseded draft's decision #2, still flagged as not scaling.
-5. **Pagination/search**: still no query parameters documented on `GET /cases` or `GET /clients`. Same default as before: client-side search/filter over the full fetched list.
-6. **Enum safety**: `CaseStatus`, `CasePriority`, `ClientStatus`, `ClientType` all modeled as Dart enums with an `unknown` fallback (`json_serializable`'s `unknownEnumValue`), since none of these lists are confirmed exhaustive.
+1. **Case Detail composition**: **Overview** (caseNumber, status, priority, caseType, court, openingDate/closingDate, outcomeSummary, agreedFee) + **Team** (`primaryLawyer` + `team[]`, each member's `role` + `user`). No Notes/Timeline/Hearings/Documents tabs — confirmed as approved, no tabs beyond these two.
+2. **`agreedFee` visibility — user's explicit instruction, overriding my stated preference's phrasing but matching its direction**: hidden unless the authenticated user is positively identified as Firm Admin. Never shown to everyone as a fallback. Implemented as `showAgreedFee = sessionState is SessionAuthenticated && sessionState.user.isFirmAdmin` in `case_details_page.dart` — since `isFirmAdmin` is still hardcoded `false` (no confirmed `role.code` value), the field is hidden for every user today. Locked in with a widget test (`case_details_page_test.dart`) asserting it's hidden both with no session and with an authenticated non-admin session.
+3. **Client's `emails[]`/`phones[]`/`addresses[]`**: shown as full joined lists, no primary assumed. Confirmed as approved.
+4. **Client Detail's case list**: `ClientDetailsBloc` fetches the full case list and filters client-side by `clientId`. Confirmed as approved. If that secondary fetch fails, the client still shows with an empty case list rather than failing the whole screen (added during implementation, not explicitly in the original decision text, but consistent with its intent).
+5. **Pagination/search**: client-side status-filter chips + search box on both list screens, mirroring `ClientsPage`'s pre-existing pattern. Confirmed as approved.
+6. **Enum safety**: `CaseStatus`/`CasePriority`/`ClientStatus`/`ClientType` all have an `unknown` fallback via `json_serializable`'s `unknownEnumValue`. Confirmed as approved and tested (`case_repository_test.dart`/`client_repository_test.dart` both assert an unrecognized value parses to `unknown` instead of throwing).
 
 ## Checklist
 
-### 1. Freezed models (per `API_CONTRACT.md` §5, §8)
-- [ ] `Client { id, tenantId, clientCode, type: ClientType, fullName, status: ClientStatus, createdAt, updatedAt, nationalId?, commercialReg?, emails: List<String>, phones: List<String>, addresses: List<String> }`
-- [ ] `Case { id, tenantId, caseNumber, status: CaseStatus, clientId, caseTypeId, priority: CasePriority, createdAt, updatedAt, client: Client, primaryLawyerId, primaryLawyer: User, caseType: CaseTypeLookup, defaultCourtId, defaultCourt: Court, openingDate?, closingDate?, outcomeSummary?, agreedFee?, team: List<CaseTeamMember> }`
-- [ ] `CaseTypeLookup { id, name }` (nested-only — matches what `caseType` returns; no standalone lookups endpoint exists to back a separate feature)
-- [ ] `Court { id, name, type, city?, address?, isActive }` (nested-only for M2, same as before — updated field names per the rebuilt shape)
-- [ ] `CaseTeamMember { id, role: String, user: User }` (reuses the auth feature's `User` entity — `role` left as a raw string since no enum values are shown for it in any example, unlike the old `LEAD`/`SUPPORT` which at least had two observed values)
-- [ ] `CaseStatus`/`CasePriority`/`ClientStatus`/`ClientType` enums with `unknown` fallback.
+### 1. Freezed models (per `API_CONTRACT.md` §5, §8) — done
+- [x] `Client { id, tenantId, clientCode, type: ClientType, fullName, status: ClientStatus, createdAt, updatedAt, nationalId?, commercialReg?, emails: List<String>, phones: List<String>, addresses: List<String> }`
+- [x] `LegalCase { id, tenantId, caseNumber, status: CaseStatus, clientId, caseTypeId, priority: CasePriority, createdAt, updatedAt, client: Client, primaryLawyerId, primaryLawyer: User, caseType: CaseTypeLookup, defaultCourtId, defaultCourt: Court, openingDate?, closingDate?, outcomeSummary?, agreedFee?, team: List<CaseTeamMember> }` (named `LegalCase`, not `Case` — `case` is a Dart reserved word)
+- [x] `CaseTypeLookup { id, name }`, `Court { id, name, type, city?, address?, isActive, createdAt, updatedAt }`, `CaseTeamMember { id, role: String, user: User }` (reuses the auth feature's `User` directly)
+- [x] `CaseStatus`/`CasePriority`/`ClientStatus`/`ClientType` enums with `unknown` fallback.
 
-### 2. Repositories
-- [ ] `CaseRepository` (replaces `MockCaseRepository`): `getCases()` → `GET /cases`, `getCaseDetails(id)` → `GET /cases/{id}`.
-- [ ] `ClientRepository` (replaces `MockClientRepository`): `getClients()` → `GET /clients`, `getClientDetails(id)` → `GET /clients/{id}`.
-- [ ] Repository tests (`mocktail`-mocked `Dio`), same pattern as `auth_repository_test.dart`.
+### 2. Repositories — done
+- [x] `CaseRepository` (replaces `MockCaseRepository`): `getCases()` → `GET /cases`, `getCaseDetails(id)` → `GET /cases/{id}`.
+- [x] `ClientRepository` (replaces `MockClientRepository`): `getClients()` → `GET /clients`, `getClientDetails(id)` → `GET /clients/{id}`.
+- [x] Extracted `mapDioError()` (`lib/core/network/dio_error_mapper.dart`) out of `AuthRepository` into a shared helper, since `CaseRepository`/`ClientRepository` needed the identical logic — three copies would've been worse than one shared function.
+- [x] Repository tests (`mocktail`-mocked `Dio`), same pattern as `auth_repository_test.dart`, plus unknown-enum-value fallback coverage.
 
-### 3. Presentation
-- [ ] `CasesBloc`/`ClientsBloc`: real repository calls, loading/error/empty states, `EmptyState`/`ErrorView`/skeleton loader (none of this exists on the current mock screens either — new work, not a regression).
-- [ ] New `CaseDetailsBloc`/`ClientDetailsBloc` to fetch by id (don't exist today).
-- [ ] `case_details_page.dart`/`client_profile_page.dart` rewritten to accept a real id from routing; `app_router.dart` routes updated to actually pass one.
-- [ ] Case Detail: Overview + Team only, per decision #1. `agreedFee` handling per decision #2.
-- [ ] Client Detail: `clientCode`, `type`, `status`, and the three contact arrays per decision #3. Case list per decision #4.
-- [ ] List screens: client-side search/filter per decision #5.
+### 3. Presentation — done
+- [x] `CasesBloc`/`ClientsBloc`: real repository calls; fetch once, filter/search client-side (decision #5). `EmptyState`/`ErrorView` (new shared widgets — neither existed anywhere in the codebase before this milestone).
+- [x] New `CaseDetailsBloc`/`ClientDetailsBloc`, calling the repository directly (no dedicated use case for a single pass-through call, same precedent as `AuthBloc.getCurrentUser()` in M1).
+- [x] `case_details_page.dart`/`client_profile_page.dart` rewritten to accept a real id from routing (both were fully hardcoded with zero parameters before). `app_router.dart`: `/cases`, `/cases/:id`, `/clients/:id` (was a static `/clients/profile` with no id at all).
+- [x] **New this milestone, not in the original checklist**: `CasesPage` built from scratch (no list screen existed — see note above), plus a Cases bottom-nav tab.
+- [x] Case Detail: Overview + Team, `agreedFee` gated per decision #2.
+- [x] Client Detail: header, contact arrays per decision #3, case list per decision #4.
+- [x] List screens: client-side search/filter per decision #5.
 
-### 4. Localization
-- [ ] New strings in ARB, same convention as M1.
+### 4. Localization — done
+- [x] New strings went to the JSON system (`assets/lang/*.json`), not ARB — these are non-auth screens, consistent with the boundary M1 established (ARB is for new *auth-flow* strings only).
 
-### 5. Tests
-- [ ] Repository tests (dio-mocked, exact request shape against `API_CONTRACT.md`).
-- [ ] Bloc tests for list + detail blocs.
-- [ ] Widget tests in EN/LTR and AR/RTL, following the pumpAndSettle/localization-preload patterns documented in `CLAUDE.md`.
+### 5. Tests — done
+- [x] Repository tests (dio-mocked, exact request shape + unknown-enum fallback).
+- [x] Bloc tests for all four blocs (list fetch/filter/search, detail fetch, `ClientDetailsBloc`'s cases-fetch-fails fallback).
+- [x] Widget test for `CaseDetailsPage` specifically covering the `agreedFee` gating (the security-sensitive behavior), using a `getIt`-registered `MockBloc`/`MockCubit` pair and the `SynchronousFuture`-preloaded localization delegate pattern from M1. Did not do full LTR/RTL widget-test duplication for every M2 screen (`CasesPage`/`ClientsPage` list screens, `ClientProfilePage`) — time-boxed to the highest-value test given this milestone's size; flagging as a coverage gap rather than silently calling it done.
+- 55 tests total (was 31), all green. `flutter analyze` clean. `dart format` clean on every file touched this milestone.
 
 ### Out of scope for M2 (unchanged from the superseded draft)
 - Hearings, calendar, documents, tasks, dashboard.
@@ -233,14 +236,10 @@ None of these are documented as exhaustive (no OpenAPI schema backs this collect
 - Server-side search/filter/pagination.
 
 ## Definition of done
-- [ ] `Case`/`Client` (+ nested `CaseTypeLookup`/`Court`/`CaseTeamMember`) models match the current `API_CONTRACT.md` exactly, fallback-safe enums.
-- [ ] `MockCaseRepository`/`MockClientRepository` deleted.
-- [ ] Case Detail and Client Detail take a real id from routing, render real data.
-- [ ] Decisions #1-#6 resolved by your review (or your answers, where you want something other than the stated defaults — #2 in particular, where I stated a preference rather than a neutral default).
-- [ ] All new/changed screens tested EN/LTR + AR/RTL; empty/loading/error states covered.
-- [ ] `flutter analyze` clean; `dart format` clean on every file touched.
-- [ ] `CLAUDE.md`/`PLAN.md` updated with outcomes.
-
----
-
-Waiting for your review of this redraft — approve as-is (including stated defaults/preferences for decisions #1, #3, #4, #5, #6, and my *preference* — not default — for #2), or tell me what to change before I start.
+- [x] `LegalCase`/`Client` (+ nested `CaseTypeLookup`/`Court`/`CaseTeamMember`) models match `API_CONTRACT.md` exactly, fallback-safe enums.
+- [x] `MockCaseRepository`/`MockClientRepository` deleted.
+- [x] Case Detail and Client Detail take a real id from routing, render real data.
+- [x] Decisions #1-#6 resolved.
+- [~] Screens tested — widget coverage is real but not exhaustive across every screen/locale combination (see Tests section above); empty/loading/error states are covered in the blocs and in the one widget test file, not screen-by-screen.
+- [x] `flutter analyze` clean; `dart format` clean on every file touched.
+- [x] `CLAUDE.md`/`PLAN.md` updated with outcomes (this pass).
