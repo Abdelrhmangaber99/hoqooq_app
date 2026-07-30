@@ -3,12 +3,16 @@ import 'package:injectable/injectable.dart';
 import 'package:logger/logger.dart';
 import 'api_config.dart';
 import 'interceptors/auth_interceptor.dart';
+import 'interceptors/envelope_interceptor.dart';
 import 'interceptors/refresh_interceptor.dart';
 
 @module
 abstract class NetworkModule {
   @lazySingleton
-  Dio dio(AuthInterceptor authInterceptor, RefreshInterceptor refreshInterceptor) {
+  Dio dio(
+    AuthInterceptor authInterceptor,
+    RefreshInterceptor refreshInterceptor,
+  ) {
     final dio = Dio(
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,
@@ -23,11 +27,14 @@ abstract class NetworkModule {
 
     dio.interceptors.add(authInterceptor);
     dio.interceptors.add(refreshInterceptor);
-    dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (object) => Logger().d(object),
-    ));
+    dio.interceptors.add(EnvelopeInterceptor());
+    dio.interceptors.add(
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        logPrint: (object) => Logger().d(object),
+      ),
+    );
 
     return dio;
   }

@@ -5,22 +5,29 @@ import '../../../features/authentication/data/models/auth_response.dart';
 import '../../../features/authentication/presentation/bloc/session_cubit.dart';
 import '../../storage/token_storage.dart';
 import '../api_config.dart';
+import 'envelope_interceptor.dart';
 
 /// Handles BR-033 refresh-token rotation. On a 401: calls `POST
-/// /auth/refresh` once (via a plain, interceptor-free Dio so this can't
-/// recurse into itself), rotates the stored refresh token, and retries the
+/// /auth/refresh` once (via a plain Dio so this can't recurse into
+/// itself — it only carries `EnvelopeInterceptor`, not the auth/refresh
+/// interceptors), rotates the stored refresh token, and retries the
 /// original request with the new access token. On refresh failure, clears
 /// the session so route guards redirect to login on the next navigation.
 @injectable
 class RefreshInterceptor extends Interceptor {
   RefreshInterceptor(this._tokenStorage, this._sessionCubit)
-    : _rawDio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
+    : _rawDio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl))
+        ..interceptors.add(EnvelopeInterceptor());
 
   /// Test-only seam: lets tests substitute a mock Dio for the internal raw
   /// client instead of hitting real network. Not used by injectable (it
   /// always resolves the unnamed constructor above).
   @visibleForTesting
-  RefreshInterceptor.withDio(this._tokenStorage, this._sessionCubit, this._rawDio);
+  RefreshInterceptor.withDio(
+    this._tokenStorage,
+    this._sessionCubit,
+    this._rawDio,
+  );
 
   final TokenStorage _tokenStorage;
   final SessionCubit _sessionCubit;
@@ -74,9 +81,7 @@ class RefreshInterceptor extends Interceptor {
         '/auth/refresh',
         data: {'refreshToken': refreshToken},
       );
-      final auth = AuthResponse.fromJson(
-        response.data as Map<String, dynamic>,
-      );
+      final auth = AuthResponse.fromJson(response.data as Map<String, dynamic>);
       await _tokenStorage.saveRefreshToken(auth.refreshToken);
       _sessionCubit.updateAccessToken(auth.accessToken);
       return auth.accessToken;
