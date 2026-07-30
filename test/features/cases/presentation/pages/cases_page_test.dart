@@ -179,4 +179,25 @@ void main() {
     expect(find.text('CASE-2026-00001'), findsOneWidget);
     expect(find.text('Carlos Hernandez'), findsOneWidget);
   });
+
+  testWidgets(
+    'typing in the search bar does not throw ProviderNotFoundException '
+    '(regression -- the search bar previously used a context positioned '
+    'above CasesBloc\'s own BlocProvider, not below it)',
+    (tester) async {
+      whenListen(
+        bloc,
+        const Stream<CasesState>.empty(),
+        initialState: CasesLoaded([legalCase]),
+      );
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'hernandez');
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

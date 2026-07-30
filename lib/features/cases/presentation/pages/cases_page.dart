@@ -22,50 +22,58 @@ class CasesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => getIt<CasesBloc>()..add(FetchCasesRequested()),
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: AppSpacing.m),
-                Text(context.tr('cases'), style: AppTypography.h1),
-                const SizedBox(height: AppSpacing.l),
-                _buildSearchBar(context),
-                const SizedBox(height: AppSpacing.m),
-                _buildStatusFilters(context),
-                const SizedBox(height: AppSpacing.m),
-                Expanded(
-                  child: BlocBuilder<CasesBloc, CasesState>(
-                    builder: (context, state) {
-                      if (state is CasesLoading || state is CasesInitial) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                        );
-                      } else if (state is CasesError) {
-                        return ErrorView(
-                          message: state.message,
-                          onRetry: () => context.read<CasesBloc>().add(
-                            FetchCasesRequested(),
-                          ),
-                        );
-                      } else if (state is CasesLoaded) {
-                        if (state.cases.isEmpty) {
-                          return EmptyState(
-                            message: context.tr('no_cases_found'),
+      // `Builder` gives everything below a context that's a genuine
+      // descendant of this `BlocProvider` — without it, `_buildSearchBar`'s
+      // `context.read<CasesBloc>()` uses this method's own `context`
+      // (an ancestor of `BlocProvider`, not a descendant), which throws
+      // `ProviderNotFoundException` the moment a user types anything.
+      // Confirmed via a widget test simulating `enterText` before this fix.
+      child: Builder(
+        builder: (context) => Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.m),
+                  Text(context.tr('cases'), style: AppTypography.h1),
+                  const SizedBox(height: AppSpacing.l),
+                  _buildSearchBar(context),
+                  const SizedBox(height: AppSpacing.m),
+                  _buildStatusFilters(context),
+                  const SizedBox(height: AppSpacing.m),
+                  Expanded(
+                    child: BlocBuilder<CasesBloc, CasesState>(
+                      builder: (context, state) {
+                        if (state is CasesLoading || state is CasesInitial) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
                           );
+                        } else if (state is CasesError) {
+                          return ErrorView(
+                            message: state.message,
+                            onRetry: () => context.read<CasesBloc>().add(
+                              FetchCasesRequested(),
+                            ),
+                          );
+                        } else if (state is CasesLoaded) {
+                          if (state.cases.isEmpty) {
+                            return EmptyState(
+                              message: context.tr('no_cases_found'),
+                            );
+                          }
+                          return _buildCasesList(context, state.cases);
                         }
-                        return _buildCasesList(context, state.cases);
-                      }
-                      return const SizedBox();
-                    },
+                        return const SizedBox();
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
