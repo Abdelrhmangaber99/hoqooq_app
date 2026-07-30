@@ -143,5 +143,6 @@
   "court": "Court",
   "emails": "Emails",
   "phones": "Phones",
-  "addresses": "Addresses"
+  "addresses": "Addresses",
+  "suspended": "Suspended"
 }

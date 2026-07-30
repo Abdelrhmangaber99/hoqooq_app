@@ -70,6 +70,8 @@ Map<String, dynamic> _$LegalCaseToJson(_LegalCase instance) =>
 const _$CaseStatusEnumMap = {
   CaseStatus.draft: 'DRAFT',
   CaseStatus.active: 'ACTIVE',
+  CaseStatus.suspended: 'SUSPENDED',
+  CaseStatus.closed: 'CLOSED',
   CaseStatus.archived: 'ARCHIVED',
   CaseStatus.unknown: 'unknown',
 };

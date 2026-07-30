@@ -106,6 +106,8 @@ class CasesPage extends StatelessWidget {
           null,
           CaseStatus.draft,
           CaseStatus.active,
+          CaseStatus.suspended,
+          CaseStatus.closed,
           CaseStatus.archived,
         ];
         return SingleChildScrollView(

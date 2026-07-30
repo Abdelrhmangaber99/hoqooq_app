@@ -10,6 +10,10 @@ String caseStatusLabel(BuildContext context, CaseStatus status) {
       return context.tr('draft');
     case CaseStatus.active:
       return context.tr('active');
+    case CaseStatus.suspended:
+      return context.tr('suspended');
+    case CaseStatus.closed:
+      return context.tr('closed');
     case CaseStatus.archived:
       return context.tr('archived');
     case CaseStatus.unknown:
@@ -23,6 +27,10 @@ Color caseStatusColor(CaseStatus status) {
       return AppColors.textHint;
     case CaseStatus.active:
       return AppColors.success;
+    case CaseStatus.suspended:
+      return AppColors.warning;
+    case CaseStatus.closed:
+      return AppColors.textSecondary;
     case CaseStatus.archived:
       return AppColors.warning;
     case CaseStatus.unknown:
