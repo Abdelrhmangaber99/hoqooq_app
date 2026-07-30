@@ -15,6 +15,8 @@ import 'package:hqooq/features/cases/domain/entities/case_type_lookup.dart';
 import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
 import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart';
+import 'package:hqooq/features/cases/presentation/bloc/case_documents_bloc.dart';
+import 'package:hqooq/features/cases/presentation/bloc/case_hearings_bloc.dart';
 import 'package:hqooq/features/cases/presentation/pages/case_details_page.dart';
 import 'package:hqooq/features/clients/domain/entities/client.dart';
 import 'package:hqooq/features/clients/domain/entities/client_status.dart';
@@ -23,6 +25,14 @@ import 'package:mocktail/mocktail.dart';
 
 class MockCaseDetailsBloc extends MockBloc<CaseDetailsEvent, CaseDetailsState>
     implements CaseDetailsBloc {}
+
+class MockCaseHearingsBloc
+    extends MockBloc<CaseHearingsEvent, CaseHearingsState>
+    implements CaseHearingsBloc {}
+
+class MockCaseDocumentsBloc
+    extends MockBloc<CaseDocumentsEvent, CaseDocumentsState>
+    implements CaseDocumentsBloc {}
 
 class MockSessionCubit extends MockCubit<SessionState>
     implements SessionCubit {}
@@ -48,6 +58,8 @@ class _PreloadedAppLocalizationsDelegate
 void main() {
   late AppLocalizations preloadedEn;
   late MockCaseDetailsBloc bloc;
+  late MockCaseHearingsBloc hearingsBloc;
+  late MockCaseDocumentsBloc documentsBloc;
   late MockSessionCubit sessionCubit;
 
   final legalCase = LegalCase(
@@ -105,21 +117,35 @@ void main() {
     await preloadedEn.load();
   });
 
-  setUp(() {
-    getIt.reset();
+  setUp(() async {
+    await getIt.reset();
     bloc = MockCaseDetailsBloc();
+    hearingsBloc = MockCaseHearingsBloc();
+    documentsBloc = MockCaseDocumentsBloc();
     sessionCubit = MockSessionCubit();
     getIt.registerFactory<CaseDetailsBloc>(() => bloc);
+    getIt.registerFactory<CaseHearingsBloc>(() => hearingsBloc);
+    getIt.registerFactory<CaseDocumentsBloc>(() => documentsBloc);
     getIt.registerSingleton<SessionCubit>(sessionCubit);
     whenListen(
       bloc,
       const Stream<CaseDetailsState>.empty(),
       initialState: CaseDetailsLoaded(legalCase),
     );
+    whenListen(
+      hearingsBloc,
+      const Stream<CaseHearingsState>.empty(),
+      initialState: const CaseHearingsLoaded([]),
+    );
+    whenListen(
+      documentsBloc,
+      const Stream<CaseDocumentsState>.empty(),
+      initialState: const CaseDocumentsLoaded([]),
+    );
   });
 
-  tearDown(() {
-    getIt.reset();
+  tearDown(() async {
+    await getIt.reset();
   });
 
   Widget buildTestable() {
