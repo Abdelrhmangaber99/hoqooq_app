@@ -245,7 +245,10 @@ class ClientProfilePage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(legalCase.caseType.name, style: AppTypography.labelLarge),
+                Text(
+                  legalCase.caseType?.name ?? context.tr('unknown'),
+                  style: AppTypography.labelLarge,
+                ),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 6,

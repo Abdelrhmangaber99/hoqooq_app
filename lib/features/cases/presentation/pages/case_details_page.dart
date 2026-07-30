@@ -116,7 +116,10 @@ class CaseDetailsPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.m),
-          Text(legalCase.caseType.name, style: AppTypography.h2),
+          Text(
+            legalCase.caseType?.name ?? context.tr('unknown'),
+            style: AppTypography.h2,
+          ),
           const SizedBox(height: 4),
           Text(legalCase.client.fullName, style: AppTypography.bodySmall),
         ],
@@ -142,7 +145,8 @@ class CaseDetailsPage extends StatelessWidget {
             context.tr('priority'),
             casePriorityLabel(context, legalCase.priority),
           ),
-          _buildInfoRow(context.tr('court'), legalCase.defaultCourt.name),
+          if (legalCase.defaultCourt != null)
+            _buildInfoRow(context.tr('court'), legalCase.defaultCourt!.name),
           if (legalCase.openingDate != null)
             _buildInfoRow(
               context.tr('opening_date'),
@@ -191,8 +195,16 @@ class CaseDetailsPage extends StatelessWidget {
 
   Widget _buildTeam(BuildContext context, LegalCase legalCase) {
     final members = [
-      _TeamEntry(legalCase.primaryLawyer, context.tr('primary_lawyer')),
-      ...legalCase.team.map((m) => _TeamEntry(m.user, m.role)),
+      if (legalCase.primaryLawyerId != null)
+        _TeamEntry(
+          user: legalCase.primaryLawyer,
+          userId: legalCase.primaryLawyerId!,
+          roleLabel: context.tr('primary_lawyer'),
+        ),
+      ...legalCase.team.map(
+        (m) =>
+            _TeamEntry(user: m.user, userId: m.userId, roleLabel: m.roleOnCase),
+      ),
     ];
     return Column(
       children: members
@@ -208,7 +220,7 @@ class CaseDetailsPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      entry.user.fullName,
+                      entry.user?.fullName ?? entry.userId,
                       style: AppTypography.labelLarge,
                     ),
                   ),
@@ -223,7 +235,12 @@ class CaseDetailsPage extends StatelessWidget {
 }
 
 class _TeamEntry {
-  final User user;
+  final User? user;
+  final String userId;
   final String roleLabel;
-  _TeamEntry(this.user, this.roleLabel);
+  _TeamEntry({
+    required this.user,
+    required this.userId,
+    required this.roleLabel,
+  });
 }

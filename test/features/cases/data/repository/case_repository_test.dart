@@ -25,7 +25,17 @@ void main() {
     );
   }
 
-  // Full shape per API_CONTRACT.md §8 (post 2026-07-30 backend rebuild).
+  // Full shape actually returned by the real backend (verified from source,
+  // pre-M3): CasesController never applies plainToInstance/
+  // ClassSerializerInterceptor, so the wire shape is governed by
+  // CasesService's TypeORM `relations: ['client', 'defaultCourt', 'team',
+  // 'opponents', 'timelineEvents']` array, not by the (also never-enforced)
+  // CaseResponseDto. `caseType` and `primaryLawyer` are NOT in that list and
+  // are never returned by a real server, despite `caseTypeId`/
+  // `primaryLawyerId` always being present. `team[]` entries carry `userId`
+  // and `roleOnCase` (not `role` — the backend's own DTO documents the
+  // wrong field name) but never a nested `user` (only `'team'` is
+  // requested, not `'team.user'`).
   Map<String, dynamic> caseJson({
     String id = 'c1',
     String status = 'ACTIVE',
@@ -55,19 +65,6 @@ void main() {
         'addresses': ['88 Canal St'],
       },
       'primaryLawyerId': 'u1',
-      'primaryLawyer': {
-        'id': 'u1',
-        'email': 'lawyer@firm.com',
-        'fullName': 'Jane Doe',
-        'isSuperAdmin': false,
-        'status': 'ACTIVE',
-        'mfaEnabled': false,
-        'createdAt': '2026-01-01T00:00:00.000Z',
-        'updatedAt': '2026-01-01T00:00:00.000Z',
-        'roles': <Map<String, dynamic>>[],
-        'tenant': {'id': 't1', 'name': 'Reynolds & Associates'},
-      },
-      'caseType': {'id': 'ct1', 'name': 'Criminal Defense'},
       'defaultCourtId': 'co1',
       'defaultCourt': {
         'id': 'co1',
@@ -81,7 +78,9 @@ void main() {
       'closingDate': null,
       'outcomeSummary': null,
       'agreedFee': 5000.0,
-      'team': <Map<String, dynamic>>[],
+      'team': [
+        {'id': 'ct-1', 'userId': 'u2', 'roleOnCase': 'LAWYER'},
+      ],
     };
   }
 
@@ -100,8 +99,18 @@ void main() {
         expect(cases.first.status, CaseStatus.active);
         expect(cases.first.priority, CasePriority.high);
         expect(cases.first.client.fullName, 'Carlos Hernandez');
-        expect(cases.first.primaryLawyer.fullName, 'Jane Doe');
         expect(cases.first.agreedFee, 5000.0);
+        // caseType/primaryLawyer are never returned by the real backend
+        // (not in CasesService's TypeORM `relations` array) — must parse to
+        // null, not throw.
+        expect(cases.first.caseType, isNull);
+        expect(cases.first.primaryLawyer, isNull);
+        expect(cases.first.primaryLawyerId, 'u1');
+        // team[] carries userId/roleOnCase but never a nested user object.
+        expect(cases.first.team, hasLength(1));
+        expect(cases.first.team.first.userId, 'u2');
+        expect(cases.first.team.first.roleOnCase, 'LAWYER');
+        expect(cases.first.team.first.user, isNull);
       });
     });
 

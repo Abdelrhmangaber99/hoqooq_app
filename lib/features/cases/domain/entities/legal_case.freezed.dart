@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LegalCase {
 
- String get id; String get tenantId; String get caseNumber;@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus get status; String get clientId; String get caseTypeId;@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority get priority; DateTime get createdAt; DateTime get updatedAt; Client get client; String get primaryLawyerId; User get primaryLawyer; CaseTypeLookup get caseType; String get defaultCourtId; Court get defaultCourt; DateTime? get openingDate; DateTime? get closingDate; String? get outcomeSummary; double? get agreedFee; List<CaseTeamMember> get team;
+ String get id; String get tenantId; String get caseNumber;@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus get status; String get clientId; String get caseTypeId;@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority get priority; DateTime get createdAt; DateTime get updatedAt; Client get client; String? get primaryLawyerId; User? get primaryLawyer; CaseTypeLookup? get caseType; String? get defaultCourtId; Court? get defaultCourt; DateTime? get openingDate; DateTime? get closingDate; String? get outcomeSummary; double? get agreedFee; List<CaseTeamMember> get team;
 /// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,11 +48,11 @@ abstract mixin class $LegalCaseCopyWith<$Res>  {
   factory $LegalCaseCopyWith(LegalCase value, $Res Function(LegalCase) _then) = _$LegalCaseCopyWithImpl;
 @useResult
 $Res call({
- String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime createdAt, DateTime updatedAt, Client client, String primaryLawyerId, User primaryLawyer, CaseTypeLookup caseType, String defaultCourtId, Court defaultCourt, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, double? agreedFee, List<CaseTeamMember> team
+ String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime createdAt, DateTime updatedAt, Client client, String? primaryLawyerId, User? primaryLawyer, CaseTypeLookup? caseType, String? defaultCourtId, Court? defaultCourt, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, double? agreedFee, List<CaseTeamMember> team
 });
 
 
-$ClientCopyWith<$Res> get client;$UserCopyWith<$Res> get primaryLawyer;$CaseTypeLookupCopyWith<$Res> get caseType;$CourtCopyWith<$Res> get defaultCourt;
+$ClientCopyWith<$Res> get client;$UserCopyWith<$Res>? get primaryLawyer;$CaseTypeLookupCopyWith<$Res>? get caseType;$CourtCopyWith<$Res>? get defaultCourt;
 
 }
 /// @nodoc
@@ -65,7 +65,7 @@ class _$LegalCaseCopyWithImpl<$Res>
 
 /// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? priority = null,Object? createdAt = null,Object? updatedAt = null,Object? client = null,Object? primaryLawyerId = null,Object? primaryLawyer = null,Object? caseType = null,Object? defaultCourtId = null,Object? defaultCourt = null,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? team = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? priority = null,Object? createdAt = null,Object? updatedAt = null,Object? client = null,Object? primaryLawyerId = freezed,Object? primaryLawyer = freezed,Object? caseType = freezed,Object? defaultCourtId = freezed,Object? defaultCourt = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? team = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,tenantId: null == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
@@ -77,12 +77,12 @@ as String,priority: null == priority ? _self.priority : priority // ignore: cast
 as CasePriority,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,client: null == client ? _self.client : client // ignore: cast_nullable_to_non_nullable
-as Client,primaryLawyerId: null == primaryLawyerId ? _self.primaryLawyerId : primaryLawyerId // ignore: cast_nullable_to_non_nullable
-as String,primaryLawyer: null == primaryLawyer ? _self.primaryLawyer : primaryLawyer // ignore: cast_nullable_to_non_nullable
-as User,caseType: null == caseType ? _self.caseType : caseType // ignore: cast_nullable_to_non_nullable
-as CaseTypeLookup,defaultCourtId: null == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
-as String,defaultCourt: null == defaultCourt ? _self.defaultCourt : defaultCourt // ignore: cast_nullable_to_non_nullable
-as Court,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
+as Client,primaryLawyerId: freezed == primaryLawyerId ? _self.primaryLawyerId : primaryLawyerId // ignore: cast_nullable_to_non_nullable
+as String?,primaryLawyer: freezed == primaryLawyer ? _self.primaryLawyer : primaryLawyer // ignore: cast_nullable_to_non_nullable
+as User?,caseType: freezed == caseType ? _self.caseType : caseType // ignore: cast_nullable_to_non_nullable
+as CaseTypeLookup?,defaultCourtId: freezed == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
+as String?,defaultCourt: freezed == defaultCourt ? _self.defaultCourt : defaultCourt // ignore: cast_nullable_to_non_nullable
+as Court?,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,closingDate: freezed == closingDate ? _self.closingDate : closingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,outcomeSummary: freezed == outcomeSummary ? _self.outcomeSummary : outcomeSummary // ignore: cast_nullable_to_non_nullable
 as String?,agreedFee: freezed == agreedFee ? _self.agreedFee : agreedFee // ignore: cast_nullable_to_non_nullable
@@ -103,27 +103,36 @@ $ClientCopyWith<$Res> get client {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$UserCopyWith<$Res> get primaryLawyer {
-  
-  return $UserCopyWith<$Res>(_self.primaryLawyer, (value) {
+$UserCopyWith<$Res>? get primaryLawyer {
+    if (_self.primaryLawyer == null) {
+    return null;
+  }
+
+  return $UserCopyWith<$Res>(_self.primaryLawyer!, (value) {
     return _then(_self.copyWith(primaryLawyer: value));
   });
 }/// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$CaseTypeLookupCopyWith<$Res> get caseType {
-  
-  return $CaseTypeLookupCopyWith<$Res>(_self.caseType, (value) {
+$CaseTypeLookupCopyWith<$Res>? get caseType {
+    if (_self.caseType == null) {
+    return null;
+  }
+
+  return $CaseTypeLookupCopyWith<$Res>(_self.caseType!, (value) {
     return _then(_self.copyWith(caseType: value));
   });
 }/// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$CourtCopyWith<$Res> get defaultCourt {
-  
-  return $CourtCopyWith<$Res>(_self.defaultCourt, (value) {
+$CourtCopyWith<$Res>? get defaultCourt {
+    if (_self.defaultCourt == null) {
+    return null;
+  }
+
+  return $CourtCopyWith<$Res>(_self.defaultCourt!, (value) {
     return _then(_self.copyWith(defaultCourt: value));
   });
 }
@@ -208,7 +217,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  String primaryLawyerId,  User primaryLawyer,  CaseTypeLookup caseType,  String defaultCourtId,  Court defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  String? primaryLawyerId,  User? primaryLawyer,  CaseTypeLookup? caseType,  String? defaultCourtId,  Court? defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LegalCase() when $default != null:
 return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.client,_that.primaryLawyerId,_that.primaryLawyer,_that.caseType,_that.defaultCourtId,_that.defaultCourt,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.team);case _:
@@ -229,7 +238,7 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  String primaryLawyerId,  User primaryLawyer,  CaseTypeLookup caseType,  String defaultCourtId,  Court defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  String? primaryLawyerId,  User? primaryLawyer,  CaseTypeLookup? caseType,  String? defaultCourtId,  Court? defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)  $default,) {final _that = this;
 switch (_that) {
 case _LegalCase():
 return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.client,_that.primaryLawyerId,_that.primaryLawyer,_that.caseType,_that.defaultCourtId,_that.defaultCourt,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.team);case _:
@@ -249,7 +258,7 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  String primaryLawyerId,  User primaryLawyer,  CaseTypeLookup caseType,  String defaultCourtId,  Court defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  String? primaryLawyerId,  User? primaryLawyer,  CaseTypeLookup? caseType,  String? defaultCourtId,  Court? defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)?  $default,) {final _that = this;
 switch (_that) {
 case _LegalCase() when $default != null:
 return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.client,_that.primaryLawyerId,_that.primaryLawyer,_that.caseType,_that.defaultCourtId,_that.defaultCourt,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.team);case _:
@@ -264,7 +273,7 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 @JsonSerializable()
 
 class _LegalCase implements LegalCase {
-  const _LegalCase({required this.id, required this.tenantId, required this.caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown) required this.status, required this.clientId, required this.caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown) required this.priority, required this.createdAt, required this.updatedAt, required this.client, required this.primaryLawyerId, required this.primaryLawyer, required this.caseType, required this.defaultCourtId, required this.defaultCourt, this.openingDate, this.closingDate, this.outcomeSummary, this.agreedFee, required final  List<CaseTeamMember> team}): _team = team;
+  const _LegalCase({required this.id, required this.tenantId, required this.caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown) required this.status, required this.clientId, required this.caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown) required this.priority, required this.createdAt, required this.updatedAt, required this.client, this.primaryLawyerId, this.primaryLawyer, this.caseType, this.defaultCourtId, this.defaultCourt, this.openingDate, this.closingDate, this.outcomeSummary, this.agreedFee, required final  List<CaseTeamMember> team}): _team = team;
   factory _LegalCase.fromJson(Map<String, dynamic> json) => _$LegalCaseFromJson(json);
 
 @override final  String id;
@@ -277,11 +286,11 @@ class _LegalCase implements LegalCase {
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
 @override final  Client client;
-@override final  String primaryLawyerId;
-@override final  User primaryLawyer;
-@override final  CaseTypeLookup caseType;
-@override final  String defaultCourtId;
-@override final  Court defaultCourt;
+@override final  String? primaryLawyerId;
+@override final  User? primaryLawyer;
+@override final  CaseTypeLookup? caseType;
+@override final  String? defaultCourtId;
+@override final  Court? defaultCourt;
 @override final  DateTime? openingDate;
 @override final  DateTime? closingDate;
 @override final  String? outcomeSummary;
@@ -327,11 +336,11 @@ abstract mixin class _$LegalCaseCopyWith<$Res> implements $LegalCaseCopyWith<$Re
   factory _$LegalCaseCopyWith(_LegalCase value, $Res Function(_LegalCase) _then) = __$LegalCaseCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime createdAt, DateTime updatedAt, Client client, String primaryLawyerId, User primaryLawyer, CaseTypeLookup caseType, String defaultCourtId, Court defaultCourt, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, double? agreedFee, List<CaseTeamMember> team
+ String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime createdAt, DateTime updatedAt, Client client, String? primaryLawyerId, User? primaryLawyer, CaseTypeLookup? caseType, String? defaultCourtId, Court? defaultCourt, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, double? agreedFee, List<CaseTeamMember> team
 });
 
 
-@override $ClientCopyWith<$Res> get client;@override $UserCopyWith<$Res> get primaryLawyer;@override $CaseTypeLookupCopyWith<$Res> get caseType;@override $CourtCopyWith<$Res> get defaultCourt;
+@override $ClientCopyWith<$Res> get client;@override $UserCopyWith<$Res>? get primaryLawyer;@override $CaseTypeLookupCopyWith<$Res>? get caseType;@override $CourtCopyWith<$Res>? get defaultCourt;
 
 }
 /// @nodoc
@@ -344,7 +353,7 @@ class __$LegalCaseCopyWithImpl<$Res>
 
 /// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? priority = null,Object? createdAt = null,Object? updatedAt = null,Object? client = null,Object? primaryLawyerId = null,Object? primaryLawyer = null,Object? caseType = null,Object? defaultCourtId = null,Object? defaultCourt = null,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? team = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? priority = null,Object? createdAt = null,Object? updatedAt = null,Object? client = null,Object? primaryLawyerId = freezed,Object? primaryLawyer = freezed,Object? caseType = freezed,Object? defaultCourtId = freezed,Object? defaultCourt = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? team = null,}) {
   return _then(_LegalCase(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,tenantId: null == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
@@ -356,12 +365,12 @@ as String,priority: null == priority ? _self.priority : priority // ignore: cast
 as CasePriority,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,client: null == client ? _self.client : client // ignore: cast_nullable_to_non_nullable
-as Client,primaryLawyerId: null == primaryLawyerId ? _self.primaryLawyerId : primaryLawyerId // ignore: cast_nullable_to_non_nullable
-as String,primaryLawyer: null == primaryLawyer ? _self.primaryLawyer : primaryLawyer // ignore: cast_nullable_to_non_nullable
-as User,caseType: null == caseType ? _self.caseType : caseType // ignore: cast_nullable_to_non_nullable
-as CaseTypeLookup,defaultCourtId: null == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
-as String,defaultCourt: null == defaultCourt ? _self.defaultCourt : defaultCourt // ignore: cast_nullable_to_non_nullable
-as Court,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
+as Client,primaryLawyerId: freezed == primaryLawyerId ? _self.primaryLawyerId : primaryLawyerId // ignore: cast_nullable_to_non_nullable
+as String?,primaryLawyer: freezed == primaryLawyer ? _self.primaryLawyer : primaryLawyer // ignore: cast_nullable_to_non_nullable
+as User?,caseType: freezed == caseType ? _self.caseType : caseType // ignore: cast_nullable_to_non_nullable
+as CaseTypeLookup?,defaultCourtId: freezed == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
+as String?,defaultCourt: freezed == defaultCourt ? _self.defaultCourt : defaultCourt // ignore: cast_nullable_to_non_nullable
+as Court?,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,closingDate: freezed == closingDate ? _self.closingDate : closingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,outcomeSummary: freezed == outcomeSummary ? _self.outcomeSummary : outcomeSummary // ignore: cast_nullable_to_non_nullable
 as String?,agreedFee: freezed == agreedFee ? _self.agreedFee : agreedFee // ignore: cast_nullable_to_non_nullable
@@ -383,27 +392,36 @@ $ClientCopyWith<$Res> get client {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$UserCopyWith<$Res> get primaryLawyer {
-  
-  return $UserCopyWith<$Res>(_self.primaryLawyer, (value) {
+$UserCopyWith<$Res>? get primaryLawyer {
+    if (_self.primaryLawyer == null) {
+    return null;
+  }
+
+  return $UserCopyWith<$Res>(_self.primaryLawyer!, (value) {
     return _then(_self.copyWith(primaryLawyer: value));
   });
 }/// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$CaseTypeLookupCopyWith<$Res> get caseType {
-  
-  return $CaseTypeLookupCopyWith<$Res>(_self.caseType, (value) {
+$CaseTypeLookupCopyWith<$Res>? get caseType {
+    if (_self.caseType == null) {
+    return null;
+  }
+
+  return $CaseTypeLookupCopyWith<$Res>(_self.caseType!, (value) {
     return _then(_self.copyWith(caseType: value));
   });
 }/// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$CourtCopyWith<$Res> get defaultCourt {
-  
-  return $CourtCopyWith<$Res>(_self.defaultCourt, (value) {
+$CourtCopyWith<$Res>? get defaultCourt {
+    if (_self.defaultCourt == null) {
+    return null;
+  }
+
+  return $CourtCopyWith<$Res>(_self.defaultCourt!, (value) {
     return _then(_self.copyWith(defaultCourt: value));
   });
 }

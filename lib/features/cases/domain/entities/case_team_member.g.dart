@@ -9,13 +9,17 @@ part of 'case_team_member.dart';
 _CaseTeamMember _$CaseTeamMemberFromJson(Map<String, dynamic> json) =>
     _CaseTeamMember(
       id: json['id'] as String,
-      role: json['role'] as String,
-      user: User.fromJson(json['user'] as Map<String, dynamic>),
+      roleOnCase: json['roleOnCase'] as String,
+      userId: json['userId'] as String,
+      user: json['user'] == null
+          ? null
+          : User.fromJson(json['user'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$CaseTeamMemberToJson(_CaseTeamMember instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'role': instance.role,
+      'roleOnCase': instance.roleOnCase,
+      'userId': instance.userId,
       'user': instance.user,
     };

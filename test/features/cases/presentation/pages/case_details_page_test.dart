@@ -10,6 +10,7 @@ import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
+import 'package:hqooq/features/cases/domain/entities/case_team_member.dart';
 import 'package:hqooq/features/cases/domain/entities/case_type_lookup.dart';
 import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
@@ -149,7 +150,7 @@ void main() {
 
   testWidgets('hides agreedFee for an authenticated non-Firm-Admin user '
       '(BR-026 — never shown to everyone by default)', (tester) async {
-    final user = legalCase.primaryLawyer;
+    final user = legalCase.primaryLawyer!;
     when(
       () => sessionCubit.state,
     ).thenReturn(SessionAuthenticated(user, isFirmAdmin: false));
@@ -164,7 +165,7 @@ void main() {
   testWidgets('shows agreedFee for an authenticated Firm Admin', (
     tester,
   ) async {
-    final user = legalCase.primaryLawyer;
+    final user = legalCase.primaryLawyer!;
     when(
       () => sessionCubit.state,
     ).thenReturn(SessionAuthenticated(user, isFirmAdmin: true));
@@ -188,4 +189,35 @@ void main() {
     expect(find.text('District Court'), findsOneWidget);
     expect(find.text('Jane Doe'), findsOneWidget);
   });
+
+  testWidgets(
+    'renders gracefully when caseType/primaryLawyer/team-user are absent '
+    '(the real backend never returns them -- CasesService does not load '
+    'those relations)',
+    (tester) async {
+      final degradedCase = legalCase.copyWith(
+        caseType: null,
+        primaryLawyer: null,
+        defaultCourt: null,
+        team: [
+          const CaseTeamMember(id: 'ct-1', roleOnCase: 'LAWYER', userId: 'u2'),
+        ],
+      );
+      whenListen(
+        bloc,
+        const Stream<CaseDetailsState>.empty(),
+        initialState: CaseDetailsLoaded(degradedCase),
+      );
+      when(() => sessionCubit.state).thenReturn(const SessionUnknown());
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+
+      // No crash, and unresolved relations fall back to a placeholder or the
+      // raw id rather than throwing a null-cast error.
+      expect(find.text('CASE-2026-00001'), findsOneWidget);
+      expect(find.text('Unknown'), findsWidgets);
+      expect(find.text('u2'), findsOneWidget);
+    },
+  );
 }

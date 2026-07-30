@@ -12,17 +12,24 @@ part 'legal_case.g.dart';
 
 /// Wire shape for `GET/POST/PATCH /cases` per API_CONTRACT.md §8.
 ///
-/// Rebuilt 2026-07-30 for a backend update: replaces the earlier
-/// UI-mockup shape (`attorneyName`/`hearingsCount`/`documentsCount`/
-/// `daysOpen`, none of which the real API ever returned) with the actual
-/// fields — much closer to the BRD's case data dictionary now
-/// (agreedFee/priority/openingDate/closingDate/primaryLawyerId/
-/// caseTypeId). Named `LegalCase`, not `Case`, because `case` is a Dart
-/// reserved word.
+/// **Corrected 2026-07-30 (backend-source re-verification, pre-M3):**
+/// `CasesController` never applies `plainToInstance`/`ClassSerializerInterceptor`
+/// — it returns the raw TypeORM entity, so the actual wire shape is governed
+/// by `CasesService.findAll`/`.findOne`'s TypeORM `relations: [...]` array
+/// (`['client', 'defaultCourt', 'team', 'opponents', 'timelineEvents']`),
+/// not by the (also never-enforced) `CaseResponseDto`. `caseType` and
+/// `primaryLawyer` are NOT in that list — they are never returned at all,
+/// despite `caseTypeId`/`primaryLawyerId` always being present. Both were
+/// wrongly `required` before this fix, which would throw against a real
+/// backend. `defaultCourt`/`defaultCourtId` are genuinely nullable on the
+/// entity itself (a case may have no default court), not just because of
+/// relation loading — corrected to nullable for that reason.
 ///
-/// Note what's now gone entirely, not just deferred: `notes[]` and
-/// `POST /cases/{id}/notes` were both removed in this update, and there is
-/// no endpoint anywhere to add a `team[]` member. See PLAN.md M2 framing.
+/// Named `LegalCase`, not `Case`, because `case` is a Dart reserved word.
+/// Note what's gone entirely, not just deferred: `notes[]` and
+/// `POST /cases/{id}/notes` were both removed in an earlier backend update,
+/// and there is no endpoint anywhere to add a `team[]` member. See
+/// PLAN.md M2 framing.
 @freezed
 abstract class LegalCase with _$LegalCase {
   const factory LegalCase({
@@ -37,11 +44,11 @@ abstract class LegalCase with _$LegalCase {
     required DateTime createdAt,
     required DateTime updatedAt,
     required Client client,
-    required String primaryLawyerId,
-    required User primaryLawyer,
-    required CaseTypeLookup caseType,
-    required String defaultCourtId,
-    required Court defaultCourt,
+    String? primaryLawyerId,
+    User? primaryLawyer,
+    CaseTypeLookup? caseType,
+    String? defaultCourtId,
+    Court? defaultCourt,
     DateTime? openingDate,
     DateTime? closingDate,
     String? outcomeSummary,
