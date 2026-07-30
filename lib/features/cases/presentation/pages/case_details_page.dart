@@ -53,13 +53,12 @@ class CaseDetailsPage extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, LegalCase legalCase) {
-    // BR-026: agreedFee is finance-gated. isFirmAdmin can't yet be
-    // reliably detected (no confirmed role.code value — see CLAUDE.md), so
-    // per the user's explicit instruction this defaults to hidden rather
-    // than shown to everyone.
+    // BR-026: agreedFee is finance-gated. isFirmAdmin is derived at login
+    // (ownerUserId == user.id — see SessionCubit.authenticated); default
+    // to hidden whenever there's no authenticated session at all.
     final sessionState = getIt<SessionCubit>().state;
     final isFirmAdmin =
-        sessionState is SessionAuthenticated && sessionState.user.isFirmAdmin;
+        sessionState is SessionAuthenticated && sessionState.isFirmAdmin;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.m),

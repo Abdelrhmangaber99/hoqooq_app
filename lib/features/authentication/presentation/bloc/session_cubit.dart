@@ -20,9 +20,17 @@ class SessionCubit extends Cubit<SessionState> {
   /// In-memory only, per BR-033 — never persisted.
   String? get accessToken => _accessToken;
 
-  void authenticated(User user, String accessToken) {
+  /// `isFirmAdmin` (BR-005) is computed by the caller as
+  /// `myFirm.ownerUserId == user.id` — see `AuthBloc._fetchCurrentUserAndEmit`
+  /// and `MyFirm`'s doc comment. Not a property of `User` itself: it
+  /// depends on cross-referencing the user against their tenant.
+  void authenticated(
+    User user,
+    String accessToken, {
+    required bool isFirmAdmin,
+  }) {
     _accessToken = accessToken;
-    emit(SessionAuthenticated(user));
+    emit(SessionAuthenticated(user, isFirmAdmin: isFirmAdmin));
   }
 
   /// Swaps the in-memory access token after a refresh, without changing the

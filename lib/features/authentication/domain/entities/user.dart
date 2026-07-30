@@ -33,10 +33,10 @@ abstract class User with _$User {
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
-  /// Flattens permission codes across all of this user's roles. Generic by
-  /// design — no enumerated `code` values are shown anywhere in
-  /// API_CONTRACT.md, so this can't be narrowed to a typed set without a
-  /// live example response.
+  /// Flattens permission codes across all of this user's roles. Confirmed
+  /// format from the actual backend source
+  /// (`src/core/constants/permissions.constant.ts`): `<module>.<action>`,
+  /// e.g. `cases.read`.
   bool hasPerm(String permissionCode) {
     return roles.any(
       (role) => role.permissions.any(
@@ -44,12 +44,4 @@ abstract class User with _$User {
       ),
     );
   }
-
-  /// BR-005: Firm Admin must always have full, non-restrictable CRUD.
-  /// `role.code` (e.g. plausibly "FIRM_ADMIN") is a much more promising
-  /// signal than the previous shape's `role.name`/display-name fields were,
-  /// but no example anywhere in API_CONTRACT.md shows a real value — still
-  /// not guessing it. Confirm the actual value against a live login
-  /// response before wiring this into any UI gating.
-  bool get isFirmAdmin => false;
 }
