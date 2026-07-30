@@ -5,8 +5,11 @@ import '../errors/failures.dart';
 /// backend source, `src/core/filters/http-exception.filter.ts`) to be
 /// `{success: false, statusCode, message, error, timestamp}` — `message`
 /// is always a plain string (array validation messages are collapsed to
-/// their first element server-side). Shared by every repository so the
-/// mapping rule lives in exactly one place.
+/// their first element server-side, see `ValidationPipe`'s
+/// `forbidNonWhitelisted`/`whitelist` config — a 400 here means either a
+/// missing/invalid required field or an extra key the DTO doesn't
+/// declare). Shared by every repository so the mapping rule lives in
+/// exactly one place.
 Failure mapDioError(DioException e) {
   if (e.type == DioExceptionType.connectionError ||
       e.type == DioExceptionType.connectionTimeout ||
@@ -19,6 +22,11 @@ Failure mapDioError(DioException e) {
     return backendMessage != null
         ? UnauthorizedFailure(backendMessage)
         : const UnauthorizedFailure();
+  }
+  if (statusCode == 400) {
+    return backendMessage != null
+        ? ValidationFailure(backendMessage)
+        : const ValidationFailure('Invalid request');
   }
   return backendMessage != null
       ? ServerFailure(backendMessage)
