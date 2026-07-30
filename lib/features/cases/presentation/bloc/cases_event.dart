@@ -7,10 +7,21 @@ abstract class CasesEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class FetchCasesRequested extends CasesEvent {
-  final String? filter;
-  const FetchCasesRequested({this.filter});
+class FetchCasesRequested extends CasesEvent {}
+
+/// `null` means "All statuses".
+class CasesStatusFilterChanged extends CasesEvent {
+  final CaseStatus? status;
+  const CasesStatusFilterChanged(this.status);
 
   @override
-  List<Object?> get props => [filter];
+  List<Object?> get props => [status];
+}
+
+class CasesSearchChanged extends CasesEvent {
+  final String query;
+  const CasesSearchChanged(this.query);
+
+  @override
+  List<Object?> get props => [query];
 }

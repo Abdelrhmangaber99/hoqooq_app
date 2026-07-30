@@ -2,7 +2,7 @@ part of 'cases_bloc.dart';
 
 abstract class CasesState extends Equatable {
   const CasesState();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -11,12 +11,18 @@ class CasesInitial extends CasesState {}
 
 class CasesLoading extends CasesState {}
 
+/// Zero-results is represented by an empty `cases` list here — the list
+/// screen decides whether to show the `EmptyState` widget, rather than a
+/// separate bloc state, since it's the same "loaded" data shape either way.
 class CasesLoaded extends CasesState {
   final List<LegalCase> cases;
-  const CasesLoaded(this.cases);
+  final CaseStatus? statusFilter;
+  final String searchQuery;
+
+  const CasesLoaded(this.cases, {this.statusFilter, this.searchQuery = ''});
 
   @override
-  List<Object?> get props => [cases];
+  List<Object?> get props => [cases, statusFilter, searchQuery];
 }
 
 class CasesError extends CasesState {

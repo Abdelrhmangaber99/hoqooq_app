@@ -9,7 +9,7 @@ class GetCasesUseCase {
 
   GetCasesUseCase(this.repository);
 
-  ApiResult<List<LegalCase>> execute({String? filter}) {
-    return repository.getCases(filter: filter);
+  ApiResult<List<LegalCase>> execute() {
+    return repository.getCases();
   }
 }

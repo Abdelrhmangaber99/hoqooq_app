@@ -36,20 +36,24 @@ import 'package:hqooq/features/calendar/domain/usecases/get_appointments_use_cas
     as _i266;
 import 'package:hqooq/features/calendar/presentation/bloc/calendar_bloc.dart'
     as _i251;
-import 'package:hqooq/features/cases/data/repository/mock_case_repository.dart'
-    as _i155;
+import 'package:hqooq/features/cases/data/repository/case_repository.dart'
+    as _i981;
 import 'package:hqooq/features/cases/domain/repository/i_case_repository.dart'
     as _i320;
 import 'package:hqooq/features/cases/domain/usecases/get_cases_use_case.dart'
     as _i613;
+import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart'
+    as _i995;
 import 'package:hqooq/features/cases/presentation/bloc/cases_bloc.dart'
     as _i546;
-import 'package:hqooq/features/clients/data/repository/mock_client_repository.dart'
-    as _i317;
+import 'package:hqooq/features/clients/data/repository/client_repository.dart'
+    as _i351;
 import 'package:hqooq/features/clients/domain/repository/i_client_repository.dart'
     as _i794;
 import 'package:hqooq/features/clients/domain/usecases/get_clients_use_case.dart'
     as _i723;
+import 'package:hqooq/features/clients/presentation/bloc/client_details_bloc.dart'
+    as _i283;
 import 'package:hqooq/features/clients/presentation/bloc/clients_bloc.dart'
     as _i165;
 import 'package:injectable/injectable.dart' as _i526;
@@ -66,7 +70,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i23.TokenStorage>(() => const _i23.TokenStorage());
     gh.lazySingleton<_i926.ThemeBloc>(() => _i926.ThemeBloc());
     gh.lazySingleton<_i81.SessionCubit>(() => _i81.SessionCubit());
-    gh.lazySingleton<_i320.ICaseRepository>(() => _i155.MockCaseRepository());
     gh.factory<_i404.AuthInterceptor>(
       () => _i404.AuthInterceptor(gh<_i81.SessionCubit>()),
     );
@@ -79,20 +82,11 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i81.SessionCubit>(),
       ),
     );
-    gh.lazySingleton<_i794.IClientRepository>(
-      () => _i317.MockClientRepository(),
-    );
     gh.lazySingleton<_i361.Dio>(
       () => networkModule.dio(
         gh<_i404.AuthInterceptor>(),
         gh<_i722.RefreshInterceptor>(),
       ),
-    );
-    gh.lazySingleton<_i613.GetCasesUseCase>(
-      () => _i613.GetCasesUseCase(gh<_i320.ICaseRepository>()),
-    );
-    gh.factory<_i546.CasesBloc>(
-      () => _i546.CasesBloc(gh<_i613.GetCasesUseCase>()),
     );
     gh.lazySingleton<_i266.GetAppointmentsUseCase>(
       () => _i266.GetAppointmentsUseCase(gh<_i588.IAppointmentRepository>()),
@@ -100,17 +94,26 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i251.CalendarBloc>(
       () => _i251.CalendarBloc(gh<_i266.GetAppointmentsUseCase>()),
     );
-    gh.lazySingleton<_i723.GetClientsUseCase>(
-      () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
+    gh.lazySingleton<_i320.ICaseRepository>(
+      () => _i981.CaseRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i598.IAuthRepository>(
       () => _i494.AuthRepository(gh<_i361.Dio>()),
     );
-    gh.factory<_i165.ClientsBloc>(
-      () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
+    gh.lazySingleton<_i794.IClientRepository>(
+      () => _i351.ClientRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i196.LoginUseCase>(
       () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
+    );
+    gh.lazySingleton<_i613.GetCasesUseCase>(
+      () => _i613.GetCasesUseCase(gh<_i320.ICaseRepository>()),
+    );
+    gh.factory<_i546.CasesBloc>(
+      () => _i546.CasesBloc(gh<_i613.GetCasesUseCase>()),
+    );
+    gh.factory<_i995.CaseDetailsBloc>(
+      () => _i995.CaseDetailsBloc(gh<_i320.ICaseRepository>()),
     );
     gh.factory<_i1026.AuthBloc>(
       () => _i1026.AuthBloc(
@@ -119,6 +122,18 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i81.SessionCubit>(),
         gh<_i23.TokenStorage>(),
       ),
+    );
+    gh.lazySingleton<_i723.GetClientsUseCase>(
+      () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
+    );
+    gh.factory<_i283.ClientDetailsBloc>(
+      () => _i283.ClientDetailsBloc(
+        gh<_i794.IClientRepository>(),
+        gh<_i320.ICaseRepository>(),
+      ),
+    );
+    gh.factory<_i165.ClientsBloc>(
+      () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
     );
     return this;
   }

@@ -2,7 +2,7 @@ part of 'clients_bloc.dart';
 
 abstract class ClientsState extends Equatable {
   const ClientsState();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -13,13 +13,13 @@ class ClientsLoading extends ClientsState {}
 
 class ClientsLoaded extends ClientsState {
   final List<Client> clients;
-  final String activeFilter;
+  final ClientStatus? statusFilter;
   final String searchQuery;
-  
-  const ClientsLoaded(this.clients, {this.activeFilter = 'All', this.searchQuery = ''});
+
+  const ClientsLoaded(this.clients, {this.statusFilter, this.searchQuery = ''});
 
   @override
-  List<Object?> get props => [clients, activeFilter, searchQuery];
+  List<Object?> get props => [clients, statusFilter, searchQuery];
 }
 
 class ClientsError extends ClientsState {

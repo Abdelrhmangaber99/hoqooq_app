@@ -9,7 +9,7 @@ class GetClientsUseCase {
 
   GetClientsUseCase(this.repository);
 
-  ApiResult<List<Client>> execute({String? filter}) {
-    return repository.getClients(filter: filter);
+  ApiResult<List<Client>> execute() {
+    return repository.getClients();
   }
 }
