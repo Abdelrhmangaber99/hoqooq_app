@@ -135,4 +135,25 @@ void main() {
     expect(find.text('Carlos Hernandez'), findsOneWidget);
     expect(find.text('CLI-001'), findsOneWidget);
   });
+
+  testWidgets(
+    'typing in the search bar does not throw ProviderNotFoundException '
+    '(regression -- the search bar previously used a context positioned '
+    'above ClientsBloc\'s own BlocProvider, not below it)',
+    (tester) async {
+      whenListen(
+        bloc,
+        const Stream<ClientsState>.empty(),
+        initialState: ClientsLoaded([client]),
+      );
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'hernandez');
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

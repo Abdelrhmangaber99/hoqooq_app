@@ -7,6 +7,8 @@ import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
 import '../../features/cases/presentation/pages/case_details_page.dart';
+import '../../features/clients/domain/entities/client.dart';
+import '../../features/clients/presentation/pages/client_form_page.dart';
 import '../../features/clients/presentation/pages/clients_page.dart';
 import '../../features/clients/presentation/pages/client_profile_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
@@ -58,9 +60,20 @@ class AppRouter {
             builder: (context, state) => const ClientsPage(),
             routes: [
               GoRoute(
+                path: 'new',
+                builder: (context, state) => const ClientFormPage(),
+              ),
+              GoRoute(
                 path: ':id',
                 builder: (context, state) =>
                     ClientProfilePage(clientId: state.pathParameters['id']!),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) =>
+                        ClientFormPage(existingClient: state.extra as Client),
+                  ),
+                ],
               ),
             ],
           ),

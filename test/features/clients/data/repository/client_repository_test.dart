@@ -1,6 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
+import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
+import 'package:hqooq/features/authentication/domain/entities/user.dart';
+import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
+import 'package:hqooq/features/clients/data/models/create_client_request.dart';
+import 'package:hqooq/features/clients/data/models/update_client_request.dart';
 import 'package:hqooq/features/clients/data/repository/client_repository.dart';
 import 'package:hqooq/features/clients/domain/entities/client_status.dart';
 import 'package:hqooq/features/clients/domain/entities/client_type.dart';
@@ -10,11 +15,27 @@ class MockDio extends Mock implements Dio {}
 
 void main() {
   late MockDio dio;
+  late SessionCubit sessionCubit;
   late ClientRepository repository;
+
+  final user = User(
+    id: 'u1',
+    email: 'lawyer@firm.com',
+    fullName: 'Jane Doe',
+    isSuperAdmin: false,
+    status: 'ACTIVE',
+    mfaEnabled: false,
+    createdAt: DateTime(2026, 1, 1),
+    updatedAt: DateTime(2026, 1, 1),
+    roles: const [],
+    tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
+  );
 
   setUp(() {
     dio = MockDio();
-    repository = ClientRepository(dio);
+    sessionCubit = SessionCubit();
+    sessionCubit.authenticated(user, 'token', isFirmAdmin: false);
+    repository = ClientRepository(dio, sessionCubit);
   });
 
   Response<T> okResponse<T>(String path, T data) {
@@ -111,6 +132,86 @@ void main() {
         (_) => fail('expected Right'),
         (client) => expect(client.id, 'cl1'),
       );
+    });
+  });
+
+  group('createClient', () {
+    test(
+      'POSTs /clients with the request body plus the current tenantId',
+      () async {
+        when(
+          () => dio.post('/clients', data: any(named: 'data')),
+        ).thenAnswer((_) async => okResponse('/clients', clientJson()));
+
+        const request = CreateClientRequest(
+          clientCode: 'CLI-002',
+          type: ClientType.individual,
+          fullName: 'New Client',
+        );
+        await repository.createClient(request);
+
+        final captured = verify(
+          () => dio.post('/clients', data: captureAny(named: 'data')),
+        ).captured;
+        final body = captured.single as Map<String, dynamic>;
+        expect(body['clientCode'], 'CLI-002');
+        expect(body['type'], 'INDIVIDUAL');
+        expect(body['fullName'], 'New Client');
+        expect(body['tenantId'], 't1');
+        // No extra keys beyond CreateClientDto's whitelisted set + tenantId
+        // -- ValidationPipe's forbidNonWhitelisted would 400 on anything
+        // else.
+        expect(
+          body.keys,
+          containsAll(['clientCode', 'type', 'fullName', 'tenantId']),
+        );
+      },
+    );
+
+    test('maps a 400 to ValidationFailure', () async {
+      when(() => dio.post('/clients', data: any(named: 'data'))).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/clients'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/clients'),
+            statusCode: 400,
+            data: {'message': 'clientCode must be a string'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      const request = CreateClientRequest(
+        clientCode: '',
+        type: ClientType.individual,
+        fullName: 'New Client',
+      );
+      final result = await repository.createClient(request);
+
+      result.fold(
+        (failure) => expect(failure, isA<ValidationFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('updateClient', () {
+    test('PATCHes /clients/{id} with only the changed fields', () async {
+      when(
+        () => dio.patch('/clients/cl1', data: any(named: 'data')),
+      ).thenAnswer((_) async => okResponse('/clients/cl1', clientJson()));
+
+      const request = UpdateClientRequest(fullName: 'Updated Name');
+      await repository.updateClient('cl1', request);
+
+      final captured = verify(
+        () => dio.patch('/clients/cl1', data: captureAny(named: 'data')),
+      ).captured;
+      final body = captured.single as Map<String, dynamic>;
+      // Only the one changed field is present -- unset fields are omitted
+      // entirely (not sent as null), so ClientsService.update's merge()
+      // can't null out untouched columns.
+      expect(body, {'fullName': 'Updated Name'});
     });
   });
 }

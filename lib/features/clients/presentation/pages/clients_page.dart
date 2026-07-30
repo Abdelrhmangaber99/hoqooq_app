@@ -22,50 +22,65 @@ class ClientsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => getIt<ClientsBloc>()..add(FetchClientsRequested()),
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: AppSpacing.m),
-                Text(context.tr('clients'), style: AppTypography.h1),
-                const SizedBox(height: AppSpacing.l),
-                _buildSearchBar(context),
-                const SizedBox(height: AppSpacing.m),
-                _buildStatusFilters(context),
-                const SizedBox(height: AppSpacing.m),
-                Expanded(
-                  child: BlocBuilder<ClientsBloc, ClientsState>(
-                    builder: (context, state) {
-                      if (state is ClientsLoading || state is ClientsInitial) {
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                          ),
-                        );
-                      } else if (state is ClientsError) {
-                        return ErrorView(
-                          message: state.message,
-                          onRetry: () => context.read<ClientsBloc>().add(
-                            FetchClientsRequested(),
-                          ),
-                        );
-                      } else if (state is ClientsLoaded) {
-                        if (state.clients.isEmpty) {
-                          return EmptyState(
-                            message: context.tr('no_clients_found'),
+      child: Builder(
+        builder: (context) => Scaffold(
+          backgroundColor: AppColors.background,
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: AppColors.primary,
+            onPressed: () async {
+              final created = await context.push<bool>(
+                '${AppRouter.clients}/new',
+              );
+              if (created == true && context.mounted) {
+                context.read<ClientsBloc>().add(FetchClientsRequested());
+              }
+            },
+            child: const Icon(Icons.add),
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.m),
+                  Text(context.tr('clients'), style: AppTypography.h1),
+                  const SizedBox(height: AppSpacing.l),
+                  _buildSearchBar(context),
+                  const SizedBox(height: AppSpacing.m),
+                  _buildStatusFilters(context),
+                  const SizedBox(height: AppSpacing.m),
+                  Expanded(
+                    child: BlocBuilder<ClientsBloc, ClientsState>(
+                      builder: (context, state) {
+                        if (state is ClientsLoading ||
+                            state is ClientsInitial) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
                           );
+                        } else if (state is ClientsError) {
+                          return ErrorView(
+                            message: state.message,
+                            onRetry: () => context.read<ClientsBloc>().add(
+                              FetchClientsRequested(),
+                            ),
+                          );
+                        } else if (state is ClientsLoaded) {
+                          if (state.clients.isEmpty) {
+                            return EmptyState(
+                              message: context.tr('no_clients_found'),
+                            );
+                          }
+                          return _buildClientsList(context, state.clients);
                         }
-                        return _buildClientsList(context, state.clients);
-                      }
-                      return const SizedBox();
-                    },
+                        return const SizedBox();
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

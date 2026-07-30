@@ -7,6 +7,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/error_view.dart';
 import '../../../cases/domain/entities/legal_case.dart';
@@ -66,6 +67,22 @@ class ClientProfilePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeaderCard(context, client),
+          const SizedBox(height: AppSpacing.m),
+          AppButton(
+            text: context.tr('edit_client'),
+            style: AppButtonStyle.outline,
+            onPressed: () async {
+              final updated = await context.push<bool>(
+                '${AppRouter.clients}/${client.id}/edit',
+                extra: client,
+              );
+              if (updated == true && context.mounted) {
+                context.read<ClientDetailsBloc>().add(
+                  FetchClientDetailsRequested(client.id),
+                );
+              }
+            },
+          ),
           const SizedBox(height: AppSpacing.l),
           Text(context.tr('contact_info'), style: AppTypography.h3),
           const SizedBox(height: AppSpacing.m),

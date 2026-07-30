@@ -164,5 +164,12 @@
   "pending_tasks": "المهام المعلقة",
   "upcoming_hearings": "الجلسات القادمة",
   "dashboard_unavailable": "بيانات لوحة التحكم غير متاحة حالياً",
-  "no_events_for_day": "لا توجد أحداث لهذا اليوم"
+  "no_events_for_day": "لا توجد أحداث لهذا اليوم",
+  "new_client": "عميل جديد",
+  "edit_client": "تعديل العميل",
+  "create_client": "إنشاء عميل",
+  "client_type": "نوع العميل",
+  "full_name": "الاسم الكامل",
+  "field_required": "هذا الحقل مطلوب",
+  "save_changes": "حفظ التغييرات"
 }

@@ -164,5 +164,12 @@
   "pending_tasks": "Pending Tasks",
   "upcoming_hearings": "Upcoming Hearings",
   "dashboard_unavailable": "Dashboard data is unavailable right now",
-  "no_events_for_day": "No events for this day"
+  "no_events_for_day": "No events for this day",
+  "new_client": "New Client",
+  "edit_client": "Edit Client",
+  "create_client": "Create Client",
+  "client_type": "Client Type",
+  "full_name": "Full Name",
+  "field_required": "This field is required",
+  "save_changes": "Save Changes"
 }

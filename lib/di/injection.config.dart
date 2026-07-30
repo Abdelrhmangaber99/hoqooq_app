@@ -56,6 +56,8 @@ import 'package:hqooq/features/clients/domain/usecases/get_clients_use_case.dart
     as _i723;
 import 'package:hqooq/features/clients/presentation/bloc/client_details_bloc.dart'
     as _i283;
+import 'package:hqooq/features/clients/presentation/bloc/client_form_bloc.dart'
+    as _i730;
 import 'package:hqooq/features/clients/presentation/bloc/clients_bloc.dart'
     as _i165;
 import 'package:hqooq/features/dashboard/data/repository/dashboard_repository.dart'
@@ -105,6 +107,12 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i722.RefreshInterceptor>(),
       ),
     );
+    gh.lazySingleton<_i794.IClientRepository>(
+      () => _i351.ClientRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
+    );
+    gh.factory<_i730.ClientFormBloc>(
+      () => _i730.ClientFormBloc(gh<_i794.IClientRepository>()),
+    );
     gh.lazySingleton<_i495.ICalendarRepository>(
       () => _i225.CalendarRepository(gh<_i361.Dio>()),
     );
@@ -120,6 +128,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i194.CaseDocumentsBloc>(
       () => _i194.CaseDocumentsBloc(gh<_i622.IDocumentRepository>()),
     );
+    gh.lazySingleton<_i723.GetClientsUseCase>(
+      () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
+    );
     gh.lazySingleton<_i1072.IDashboardRepository>(
       () => _i773.DashboardRepository(gh<_i361.Dio>()),
     );
@@ -132,8 +143,8 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i598.IAuthRepository>(
       () => _i494.AuthRepository(gh<_i361.Dio>()),
     );
-    gh.lazySingleton<_i794.IClientRepository>(
-      () => _i351.ClientRepository(gh<_i361.Dio>()),
+    gh.factory<_i165.ClientsBloc>(
+      () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
     );
     gh.lazySingleton<_i196.LoginUseCase>(
       () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
@@ -158,9 +169,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i389.CaseHearingsBloc>(
       () => _i389.CaseHearingsBloc(gh<_i844.IHearingRepository>()),
     );
-    gh.lazySingleton<_i723.GetClientsUseCase>(
-      () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
-    );
     gh.factory<_i548.DashboardBloc>(
       () => _i548.DashboardBloc(
         gh<_i1072.IDashboardRepository>(),
@@ -173,9 +181,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i794.IClientRepository>(),
         gh<_i320.ICaseRepository>(),
       ),
-    );
-    gh.factory<_i165.ClientsBloc>(
-      () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
     );
     return this;
   }
