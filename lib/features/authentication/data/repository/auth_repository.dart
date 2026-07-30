@@ -1,8 +1,8 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
-import '../../../../core/errors/failures.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/network/dio_error_mapper.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repository/i_auth_repository.dart';
 import '../models/auth_response.dart';
@@ -29,9 +29,11 @@ class AuthRepository implements IAuthRepository {
     try {
       final request = LoginRequest(email: email, password: password);
       final response = await _dio.post('/auth/login', data: request.toJson());
-      return Right(AuthResponse.fromJson(response.data as Map<String, dynamic>));
+      return Right(
+        AuthResponse.fromJson(response.data as Map<String, dynamic>),
+      );
     } on DioException catch (e) {
-      return Left(_mapError(e));
+      return Left(mapDioError(e));
     }
   }
 
@@ -40,9 +42,11 @@ class AuthRepository implements IAuthRepository {
     try {
       final request = RefreshRequest(refreshToken: refreshToken);
       final response = await _dio.post('/auth/refresh', data: request.toJson());
-      return Right(AuthResponse.fromJson(response.data as Map<String, dynamic>));
+      return Right(
+        AuthResponse.fromJson(response.data as Map<String, dynamic>),
+      );
     } on DioException catch (e) {
-      return Left(_mapError(e));
+      return Left(mapDioError(e));
     }
   }
 
@@ -52,7 +56,7 @@ class AuthRepository implements IAuthRepository {
       await _dio.post('/auth/logout', data: {'refreshToken': refreshToken});
       return const Right(null);
     } on DioException catch (e) {
-      return Left(_mapError(e));
+      return Left(mapDioError(e));
     }
   }
 
@@ -62,7 +66,7 @@ class AuthRepository implements IAuthRepository {
       final response = await _dio.get('/users/me');
       return Right(User.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
-      return Left(_mapError(e));
+      return Left(mapDioError(e));
     }
   }
 
@@ -73,7 +77,7 @@ class AuthRepository implements IAuthRepository {
       await _dio.post('/auth/forgot-password', data: request.toJson());
       return const Right(null);
     } on DioException catch (e) {
-      return Left(_mapError(e));
+      return Left(mapDioError(e));
     }
   }
 
@@ -83,11 +87,14 @@ class AuthRepository implements IAuthRepository {
     required String newPassword,
   }) async {
     try {
-      final request = ResetPasswordRequest(token: token, newPassword: newPassword);
+      final request = ResetPasswordRequest(
+        token: token,
+        newPassword: newPassword,
+      );
       await _dio.post('/auth/reset-password', data: request.toJson());
       return const Right(null);
     } on DioException catch (e) {
-      return Left(_mapError(e));
+      return Left(mapDioError(e));
     }
   }
 
@@ -104,24 +111,7 @@ class AuthRepository implements IAuthRepository {
       await _dio.post('/auth/change-password', data: request.toJson());
       return const Right(null);
     } on DioException catch (e) {
-      return Left(_mapError(e));
+      return Left(mapDioError(e));
     }
-  }
-
-  /// No confirmed error-envelope shape exists anywhere in API_CONTRACT.md
-  /// (every documented error response has an empty body) — mapping is by
-  /// HTTP status / DioException type only. Revisit once a real error
-  /// response has been observed.
-  Failure _mapError(DioException e) {
-    if (e.type == DioExceptionType.connectionError ||
-        e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout) {
-      return const NetworkFailure();
-    }
-    final statusCode = e.response?.statusCode;
-    if (statusCode == 401) {
-      return const UnauthorizedFailure();
-    }
-    return const ServerFailure();
   }
 }
