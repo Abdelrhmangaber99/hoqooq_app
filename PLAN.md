@@ -250,7 +250,7 @@ None of these are documented as exhaustive (no OpenAPI schema backs this collect
 
 # Milestone 3 — Read-only workspace: Hearings, Documents, Tasks, Dashboard, Calendar
 
-**Status: DRAFT — awaiting review. No code written yet.**
+**Status: complete.** All checklist items done. Approved with two pre-implementation additions (M2 smoke-test debt closure, already done; backend re-verification, which caught and fixed a real M2 regression — see the session log) — see `CLAUDE.md` for the full close-out.
 
 ## Framing
 
@@ -320,13 +320,17 @@ New strings (hearing/document/task labels, status/priority labels, Dashboard's r
 - `GET /dashboard` entirely — it's the System/Super Admin's platform-wide view, not something this tenant-scoped mobile client should ever call.
 - `GET /reports/export/{cases,clients}` CSV export — no UI entry point planned before M4+.
 
-## Definition of done (draft — to convert to checkboxes once implementation starts)
+## Definition of done
 
-- `Hearing`/`TaskItem`/`DocumentItem`/`CalendarEventEntity`/`TimelineItem`/`DashboardMetrics` models match the source-verified contract in `API_CONTRACT.md` finding I, fallback-safe enums using the entity-file values (never the dead `enums/` files).
-- Mock `Appointment`/`MockAppointmentRepository` deleted; Dashboard's static mock content replaced with real data end-to-end.
-- Case Detail shows real Hearings and Documents sections, filtered client-side by `caseId`.
-- Dashboard shows real metrics from `GET /reports/dashboard` and a real personal task list; Calendar shows real data from `/calendar/timeline`.
-- Decisions #1-#3 implemented as specified above.
-- Repository + bloc tests for all new code; at least one widget smoke test for Dashboard and Calendar.
-- `flutter analyze` clean; `dart format` clean on every file touched.
-- `CLAUDE.md`/`PLAN.md` updated with outcomes at milestone close, same as M1/M2.
+- [x] `Hearing`/`TaskItem`/`DocumentItem`/`CalendarEventEntity`/`TimelineItem`/`DashboardMetrics` models match the source-verified contract in `API_CONTRACT.md` finding I, fallback-safe enums using the entity-file values (never the dead `enums/` files).
+- [x] Mock `Appointment`/`MockAppointmentRepository`/`GetAppointmentsUseCase` deleted; Dashboard's static mock content replaced with real data end-to-end.
+- [x] Case Detail shows real Hearings and Documents sections, filtered client-side by `caseId`.
+- [x] Dashboard shows real metrics from `GET /reports/dashboard` and a real personal task list; Calendar shows real data from `/calendar/timeline`.
+- [x] Decisions #1-#3 implemented as specified above.
+- [x] Repository + bloc tests for all new code; widget smoke tests for Dashboard and Calendar (loading/error/loaded/empty).
+- [x] `flutter analyze` clean; `dart format` clean on every file touched.
+- [x] `CLAUDE.md`/`PLAN.md` updated with outcomes (this pass).
+
+### Not in this pass, flagged not forgotten
+- A pre-existing M2 regression was found and fixed during this milestone's pre-planning re-verification (see session log) — `LegalCase.caseType`/`.primaryLawyer`/`CaseTeamMember.user` were wrongly `required`, and `CaseTeamMember.role` didn't match the real `roleOnCase` field. Fixed as its own commit before M3 feature work started, not folded into M3's own scope.
+- Full EN/AR widget-test duplication for every M3 screen remains a known gap (English-only smoke coverage), consistent with the precedent M2 already established.

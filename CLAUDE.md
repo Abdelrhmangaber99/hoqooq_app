@@ -47,7 +47,7 @@ This repo already contains a working UI-only prototype (see `PROJECT_SUMMARY.md`
 | Routing | `go_router` | `go_router` ✓ (matches) |
 | HTTP | `dio` | `dio` ✓ (matches; as of M1, `dio_client.dart` uses `ApiConfig.baseUrl` + `AuthInterceptor` + `RefreshInterceptor`. `TenantInterceptor` has been removed — see M1 session log) |
 
-Originally, every feature (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) was wired to **mock repositories** returning fake data. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. As of M2, authentication/cases/clients are real; calendar/dashboard/notifications/profile remain mock-or-static.
+Originally, every feature (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) was wired to **mock repositories** returning fake data. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. As of M3, authentication/cases/clients/hearings/documents/tasks/calendar/dashboard are all real; notifications/profile remain static (untouched, out of scope so far).
 
 ---
 
@@ -117,13 +117,19 @@ lib/
       presentation/
         bloc/            # auth_bloc, auth_event, auth_state, session_cubit, session_state (session_cubit added M1)
         pages/           # login, splash (sign_up_page.dart kept but unrouted, see PLAN.md)
-    calendar/            # still mock-backed — not touched, out of M2 scope
+    calendar/
+      data/repository/    # calendar_repository.dart (real, added M3, replaces MockAppointmentRepository) — no mock left
+      domain/entities/    # calendar_event_entity, calendar_event_type, timeline_item (sealed union over CALENDAR_EVENT/HEARING/TASK, added M3)
+      presentation/
+        bloc/            # calendar_bloc/event/state (rebuilt M3 against GET /calendar/timeline)
+        pages/           # calendar_page.dart (rebuilt M3); appointment_details_page.dart/new_appointment_page.dart kept but unrouted (fictional/write-only, same treatment sign_up_page.dart got in M1)
+        timeline_display_helpers.dart  # (added M3)
     cases/
       data/repository/    # case_repository.dart (real, added M2) — no mock left
-      domain/entities/    # legal_case, case_status, case_priority, case_type_lookup, court, case_team_member (added M2)
+      domain/entities/    # legal_case, case_status, case_priority, case_type_lookup, court, case_team_member (added M2; corrected pre-M3 — caseType/primaryLawyer/team[].user are nullable, team[].role renamed to roleOnCase, see session log), case_summary (added M3 — thin case shape nested in Hearing/TaskItem/DocumentItem/TimelineItem)
       presentation/
-        bloc/            # cases_bloc/event/state, case_details_bloc/event/state (added M2)
-        pages/           # cases_page.dart (added M2 — no list screen existed before), case_details_page.dart (rewritten M2)
+        bloc/            # cases_bloc/event/state, case_details_bloc/event/state (added M2); case_hearings_bloc/event/state, case_documents_bloc/event/state (added M3, sibling blocs to case_details_bloc)
+        pages/           # cases_page.dart (added M2), case_details_page.dart (rewritten M2, Hearings/Documents sections added M3)
         case_display_helpers.dart  # enum → label/color mapping (added M2)
     clients/
       data/repository/    # client_repository.dart (real, added M2) — no mock left
@@ -132,9 +138,17 @@ lib/
         bloc/            # clients_bloc/event/state, client_details_bloc/event/state (added M2)
         pages/           # clients_page.dart (updated M2), client_profile_page.dart (rewritten M2)
         client_display_helpers.dart  # (added M2)
-    dashboard/            # still static UI, no data layer — out of M2 scope
-    notifications/        # still static UI — out of M2 scope
-    profile/              # still static UI — out of M2 scope
+    dashboard/
+      data/repository/    # dashboard_repository.dart (real, added M3, calls GET /reports/dashboard — never GET /dashboard)
+      domain/entities/    # dashboard_metrics (added M3)
+      presentation/
+        bloc/            # dashboard_bloc/event/state (added M3)
+        pages/           # dashboard_page.dart (rebuilt M3 — was 100% static mock before)
+    documents/            # data/repository, domain/{entities,repository} (added M3) — no presentation/pages of its own, surfaces only inside case_details_page.dart's Documents section
+    hearings/             # data/repository, domain/{entities,repository}, presentation/hearing_display_helpers.dart (added M3) — no presentation/pages of its own, surfaces only inside case_details_page.dart's Hearings section
+    tasks/                # data/repository, domain/{entities,repository}, presentation/task_display_helpers.dart (added M3) — no presentation/pages of its own, surfaces via dashboard_page.dart's personal task list
+    notifications/        # still static UI — untouched, out of scope so far
+    profile/              # still static UI — untouched, out of scope so far
   shared/
     presentation/pages/main_layout.dart  # Cases tab added M2
     widgets/              # empty_state.dart, error_view.dart (added M2 — neither existed before)
@@ -142,10 +156,11 @@ l10n.yaml               # gen-l10n config (added M1)
 test/
   core/network/interceptors/refresh_interceptor_test.dart
   features/authentication/{data/repository, domain/entities, presentation/{bloc,pages}}/*_test.dart
-  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ includes cases_page_test.dart (added post-M2 retrospective follow-up)
+  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ includes cases_page_test.dart (post-M2 retrospective); presentation/bloc/ includes case_hearings_bloc_test.dart/case_documents_bloc_test.dart (M3)
   features/clients/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ (clients_page_test.dart, client_profile_page_test.dart) added post-M2 retrospective follow-up
+  features/{calendar,dashboard,documents,hearings,tasks}/  # M3: data/repository (all 5), presentation/bloc (calendar, dashboard), presentation/pages (calendar, dashboard)
 ```
-Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. Auth, Cases, and Clients are now fully real; calendar/dashboard/notifications/profile remain mock-or-static until their own milestone.
+Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. As of M3: Auth, Cases, Clients, Hearings, Documents, Tasks, Calendar, and Dashboard are all real; only Notifications/Profile remain static, untouched so far.
 
 ## Coding conventions
 
@@ -189,3 +204,9 @@ Each feature: `data/repository` → `domain/{entities,repository,usecases}` → 
   - Applying that to `CasesService` (`relations: ['client', 'defaultCourt', 'team', 'opponents', 'timelineEvents']`) surfaced a **real regression in already-shipped, tested M2 code**: `caseType` and `primaryLawyer` are never returned at all (not in the relations array, despite `caseTypeId`/`primaryLawyerId` always being present), and `team[].user` is never populated (`relations: ['team']`, not `'team.user'`) — plus the real field is `roleOnCase`, not `role` (the backend's own DTO documents the wrong name, another sign it's never actually applied). `LegalCase`/`CaseTeamMember` had all of these as `required` non-nullable fields, which would throw a null-cast error against a real server. This was invisible in M2's own tests because the repository test's mock JSON was built from the documented-but-unenforced DTO shape, not from what `CasesService`'s actual query returns.
   - User confirmed: fix this now, before M3. Fixed: `caseType`, `primaryLawyer`, `primaryLawyerId`, `defaultCourtId`, `defaultCourt` all made nullable on `LegalCase`; `CaseTeamMember.role` renamed to `roleOnCase`, `user` made nullable, `userId` added (always present even when `user` isn't). `case_details_page.dart`/`client_profile_page.dart` updated to degrade gracefully — fall back to the raw id or a localized "Unknown" placeholder instead of assuming the nested objects exist. Added a dedicated widget test (`case_details_page_test.dart`: "renders gracefully when caseType/primaryLawyer/team-user are absent") locking in the actual real-backend scenario, and updated `case_repository_test.dart`'s fixture to match what the real service returns instead of the aspirational DTO shape. 70 tests total (was 69), all green; `flutter analyze` clean.
   - This also resolved the M3 pre-planning question of whether Hearings/Tasks/Calendar/Documents' response DTOs (all documented as ID-only for their relations) reflect real behavior: **they don't** — the real responses will nest whatever each service's `relations` array requests, same as Cases. M3's model-generation step will build against the relations-array-derived shape, not the DTO-documented one, for all four remaining modules.
+
+- **2026-07-30 (M3 execution)** — User approved the M3 draft plan with two pre-implementation conditions: close the remaining M2 widget-smoke-test debt (already done earlier this session, confirmed complete rather than redone) and re-verify the backend source for Hearings/Documents/Tasks/Calendar/Dashboard directly before generating any entities, treating the implementation — not duplicate enum files or prior docs — as the source of truth. That re-verification pass paid off immediately: cross-referencing `CasesController`/`CasesService` to establish the general "is a response DTO ever actually enforced" pattern surfaced a real regression in already-shipped M2 code (`LegalCase.caseType`/`.primaryLawyer`/`CaseTeamMember.user` were wrongly `required` — none of the three are ever returned by the real backend, since `CasesService`'s TypeORM `relations` array doesn't request them; `CaseTeamMember.role` also didn't match the real `roleOnCase` field). Per the user's explicit choice, fixed that regression first as its own standalone commit before starting M3 feature work — see `API_CONTRACT.md`'s finding I and the correction to finding C for the full writeup.
+  - Implemented M3 in full per `PLAN.md`'s checklist: `Hearing`/`DocumentItem`/`TaskItem`/`CalendarEventEntity`/`TimelineItem`/`DashboardMetrics` models (+ `CaseSummary`, the thin nested-case shape all four reuse) built against each service's TypeORM `relations` array, not the (confirmed unenforced) response DTOs — same lesson as the regression fix, applied prospectively this time instead of reactively. `HearingStatus`/`TaskStatus`/`TaskPriority`/`CalendarEventType` enums built from the real entity files, explicitly not the confirmed-dead standalone `enums/` files that don't match the API.
+  - Case Detail gained Hearings and Documents sections via two new sibling blocs (`CaseHearingsBloc`/`CaseDocumentsBloc`), both client-side-filtered by `caseId` — no server-side filter exists for either. Dashboard was rebuilt from 100%-static mock content into `DashboardBloc` calling `GET /reports/dashboard` (confirmed with the user: never `GET /dashboard`, which is the System/Super Admin's platform-wide view, not a per-tenant metric) plus a real personal pending-tasks list; the mock's "today's schedule"/"recent clients" sections were dropped rather than faked, flagged as deferred. Calendar was rebuilt against `GET /calendar/timeline` (the one endpoint anywhere in the API with real server-side filtering), replacing the mock `Appointment` model entirely; `AppointmentDetailsPage`/`NewAppointmentPage` were already unreachable (nothing navigated to them) and are fictional/write-only respectively, so they were unrouted rather than rebuilt against a still-read-only milestone — same treatment `sign_up_page.dart` got in M1.
+  - Two pre-existing layout bugs surfaced by this milestone's first-ever widget test for `CalendarPage`: a vertical overflow that only reproduces at the test harness's unusually short default 800×600 surface (fixed by giving that test a phone-sized viewport, not by changing the real layout), and a genuine horizontal overflow in the month/year header at standard phone widths like 390px (fixed for real, since it would have reproduced on an actual device).
+  - 105 tests total (was 70), all green; `flutter analyze` clean; `dart format` clean on every file touched — reverted a `dart format lib/features/calendar` sweep partway through after it caught two untouched files (`appointment_details_page.dart`/`new_appointment_page.dart`) in its formatting pass, same discipline as M1/M2. 6 commits this milestone (1 regression fix + 5 feature/test commits). M4 (writes) not started.
