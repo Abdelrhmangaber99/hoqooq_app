@@ -9,9 +9,10 @@ void main() {
     return User(
       id: 'u1',
       email: 'lawyer@firm.com',
-      firstName: 'Jane',
-      lastName: 'Doe',
-      isActive: true,
+      fullName: 'Jane Doe',
+      isSuperAdmin: false,
+      status: 'ACTIVE',
+      mfaEnabled: false,
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
       roles: roles,
@@ -19,66 +20,48 @@ void main() {
     );
   }
 
-  test('fullName concatenates firstName and lastName', () {
+  test('fullName is the API-provided value', () {
     expect(buildUser().fullName, 'Jane Doe');
   });
 
   group('hasPerm', () {
-    test('is true when any role grants the exact resource/action pair', () {
+    test('is true when any role grants the exact permission code', () {
       final user = buildUser(
         roles: [
-          Role(
+          const Role(
             id: 'r1',
-            name: 'LAWYER',
-            displayNameEn: 'Lawyer',
-            displayNameAr: 'محامي',
-            permissions: const [
-              Permission(
-                id: 'p1',
-                resource: 'cases',
-                action: 'read',
-                displayNameEn: 'Read cases',
-                displayNameAr: 'قراءة القضايا',
-              ),
-            ],
+            code: 'LAWYER',
+            scope: 'TENANT',
+            permissions: [Permission(id: 'p1', code: 'cases.read')],
           ),
         ],
       );
 
-      expect(user.hasPerm('cases', 'read'), isTrue);
+      expect(user.hasPerm('cases.read'), isTrue);
     });
 
-    test('is false when no role grants the pair', () {
-      expect(buildUser().hasPerm('cases', 'read'), isFalse);
+    test('is false when no role grants the code', () {
+      expect(buildUser().hasPerm('cases.read'), isFalse);
     });
 
-    test('does not match on resource alone without the right action', () {
+    test('does not match a different code', () {
       final user = buildUser(
         roles: [
-          Role(
+          const Role(
             id: 'r1',
-            name: 'LAWYER',
-            displayNameEn: 'Lawyer',
-            displayNameAr: 'محامي',
-            permissions: const [
-              Permission(
-                id: 'p1',
-                resource: 'cases',
-                action: 'read',
-                displayNameEn: 'Read cases',
-                displayNameAr: 'قراءة القضايا',
-              ),
-            ],
+            code: 'LAWYER',
+            scope: 'TENANT',
+            permissions: [Permission(id: 'p1', code: 'cases.read')],
           ),
         ],
       );
 
-      expect(user.hasPerm('cases', 'delete'), isFalse);
+      expect(user.hasPerm('cases.delete'), isFalse);
     });
   });
 
   test(
-    'isFirmAdmin is always false for now (no confirmed role.name value — see CLAUDE.md)',
+    'isFirmAdmin is always false for now (no confirmed role.code value — see CLAUDE.md)',
     () {
       expect(buildUser().isFirmAdmin, isFalse);
     },

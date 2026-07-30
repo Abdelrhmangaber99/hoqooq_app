@@ -29,9 +29,10 @@ void main() {
   final user = User(
     id: 'u1',
     email: 'lawyer@firm.com',
-    firstName: 'Jane',
-    lastName: 'Doe',
-    isActive: true,
+    fullName: 'Jane Doe',
+    isSuperAdmin: false,
+    status: 'ACTIVE',
+    mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     roles: const [],
@@ -92,10 +93,8 @@ void main() {
       'emits [Loading, Error] when the login call itself fails',
       build: () {
         when(
-          () => loginUseCase.execute(
-            email: 'lawyer@firm.com',
-            password: 'wrong',
-          ),
+          () =>
+              loginUseCase.execute(email: 'lawyer@firm.com', password: 'wrong'),
         ).thenAnswer((_) async => const Left(UnauthorizedFailure()));
         return buildBloc();
       },
@@ -142,7 +141,10 @@ void main() {
       expect: () => [isA<AuthLoading>(), isA<AuthUnauthenticated>()],
       verify: (_) {
         verify(() => sessionCubit.unauthenticated()).called(1);
-        verifyNever(() => authRepository.refresh(refreshToken: any(named: 'refreshToken')));
+        verifyNever(
+          () =>
+              authRepository.refresh(refreshToken: any(named: 'refreshToken')),
+        );
       },
     );
 
@@ -199,7 +201,9 @@ void main() {
       act: (bloc) => bloc.add(LogoutRequested()),
       expect: () => [isA<AuthUnauthenticated>()],
       verify: (_) {
-        verify(() => authRepository.logout(refreshToken: 'refresh-456')).called(1);
+        verify(
+          () => authRepository.logout(refreshToken: 'refresh-456'),
+        ).called(1);
         verify(() => tokenStorage.clear()).called(1);
         verify(() => sessionCubit.unauthenticated()).called(1);
       },

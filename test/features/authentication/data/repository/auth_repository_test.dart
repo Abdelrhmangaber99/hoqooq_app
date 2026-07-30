@@ -37,31 +37,34 @@ void main() {
     };
 
     test('POSTs exactly {email, password} to /auth/login', () async {
-      when(
-        () => dio.post('/auth/login', data: any(named: 'data')),
-      ).thenAnswer((_) async => okResponse('/auth/login', responseBody, statusCode: 201));
+      when(() => dio.post('/auth/login', data: any(named: 'data'))).thenAnswer(
+        (_) async => okResponse('/auth/login', responseBody, statusCode: 201),
+      );
 
       await repository.login(email: 'lawyer@firm.com', password: 'secret123');
 
       verify(() => dio.post('/auth/login', data: requestBody)).called(1);
     });
 
-    test('returns Right(AuthResponse) with tokens parsed from the response', () async {
-      when(
-        () => dio.post('/auth/login', data: any(named: 'data')),
-      ).thenAnswer((_) async => okResponse('/auth/login', responseBody));
+    test(
+      'returns Right(AuthResponse) with tokens parsed from the response',
+      () async {
+        when(
+          () => dio.post('/auth/login', data: any(named: 'data')),
+        ).thenAnswer((_) async => okResponse('/auth/login', responseBody));
 
-      final result = await repository.login(
-        email: 'lawyer@firm.com',
-        password: 'secret123',
-      );
+        final result = await repository.login(
+          email: 'lawyer@firm.com',
+          password: 'secret123',
+        );
 
-      expect(result.isRight(), isTrue);
-      result.fold((_) => fail('expected Right'), (auth) {
-        expect(auth.accessToken, 'access-123');
-        expect(auth.refreshToken, 'refresh-456');
-      });
-    });
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('expected Right'), (auth) {
+          expect(auth.accessToken, 'access-123');
+          expect(auth.refreshToken, 'refresh-456');
+        });
+      },
+    );
 
     test('maps a 401 to UnauthorizedFailure', () async {
       when(() => dio.post('/auth/login', data: any(named: 'data'))).thenThrow(
@@ -128,9 +131,9 @@ void main() {
 
   group('logout', () {
     test('POSTs exactly {refreshToken} to /auth/logout', () async {
-      when(
-        () => dio.post('/auth/logout', data: any(named: 'data')),
-      ).thenAnswer((_) async => okResponse('/auth/logout', null, statusCode: 204));
+      when(() => dio.post('/auth/logout', data: any(named: 'data'))).thenAnswer(
+        (_) async => okResponse('/auth/logout', null, statusCode: 204),
+      );
 
       await repository.logout(refreshToken: 'refresh-456');
 
@@ -141,29 +144,23 @@ void main() {
   });
 
   group('getCurrentUser', () {
-    // Full shape per API_CONTRACT.md §2 (GET /users/me).
+    // Full shape per API_CONTRACT.md §2 (GET /users/me), rebuilt 2026-07-30.
     final userJson = {
       'id': 'u1',
       'email': 'lawyer@firm.com',
-      'firstName': 'Jane',
-      'lastName': 'Doe',
-      'isActive': true,
+      'fullName': 'Jane Doe',
+      'isSuperAdmin': false,
+      'status': 'ACTIVE',
+      'mfaEnabled': false,
       'createdAt': '2026-01-01T00:00:00.000Z',
       'updatedAt': '2026-01-01T00:00:00.000Z',
       'roles': [
         {
           'id': 'r1',
-          'name': 'LAWYER',
-          'displayNameEn': 'Lawyer',
-          'displayNameAr': 'محامي',
+          'code': 'LAWYER',
+          'scope': 'TENANT',
           'permissions': [
-            {
-              'id': 'p1',
-              'resource': 'cases',
-              'action': 'read',
-              'displayNameEn': 'Read cases',
-              'displayNameAr': 'قراءة القضايا',
-            },
+            {'id': 'p1', 'code': 'cases.read'},
           ],
         },
       ],
@@ -181,8 +178,8 @@ void main() {
       result.fold((_) => fail('expected Right'), (user) {
         expect(user.id, 'u1');
         expect(user.fullName, 'Jane Doe');
-        expect(user.hasPerm('cases', 'read'), isTrue);
-        expect(user.hasPerm('cases', 'delete'), isFalse);
+        expect(user.hasPerm('cases.read'), isTrue);
+        expect(user.hasPerm('cases.delete'), isFalse);
         expect(user.tenant.name, 'Reynolds & Associates');
       });
     });
@@ -207,9 +204,14 @@ void main() {
     test('resetPassword POSTs exactly {token, newPassword}', () async {
       when(
         () => dio.post('/auth/reset-password', data: any(named: 'data')),
-      ).thenAnswer((_) async => okResponse('/auth/reset-password', null, statusCode: 204));
+      ).thenAnswer(
+        (_) async => okResponse('/auth/reset-password', null, statusCode: 204),
+      );
 
-      await repository.resetPassword(token: 'reset-tok', newPassword: 'newpw123');
+      await repository.resetPassword(
+        token: 'reset-tok',
+        newPassword: 'newpw123',
+      );
 
       verify(
         () => dio.post(
@@ -222,7 +224,9 @@ void main() {
     test('changePassword POSTs exactly {oldPassword, newPassword}', () async {
       when(
         () => dio.post('/auth/change-password', data: any(named: 'data')),
-      ).thenAnswer((_) async => okResponse('/auth/change-password', null, statusCode: 204));
+      ).thenAnswer(
+        (_) async => okResponse('/auth/change-password', null, statusCode: 204),
+      );
 
       await repository.changePassword(
         oldPassword: 'oldpw123',

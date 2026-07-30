@@ -9,12 +9,12 @@ part of 'user.dart';
 _User _$UserFromJson(Map<String, dynamic> json) => _User(
   id: json['id'] as String,
   email: json['email'] as String,
-  firstName: json['firstName'] as String,
-  lastName: json['lastName'] as String,
-  isActive: json['isActive'] as bool,
+  fullName: json['fullName'] as String,
+  isSuperAdmin: json['isSuperAdmin'] as bool,
+  status: json['status'] as String,
+  mfaEnabled: json['mfaEnabled'] as bool,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
-  phone: json['phone'] as String?,
   avatarUrl: json['avatarUrl'] as String?,
   lastLoginAt: json['lastLoginAt'] == null
       ? null
@@ -28,12 +28,12 @@ _User _$UserFromJson(Map<String, dynamic> json) => _User(
 Map<String, dynamic> _$UserToJson(_User instance) => <String, dynamic>{
   'id': instance.id,
   'email': instance.email,
-  'firstName': instance.firstName,
-  'lastName': instance.lastName,
-  'isActive': instance.isActive,
+  'fullName': instance.fullName,
+  'isSuperAdmin': instance.isSuperAdmin,
+  'status': instance.status,
+  'mfaEnabled': instance.mfaEnabled,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
-  'phone': instance.phone,
   'avatarUrl': instance.avatarUrl,
   'lastLoginAt': instance.lastLoginAt?.toIso8601String(),
   'roles': instance.roles,

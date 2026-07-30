@@ -7,9 +7,11 @@ part 'user.g.dart';
 
 /// Wire shape for the `User` object returned by `GET /users/me`,
 /// `POST /auth/login`, and `POST /auth/refresh` per API_CONTRACT.md §1-2.
-/// Deliberately matches the collection's camelCase field names exactly —
-/// this replaces the earlier prototype shape (fullName/role enum/lawFirmName)
-/// which had no basis in the real API.
+///
+/// Rebuilt 2026-07-30 for a backend update: `firstName`/`lastName`/`isActive`/
+/// `phone` no longer exist (this is the second shape this entity has had in
+/// one day — first a UI-mockup shape, then this rebuild). `fullName` and
+/// `status` are now real API fields, not derived client-side.
 @freezed
 abstract class User with _$User {
   const User._();
@@ -17,12 +19,12 @@ abstract class User with _$User {
   const factory User({
     required String id,
     required String email,
-    required String firstName,
-    required String lastName,
-    required bool isActive,
+    required String fullName,
+    required bool isSuperAdmin,
+    required String status,
+    required bool mfaEnabled,
     required DateTime createdAt,
     required DateTime updatedAt,
-    String? phone,
     String? avatarUrl,
     DateTime? lastLoginAt,
     required List<Role> roles,
@@ -31,25 +33,23 @@ abstract class User with _$User {
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
-  String get fullName => '$firstName $lastName';
-
-  /// Flattens permissions across all of this user's roles. Generic by
-  /// design — no `resource`/`action` values are enumerated anywhere in
-  /// API_CONTRACT.md, so this can't be narrowed further without a live
-  /// example response.
-  bool hasPerm(String resource, String action) {
+  /// Flattens permission codes across all of this user's roles. Generic by
+  /// design — no enumerated `code` values are shown anywhere in
+  /// API_CONTRACT.md, so this can't be narrowed to a typed set without a
+  /// live example response.
+  bool hasPerm(String permissionCode) {
     return roles.any(
       (role) => role.permissions.any(
-        (permission) =>
-            permission.resource == resource && permission.action == action,
+        (permission) => permission.code == permissionCode,
       ),
     );
   }
 
   /// BR-005: Firm Admin must always have full, non-restrictable CRUD.
-  /// No example anywhere in API_CONTRACT.md shows a real `role.name` value
-  /// (e.g. whether it's "FIRM_ADMIN"), so this can't be detected reliably
-  /// yet. Scaffolded per PLAN.md §5 — confirm the real value against a live
-  /// login response before wiring this into any UI gating.
+  /// `role.code` (e.g. plausibly "FIRM_ADMIN") is a much more promising
+  /// signal than the previous shape's `role.name`/display-name fields were,
+  /// but no example anywhere in API_CONTRACT.md shows a real value — still
+  /// not guessing it. Confirm the actual value against a live login
+  /// response before wiring this into any UI gating.
   bool get isFirmAdmin => false;
 }

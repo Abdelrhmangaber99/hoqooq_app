@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Permission {
 
- String get id; String get resource; String get action; String get displayNameEn; String get displayNameAr;
+ String get id; String get code;
 /// Create a copy of Permission
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $PermissionCopyWith<Permission> get copyWith => _$PermissionCopyWithImpl<Permiss
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Permission&&(identical(other.id, id) || other.id == id)&&(identical(other.resource, resource) || other.resource == resource)&&(identical(other.action, action) || other.action == action)&&(identical(other.displayNameEn, displayNameEn) || other.displayNameEn == displayNameEn)&&(identical(other.displayNameAr, displayNameAr) || other.displayNameAr == displayNameAr));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Permission&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,resource,action,displayNameEn,displayNameAr);
+int get hashCode => Object.hash(runtimeType,id,code);
 
 @override
 String toString() {
-  return 'Permission(id: $id, resource: $resource, action: $action, displayNameEn: $displayNameEn, displayNameAr: $displayNameAr)';
+  return 'Permission(id: $id, code: $code)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $PermissionCopyWith<$Res>  {
   factory $PermissionCopyWith(Permission value, $Res Function(Permission) _then) = _$PermissionCopyWithImpl;
 @useResult
 $Res call({
- String id, String resource, String action, String displayNameEn, String displayNameAr
+ String id, String code
 });
 
 
@@ -65,13 +65,10 @@ class _$PermissionCopyWithImpl<$Res>
 
 /// Create a copy of Permission
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? resource = null,Object? action = null,Object? displayNameEn = null,Object? displayNameAr = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,resource: null == resource ? _self.resource : resource // ignore: cast_nullable_to_non_nullable
-as String,action: null == action ? _self.action : action // ignore: cast_nullable_to_non_nullable
-as String,displayNameEn: null == displayNameEn ? _self.displayNameEn : displayNameEn // ignore: cast_nullable_to_non_nullable
-as String,displayNameAr: null == displayNameAr ? _self.displayNameAr : displayNameAr // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -157,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String resource,  String action,  String displayNameEn,  String displayNameAr)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String code)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Permission() when $default != null:
-return $default(_that.id,_that.resource,_that.action,_that.displayNameEn,_that.displayNameAr);case _:
+return $default(_that.id,_that.code);case _:
   return orElse();
 
 }
@@ -178,10 +175,10 @@ return $default(_that.id,_that.resource,_that.action,_that.displayNameEn,_that.d
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String resource,  String action,  String displayNameEn,  String displayNameAr)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String code)  $default,) {final _that = this;
 switch (_that) {
 case _Permission():
-return $default(_that.id,_that.resource,_that.action,_that.displayNameEn,_that.displayNameAr);case _:
+return $default(_that.id,_that.code);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +195,10 @@ return $default(_that.id,_that.resource,_that.action,_that.displayNameEn,_that.d
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String resource,  String action,  String displayNameEn,  String displayNameAr)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String code)?  $default,) {final _that = this;
 switch (_that) {
 case _Permission() when $default != null:
-return $default(_that.id,_that.resource,_that.action,_that.displayNameEn,_that.displayNameAr);case _:
+return $default(_that.id,_that.code);case _:
   return null;
 
 }
@@ -213,14 +210,11 @@ return $default(_that.id,_that.resource,_that.action,_that.displayNameEn,_that.d
 @JsonSerializable()
 
 class _Permission implements Permission {
-  const _Permission({required this.id, required this.resource, required this.action, required this.displayNameEn, required this.displayNameAr});
+  const _Permission({required this.id, required this.code});
   factory _Permission.fromJson(Map<String, dynamic> json) => _$PermissionFromJson(json);
 
 @override final  String id;
-@override final  String resource;
-@override final  String action;
-@override final  String displayNameEn;
-@override final  String displayNameAr;
+@override final  String code;
 
 /// Create a copy of Permission
 /// with the given fields replaced by the non-null parameter values.
@@ -235,16 +229,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Permission&&(identical(other.id, id) || other.id == id)&&(identical(other.resource, resource) || other.resource == resource)&&(identical(other.action, action) || other.action == action)&&(identical(other.displayNameEn, displayNameEn) || other.displayNameEn == displayNameEn)&&(identical(other.displayNameAr, displayNameAr) || other.displayNameAr == displayNameAr));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Permission&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,resource,action,displayNameEn,displayNameAr);
+int get hashCode => Object.hash(runtimeType,id,code);
 
 @override
 String toString() {
-  return 'Permission(id: $id, resource: $resource, action: $action, displayNameEn: $displayNameEn, displayNameAr: $displayNameAr)';
+  return 'Permission(id: $id, code: $code)';
 }
 
 
@@ -255,7 +249,7 @@ abstract mixin class _$PermissionCopyWith<$Res> implements $PermissionCopyWith<$
   factory _$PermissionCopyWith(_Permission value, $Res Function(_Permission) _then) = __$PermissionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String resource, String action, String displayNameEn, String displayNameAr
+ String id, String code
 });
 
 
@@ -272,13 +266,10 @@ class __$PermissionCopyWithImpl<$Res>
 
 /// Create a copy of Permission
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? resource = null,Object? action = null,Object? displayNameEn = null,Object? displayNameAr = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,}) {
   return _then(_Permission(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,resource: null == resource ? _self.resource : resource // ignore: cast_nullable_to_non_nullable
-as String,action: null == action ? _self.action : action // ignore: cast_nullable_to_non_nullable
-as String,displayNameEn: null == displayNameEn ? _self.displayNameEn : displayNameEn // ignore: cast_nullable_to_non_nullable
-as String,displayNameAr: null == displayNameAr ? _self.displayNameAr : displayNameAr // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
