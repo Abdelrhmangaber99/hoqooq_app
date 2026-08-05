@@ -123,6 +123,81 @@ Both endpoints (removed in the pre-M2 backend update, flagged as a regression at
 
 ---
 
+## ⚠️ Findings from the third backend-source re-sync (2026-08-06) — M6 pre-planning
+
+User asked for a fresh re-inspection of the backend source before drafting M6, specifically to find backend-supported features not yet built in Flutter, prioritized over inventing new ones. This pass went deeper than any prior one into modules that were previously only enumerated by controller name (Finance, Notifications, Opponents, AI, Tenants) but never read in full. Confirmed directly from `Hoqooq-main/src/`.
+
+### R. Finance module (Invoices + Payments) — real, rich, and fully buildable; corrects a wrong claim in §12 below
+
+Never previously read past the Postman-collection-derived summary in §12. Real endpoints, all guarded `JwtAuthGuard`+`PermissionsGuard`, `finance.{create,read,update,delete}`:
+- `GET /finance/analytics` — firm-wide `{totalInvoiced, totalPaid, totalOutstanding, collectionRatePercentage, totalInvoicesCount, paidInvoicesCount, partialInvoicesCount, unpaidInvoicesCount, grossRevenue, netProfitEstimate}`. Hand-built plain object (not a raw entity) — this response shape **is** reliable.
+- `GET /finance/cases-summary` — per-case array `{caseId, caseNumber, clientName, totalInvoiced, totalPaid, outstandingBalance, paymentStatus: 'PAID'|'PARTIAL'|'UNPAID'|'NO_INVOICE', invoicesCount}` for every case in the tenant. Also hand-built, reliable.
+- `GET /finance/cases/:caseId/summary` — same shape as above for one case, plus a nested `invoices: Invoice[]` (raw entities, see below).
+- `POST/GET /finance/invoices`, `GET/PATCH/DELETE /finance/invoices/:id`.
+- `POST/GET /finance/payments`, `GET/DELETE /finance/payments/:id` (**no PATCH for payments** — a payment can be created or deleted, never edited).
+
+**⚠️ `FinanceController` never calls `plainToInstance` anywhere — same "DTO documented, never enforced" pattern as Cases/Hearings/Tasks/Calendar (see the correction in §8 below).** The real `Invoice`/`Payment` wire shape is governed by `FinanceService`'s query relations, not `InvoiceResponseDto`/`PaymentResponseDto`:
+- `findAllInvoices` → `relations: ['client', 'case', 'payments']` — **no `lineItems`**.
+- `findOneInvoice` → `relations: ['client', 'case', 'payments', 'lineItems']` — list and detail have different shapes, same "list is thinner than detail" pattern as elsewhere in this API.
+- `findAllPayments`/`findOnePayment` → `relations: ['invoice']`.
+- `case`/`client` are full nested entities (not thin summaries) — build the Flutter model with a reused thin `CaseSummary` reference for `case`, same pattern as Hearings/Tasks/Documents, to avoid unbounded nesting.
+
+**⚠️ Corrects §12 below: DELETE on Invoices and Payments is a HARD delete, not soft — the opposite of what this file previously claimed.** `FinanceService.removeInvoice`/`.removePayment` both call `.remove()`, not `.softRemove()` (`finance.service.ts` lines 72, 140), despite `Invoice`/`Payment` extending `AuditableEntity`/`BaseEntity` with the same soft-delete columns every other confirmed-soft module has. The earlier "DELETE on both invoices and payments is confirmed soft-delete... does not contradict BR-028/BR-029" line in §12 was never actually verified against Finance source — it was an extrapolation from finding C's general pattern, and finding C's own caveat (Hearings/Tasks hard-delete despite having the columns) already warned against exactly this kind of unverified generalization. **This one matters more than Hearings/Tasks hard-delete does — BR-028/BR-029 explicitly name financial records.** No Flutter delete UI exists for Finance yet (nothing to fix retroactively), but this is a hard blocker on ever wiring one without a business-rule conversation first — same "don't wire a destructive UI action without asking" standing instruction that already applies to Hearings/Tasks.
+
+**Real, backend-confirmed inconsistency, not a Flutter bug to work around:** `CreatePaymentDto.method` is validated against `PaymentMethod` imported from `enums/payment-method.enum.ts` (`CASH|BANK_TRANSFER|CHEQUE|ONLINE`), but the `Payment` entity's TypeORM column type is a **different, inline-declared** `PaymentMethod` enum in `payment.entity.ts` (`CASH|BANK_TRANSFER|CREDIT_CARD|CHECK`) — same name, different values, two separate declarations. `FinanceService.createPayment` does a raw SQL insert coalescing `(createPaymentDto as any).paymentMethod || createPaymentDto.method`, suggesting the backend team is already aware of some mismatch here. **The DTO's enum is what class-validator actually enforces on write** (`CASH|BANK_TRANSFER|CHEQUE|ONLINE`) — that's the value set the Flutter app should send; whether the DB-level enum type actually accepts `CHEQUE`/`ONLINE` at the Postgres layer is unverifiable from source alone and worth flagging to the backend team before relying on it in a real environment.
+
+`createPayment` auto-transitions the invoice's `status` to `PARTIAL`/`PAID` based on cumulative payments against `grandTotal` — the invoice itself isn't re-fetched by this call, so the Flutter app must explicitly refetch the invoice after a payment write to see the new status (same explicit-refetch convention as every other write path in this app).
+
+No line-items CRUD exists despite `InvoiceLineItem` entity/relation existing (confirms the pre-existing gap) — `subtotal`/`taxTotal`/`grandTotal` stay flat, client-computed numbers on create/update, not derived from itemized lines.
+
+### S. Notifications — real, simple, DTO-enforced, no blockers
+
+Never previously read past "unchanged" in §4 below. `NotificationsController` **does** call `plainToInstance(..., {excludeExtraneousValues: true})` on both routes — this one's DTO **is** reliably enforced:
+- `GET /notifications/me` — returns **only unread** notifications (`NotificationsService.getUserNotifications` filters `isRead: false` server-side) for the current user, sorted `createdAt DESC`. No pagination, no way to see read history — once marked read, a notification effectively disappears from this endpoint.
+- `PATCH /notifications/{id}/read` — ownership-checked (404 if the notification isn't the caller's own), marks `isRead: true`, returns the updated notification.
+- **`NotificationResponseDto`** = `{id, userId, title, message, isRead, type, createdAt}`. Real `NotificationType` enum (`enums/notification-type.enum.ts`): `HEARING_REMINDER|TASK_ASSIGNED|INVOICE_DUE|SYSTEM_ALERT`.
+- No permission gating beyond `JwtAuthGuard` — any authenticated user reads/marks only their own notifications, no `@RequirePermissions` involved (the `notifications.read` permission code exists in `permissions.constant.ts` but this controller never checks it — dead code on the permission side, not a blocker).
+- No creation endpoint — notifications are server-internal only (`NotificationsService.create`, called from elsewhere in the backend / a queue processor), nothing for the client to `POST`.
+
+### T. Opponents — real, DTO-enforced CRUD, but structurally NOT linkable to a case
+
+Never previously read past "minor shape change" in §6 below. Full CRUD (`opponents.create/read/update/delete`), tenant-scoped, `plainToInstance`-enforced throughout — reliable. `Opponent` = `{id, type: INDIVIDUAL|COMPANY|GOVERNMENT, name, phone?, address?, createdAt, updatedAt}`.
+
+**No `caseId` column exists on `Opponent` at all** — it's a flat, tenant-wide directory entity, structurally identical in spirit to Clients/Courts (a standalone reference list), not a per-case sub-resource. A `CaseOpponent` join entity (`case_opponents` table: `caseId`, `opponentId`, optional `relationship` string) does exist, and `case.opponents` **is** joined into every `GET /cases`/`GET /cases/{id}` response (`cases.service.ts`'s query builder explicitly does `.leftJoinAndSelect('case.opponents', 'opponents')`) — but **no controller or route anywhere creates, reads, or deletes a `CaseOpponent` row.** The join table exists in the schema with zero HTTP surface to populate it. **Practical consequence: `case.opponents` will always deserialize as an empty array in a real response, and a "link this opponent to this case" UI is not buildable — only a standalone, flat Opponents directory (list/create/edit/delete, same shape as the existing Clients/Courts screens) is.**
+
+### U. Courts — full CRUD now exists; the app only ever built the read side
+
+`CourtsController` has real `POST`/`PATCH`/`DELETE` routes (`courts.create/update/delete` permissions) alongside the `GET` this app already uses as Case/Hearing picker reference data — `plainToInstance`-enforced, DELETE confirmed soft (`.softRemove()`, matches finding C, consistent with BR-021 "deactivate, don't delete"). Court management itself (as opposed to just reading courts for a dropdown) was never built as a first-class Flutter feature — same CRUD shape as Clients, no blockers.
+
+### V. Case `opponents[]`/`timelineEvents[]` — confirmed always-empty, not partially-populated
+
+Re-confirmed directly from `cases.service.ts`'s query builder: both `case.opponents` and `case.timelineEvents` are joined into every case fetch (`.leftJoinAndSelect('case.opponents', 'opponents')` / `.leftJoinAndSelect('case.timelineEvents', 'timelineEvents')`), but grepping the entire `CasesService` for any write to either repository turns up nothing — no code path anywhere creates a `CaseTimelineEvent` or (per finding T) a `CaseOpponent` row. Both fields will reliably deserialize as `[]` in a real response. This isn't new information about BR-017 (still no case-timeline endpoint, unchanged), but it does confirm neither field is silently half-working — they're both fully inert, not worth modeling in `LegalCase` until (if ever) a write path for either appears.
+
+### W. Tenants / Firm Profile (`GET/PATCH /tenants/my-firm`, `POST /tenants/my-firm/logo`) — real and buildable, one DTO/entity mismatch to flag
+
+`GET /tenants/my-firm` (any authenticated tenant user, no permission gate beyond having a `tenantId` at all) returns the raw `Tenant` entity: `{id, name, logoUrl, address, contactEmail, ownerUserId, defaultLanguage: EN|AR, currency, timezone, status: ACTIVE|SUSPENDED|CANCELLED, subscription, createdAt, updatedAt}`. `PATCH /tenants/my-firm` (requires `settings.update`) and `POST /tenants/my-firm/logo` (multipart, field name `logo`, same permission) are real, working write paths.
+
+**⚠️ `UpdateTenantDto`'s fields don't all map to real `Tenant` columns — a backend inconsistency worth confirming before building an edit form around it.** The DTO accepts `{name?, address?, publicContactEmail?, publicContactPhone?, website?, specializations?[]}`, but the `Tenant` entity only has columns for `name`, `address`, and `contactEmail` (not `publicContactEmail` — different name) — there is **no** `publicContactPhone`, `website`, or `specializations` column on `Tenant` at all. This DTO looks copy-pasted from a different (marketplace-facing lawyer-profile?) concept than the actual `Tenant` entity. Sending `publicContactPhone`/`website`/`specializations` will pass validation (the DTO declares them) but has no column to persist into — TypeORM's `merge()` will silently drop unknown-to-the-entity fields. **Only `name`/`address` are safe to build an edit form around with confidence; `contactEmail` may or may not be reachable at all given the DTO's field is named `publicContactEmail` not `contactEmail`** — flag to the backend team, don't guess which one actually persists.
+
+`BookMeetingDto` exists (`dtos/book-meeting.dto.ts`) and is referenced in `tenants.service.ts`, but is never wired to any controller route — dead/unused, consistent with the marketplace/consultations concept staying out of scope.
+
+### X. AI module — confirmed a non-functional stub, not a real feature yet
+
+`AiController`'s three endpoints (`POST /ai/summarize`, `/ai/research`, `/ai/chat`) each return a hardcoded `{status: 'success', feature: '...', message: 'AI Module is ready to be implemented.'}` regardless of request body — no real AI integration, no RAG, no entitlement check exists behind these routes yet. Confirms and sharpens the existing "no AI entitlement/credit-preflight endpoint" gap: it's not just missing a preflight check, the feature itself doesn't do anything real yet. Not a buildable feature for any milestone until the backend actually implements it — BR-030/BR-032 stay unaddressable.
+
+### Y. `PermissionsGuard` was rewritten — supersedes finding I's "admin/client bypass entirely" claim
+
+`src/core/guards/permissions.guard.ts` is a different, more granular implementation than what finding I described. Re-read in full:
+- `SUPER_ADMIN` (or `isSuperAdmin`) bypasses only for `system.*` permissions plus a specific whitelist (`employees.read`, `lookups.read`, `settings.read`, `roles.read`, `users.read`, `users.create`, `users.delete`) — **not** a blanket bypass anymore.
+- `FIRM_ADMIN` bypasses every non-`system.*` check — confirms BR-005's full-CRUD requirement is backend-enforced, not just a Flutter-side assumption.
+- `ACCOUNTANT` bypasses only when every required permission is `finance.*`, `reports.read`, `dashboard.read`, or `lookups.read` — a real, working "accountant persona" the backend now supports end-to-end.
+- **`CLIENT` role bypasses every non-`system.*` check too, same as Firm Admin** — flagged as a notable backend RBAC looseness (a client-role user would pass any permission check for any tenant-scoped action), but **not a Flutter action item**: this app never authenticates a CLIENT-role user (BR-001 keeps public self-signup/client login out of this app's scope), so there's no code path in this client that could exercise it.
+- Everyone else (`LAWYER`/`SECRETARY`/`ASSISTANT`) falls through to explicit `user.permissions.includes(...)` matching — same as before.
+
+**Seed data now grants real permissions to `FIRM_ADMIN` (every non-`system.*` permission) and `ACCOUNTANT` (`finance.*`, `reports.read`, `dashboard.read`, `lookups.read`)** — resolves the M4-era finding that only `admin` had any permissions seeded at all. **`LAWYER`/`SECRETARY`/`ASSISTANT` still have zero permissions granted in seed data** — those three roles still can't pass any explicit `@RequirePermissions` check against a freshly-seeded environment (same underlying gap as before, narrower now that two of five non-admin roles are fixed). Practical implication for testing: an `ACCOUNTANT`-role seeded login is now a real, viable way to exercise Finance (and M5.5's RBAC gating generally) end-to-end against a live backend; a `LAWYER`-role login still can't exercise most permission-gated write actions server-side, independent of whether the Flutter-side gating is correct.
+
+---
+
 ## ⚠️ Breaking changes since the M1 version of this file (2026-07-30, same day)
 
 This is not a re-randomization of examples — the collection went from 97 requests to 87, gained a global `/api` prefix, and several core entities were structurally rebuilt to match the BRD's actual data dictionary far more closely. Full diff method available: old export preserved as `/tmp/postman_full.json` from the M1 session, new one at `/tmp/postman_full_v2.json` (both outside the repo).
@@ -224,13 +299,15 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 
 `tenantId` is still client-suppliable in `POST`/`PATCH /users` bodies — same BR-003 concern as M1, unresolved.
 
-## 3. Public / Tenants — unchanged (still present, still a BR-scope concern)
+## 3. Public / Tenants — marketplace half unchanged; `my-firm` half source-verified 2026-08-06 (finding W)
 
-`GET /api/public/lawyers`, `GET /api/public/lawyers/specializations` (bearer, despite the name) — still a marketplace-style directory the BRD lists as out-of-scope. `GET /api/settings/public` (none). `GET/PATCH /api/tenants/my-firm`, `POST /api/tenants/my-firm/logo`, and the System-Admin-only `GET/PATCH/DELETE /api/tenants`/`/api/tenants/{id}` — all unchanged from M1, all the same concerns (cross-tenant System-Admin endpoints sitting in the same flat collection as firm-scoped ones; `DELETE` on a tenant is confirmed soft-delete, see finding C — does not contradict BR-013).
+`GET /api/public/lawyers`, `GET /api/public/lawyers/specializations` (bearer, despite the name) — still a marketplace-style directory the BRD lists as out-of-scope. `GET /api/settings/public` (none). The System-Admin-only `GET/PATCH/DELETE /api/tenants`/`/api/tenants/{id}` and `POST /api/tenants/provision` — unchanged, out of scope for this app (BR-037, this client never acts as System Admin); `DELETE` on a tenant is confirmed soft-delete (see finding C — does not contradict BR-013).
 
-## 4. Notifications — unchanged
+`GET/PATCH /api/tenants/my-firm` + `POST /api/tenants/my-firm/logo` are real, working, Firm-facing endpoints — a "Firm Profile" screen is buildable. `GET` (any authenticated tenant user) returns the raw `Tenant` entity: `{id, name, logoUrl, address, contactEmail, ownerUserId, defaultLanguage: EN|AR, currency, timezone, status: ACTIVE|SUSPENDED|CANCELLED, subscription, createdAt, updatedAt}`. `PATCH`/logo-upload both require `settings.update`. **`UpdateTenantDto`'s fields don't reliably map to real `Tenant` columns — see finding W before building an edit form:** only `name`/`address` are safe; the DTO also accepts `publicContactEmail`/`publicContactPhone`/`website`/`specializations`, none of which have a matching column on `Tenant` (closest is `contactEmail`, a different name than `publicContactEmail`) — this looks like a copy-pasted DTO from an unrelated concept, flag to the backend team rather than guessing which fields actually persist.
 
-`GET /api/notifications/me` → `[{id, userId, title, message, isRead, type, createdAt}]`. `PATCH /api/notifications/{id}/read`. Same gap as before: no `/me/notification_prefs`, no device registration.
+## 4. Notifications — fully source-verified 2026-08-06 (finding S), real and low-risk
+
+`GET /api/notifications/me` → **unread only** (`isRead: false` filtered server-side), sorted newest-first: `[{id, userId, title, message, isRead, type, createdAt}]`. `PATCH /api/notifications/{id}/read` (ownership-checked, 404 if not the caller's own). Both `plainToInstance`-enforced — reliable. Real `NotificationType` enum: `HEARING_REMINDER|TASK_ASSIGNED|INVOICE_DUE|SYSTEM_ALERT`. No permission gating beyond being authenticated. No creation endpoint (server-internal only). Same gap as before, unchanged: no `/me/notification_prefs`, no device/FCM registration, no way to see already-read notifications (no history endpoint).
 
 ## 5. Clients — shape rebuilt (see breaking change #4)
 
@@ -242,13 +319,13 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 
 **Client** = `{id, tenantId, clientCode, type, fullName, status, createdAt, updatedAt, nationalId?, commercialReg?, emails: string[], phones: string[], addresses: string[]}`. Note `emails`/`phones`/`addresses` are arrays of plain strings in the examples, not objects with a "primary" flag — BRD wanted one designated primary per array (§8.3); this collection doesn't show how (or if) that's represented. `DELETE` is confirmed soft-delete (TypeORM `@DeleteDateColumn`/`isArchived` via `.softRemove()` — see backend-source finding C above), matching the spec's "archive only" expectation.
 
-## 6. Opponents — minor shape change
+## 6. Opponents — minor shape change, source-verified 2026-08-06 (finding T)
 
-`{type, name, phone?, address?}` — **`email` and `notes` fields are gone** compared to the M1 version. POST/GET/PATCH/DELETE all otherwise the same shape (`id, type, name, createdAt, updatedAt, phone?, address?`). Still no representative_name/representative_contact (BRD §8.3). DELETE confirmed soft (see finding C).
+`{type: INDIVIDUAL|COMPANY|GOVERNMENT, name, phone?, address?}` — **`email` and `notes` fields are gone** compared to the M1 version. POST/GET/PATCH/DELETE all otherwise the same shape (`id, type, name, createdAt, updatedAt, phone?, address?`), `plainToInstance`-enforced (reliable). Still no representative_name/representative_contact (BRD §8.3). DELETE confirmed soft (see finding C). **No `caseId` on the entity — this is a flat, tenant-wide directory, not a per-case sub-resource.** A `CaseOpponent` join table exists and `case.opponents` is joined into every case response, but no endpoint anywhere populates it — see finding T for the full detail. A standalone Opponents directory (list/create/edit/delete) is buildable; a "case's opponents" UI is not, until a link-endpoint exists.
 
-## 7. Courts — shape adjusted
+## 7. Courts — shape adjusted; full CRUD confirmed 2026-08-06 (finding U), only the read side is built
 
-`{name, type, city?, address?, isActive}` (was `location`/`contactInfo`, now `city`/`address`). Still no court_circuits endpoints. DELETE confirmed soft (see finding C) — matches BR-021's "deactivate, don't delete".
+`{name, type, city?, address?, isActive}` (was `location`/`contactInfo`, now `city`/`address`). `plainToInstance`-enforced, DELETE confirmed soft (see finding C) — matches BR-021's "deactivate, don't delete". Still no court_circuits endpoints. **`POST`/`PATCH`/`DELETE /courts` are real, working endpoints (`courts.create/update/delete` permissions)** — this app currently only calls `GET /courts` as read-only reference data for Case/Hearing pickers; Court management itself was never built as a first-class feature. Same simple-CRUD shape as Clients, no blockers.
 
 ## 8. Cases — shape rebuilt (see breaking change #3)
 
@@ -295,9 +372,15 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 
 **Hearing creation is now unblocked (2026-08-05, finding K):** `hearingTypeId` is now populatable via `GET /lookups?kind=HEARING_TYPE`. `HearingsService.create` also enforces a new authorization rule not previously documented: a non-firm-admin caller must have a `CaseTeam` assignment on the target case with `accessLevel` of `FULL_ACCESS` or `ASSIGN_HEARING`, or the request 403s (`ForbiddenException`) — worth surfacing distinctly in the UI if a non-admin's hearing-creation attempt fails for this reason, rather than a generic error.
 
-## 12. Finance — shape adjusted
+## 12. Finance — fully source-verified 2026-08-06 (finding R), supersedes everything below from the Postman-era summary
 
-**Invoices**: `{clientId, invoiceNumber, subtotal, taxTotal, grandTotal, issueDate, dueDate, caseId?, status, notes?}` + nested `payments[]`. `status` now includes `PARTIAL` (was `DRAFT/ISSUED/PAID/CANCELLED`, examples now show `PARTIAL/PAID/CANCELLED` — union unclear, not exhaustively documented). Still flat totals, no line-items endpoint (BRD's `invoice_line_items`). **Payments**: unchanged shape, `{invoiceId, amount, paymentDate, method, referenceNumber?}`. `DELETE` on both invoices and payments is confirmed soft-delete (see finding C) — does not contradict BR-028/BR-029. Still no reversal/compensating-transaction endpoint (a real gap, distinct from the delete-semantics question). Still no expenses module at all.
+**Invoices**: create/read/update all real; request DTO = `{clientId, caseId?, invoiceNumber, subtotal, taxTotal, grandTotal, status?, issueDate, dueDate, notes?}` (no client-suppliable `tenantId` — sourced from the JWT). Real `InvoiceStatus` enum (`entities/invoice.entity.ts`, confirmed exhaustive from source): `DRAFT|SENT|PARTIAL|PAID|CANCELLED`. Response is a **raw entity**, not the documented DTO (`FinanceController` never calls `plainToInstance`) — list (`GET /finance/invoices`) loads `relations: ['client', 'case', 'payments']`, detail (`GET /finance/invoices/:id`) additionally loads `lineItems`. Still no line-items CRUD despite the relation existing — totals stay flat, client-supplied numbers. **Payments**: create/read/delete only, **no update** — request DTO = `{invoiceId, amount, paymentDate, method, referenceNumber?}` (field is `method`, not `paymentMethod` — see the enum-mismatch caveat below). Also a raw entity, `relations: ['invoice']`. Creating a payment auto-transitions the parent invoice's `status` to `PARTIAL`/`PAID` server-side — refetch the invoice to see it.
+
+**⚠️ `DELETE` on both invoices and payments is a HARD delete (`.remove()`, not `.softRemove()`) — this directly contradicts what this line previously said ("confirmed soft-delete... does not contradict BR-028/BR-029").** That earlier claim was never actually checked against Finance source; it was inferred from finding C's general pattern, which finding C itself already warned not to assume blanket-applies (see finding R for the full write-up, and finding C's Hearings/Tasks caveat). **This is the one hard-delete-vs-BR conflict in the entire API that actually matters** — BR-028/BR-029 explicitly name financial records. No Flutter delete UI exists for Finance (nothing retroactively broken), but don't build one without a business-rule conversation first.
+
+**Backend inconsistency, not a Flutter workaround target:** two different `PaymentMethod` enums exist — the DTO validates `CASH|BANK_TRANSFER|CHEQUE|ONLINE`, the `Payment` entity's DB column type declares `CASH|BANK_TRANSFER|CREDIT_CARD|CHECK`. Send the DTO's values (that's what's actually enforced on write); flag the mismatch to the backend team rather than guessing which one the database really accepts.
+
+**New since the Postman-era version of this file**: `GET /finance/analytics` (firm-wide revenue/collection/net-profit summary, hand-built response, reliable), `GET /finance/cases-summary` (per-case payment-status breakdown for every case in the tenant), `GET /finance/cases/:caseId/summary` (same, single case, plus nested invoices) — none of these three existed in the Postman collection at all. Still no reversal/compensating-transaction endpoint (a real gap, distinct from the delete-semantics question — and now a more pointed one given delete is hard). Still no expenses module with any HTTP surface, despite an `Expense` entity existing server-side (used internally by `getFinancialAnalytics`'s net-profit calculation, never exposed over a route).
 
 ## 13. Calendar — shape adjusted, now closer to BRD's unified-calendar concept
 
@@ -311,9 +394,9 @@ Both `GET /api/reports/dashboard` (`{totalActiveCases, pendingTasks, upcomingHea
 
 Generic key-value store, same as M1 version. Same limitation: no typed lookups endpoint for case types/hearing types/document categories/expense categories (though `caseType: {id, name}` appearing nested in Case responses now confirms **lookups do exist as real entities server-side** — there's just still no dedicated `GET /lookups?kind=...`-style endpoint exposed in this collection to fetch them standalone).
 
-## 16. AI Assistant — unchanged
+## 16. AI Assistant — confirmed non-functional stub 2026-08-06 (finding X)
 
-`POST /api/ai/summarize`, `/api/ai/research`, `/api/ai/chat` — still no example bodies, still no entitlement/credit-preflight endpoint, still no classify/extract actions. Same gaps as M1 version.
+`POST /api/ai/summarize`, `/api/ai/research`, `/api/ai/chat` — all three return a hardcoded `{status: 'success', message: 'AI Module is ready to be implemented.'}` regardless of input. Not a documentation gap, an implementation gap: there is no real AI/RAG behavior behind these routes at all yet. Still no entitlement/credit-preflight endpoint, still no classify/extract actions. Not buildable as a real feature in any near-term milestone.
 
 ## 17. Modules removed since M1 (see breaking change #5)
 
@@ -344,8 +427,8 @@ Generic key-value store, same as M1 version. Same limitation: no typed lookups e
 - No document-versions-list/restore endpoint (BR-024) despite `versionNumber` existing on the model.
 - No AI entitlement/credit-preflight endpoint (BR-031), no classify/extract actions.
 - No expenses module at all.
-- No payment-reversal/compensating-transaction endpoint (BR-029) — note `DELETE` on invoices/payments is confirmed soft-delete (see finding C above), so this gap is about the missing reversal workflow, not physical deletion.
-- ~~Hard `DELETE`~~ **Resolved (2026-07-30, backend-source re-sync):** all `DELETE` endpoints are TypeORM soft-delete (`@DeleteDateColumn`/`isArchived` via `.softRemove()`), confirmed from `Hoqooq-main/` source — cases, clients, documents, courts, opponents, invoices, payments, tenants, users, calendar events do **not** violate BR-016/024/028/029. This was a wrong inference in earlier versions of this file, not a real backend gap.
+- No payment-reversal/compensating-transaction endpoint (BR-029) — note `DELETE` on invoices/payments is confirmed **hard**-delete (see finding R, 2026-08-06 — corrects the line below), so this gap is about the missing reversal workflow AND the delete-semantics question, not just the former.
+- ~~Hard `DELETE`~~ **Partially resolved, then partially re-broken by a later verification (see finding R, 2026-08-06):** cases, clients, documents, courts, opponents, tenants, users, calendar events are confirmed TypeORM soft-delete (`.softRemove()`) — do **not** violate BR-016/024/028/029. **Invoices and payments were wrongly included in this "confirmed soft" list — they are hard `.remove()` calls, never actually checked against Finance source until the 2026-08-06 pass. This is the one real hard-delete-vs-BR conflict in the API** (BR-028/BR-029 explicitly cover financial records), on top of the already-known Hearings/Tasks inconsistency (which those BR numbers don't cover).
 - `tenantId` still client-suppliable on `POST/PATCH /users`, and now also on `POST/PATCH /cases` — still contradicts BR-003.
 - No error-envelope example anywhere in any of the 87 requests.
 - `auth/signup` still exists, still contradicts BR-001.
@@ -378,3 +461,17 @@ Generic key-value store, same as M1 version. Same limitation: no typed lookups e
 - `tenantId` still client-suppliable (though overridden server-side) on `POST /cases`/`POST /hearings`/`POST/PATCH /users`.
 - `auth/signup` still exists, still contradicts BR-001. `public/lawyers` marketplace still exists, still a BR-scope concern.
 - **New this pass:** duplicate `EmployeesController` route collision (backend bug, not a Flutter concern — see finding Q).
+
+### Real, buildable, backend-supported features not yet in Flutter (third re-sync, 2026-08-06 — see findings R–Y)
+
+Not gaps in the backend — these all exist, work, and are DTO-verified (or raw-entity-verified where noted). Listed here because M6 planning drew directly from this list, per the instruction to prioritize what already exists over inventing new work:
+- **Finance (Invoices + Payments)** — full CRUD minus payment-update, plus 3 analytics endpoints (`/finance/analytics`, `/finance/cases-summary`, `/finance/cases/:caseId/summary`). BRD-aligned (§8.4, BR-026–029). See finding R for the hard-delete correction and the two DTO/enum mismatches to work around.
+- **Notifications** — `GET /notifications/me` (unread only) + `PATCH .../read`. Simplest, lowest-risk item on this list; the Flutter screen already exists as static UI waiting to be wired up.
+- **Opponents** — standalone tenant-wide CRUD directory. Real but structurally can't be linked to a case (see finding T) — scope any UI as a flat directory, not a case sub-resource.
+- **Courts, write side** — `POST`/`PATCH`/`DELETE /courts` exist; only `GET` is used today.
+- **Firm Profile** (`GET/PATCH /tenants/my-firm` + logo upload) — real, Firm-Admin-only (`settings.update`), one DTO/entity field-mapping issue to flag to the backend team before trusting it fully (finding W).
+
+### Confirmed NOT buildable this pass
+- **AI Assistant** — all three endpoints are hardcoded stubs, zero real behavior (finding X).
+- **Case-linked Opponents / Case Timeline** — both have a joined-but-always-empty relation on `Case`, no write path exists for either (findings T, V).
+- **Public lawyers marketplace, `auth/signup`** — exist but remain explicit BR-scope violations, not something to build toward.
