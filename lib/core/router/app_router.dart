@@ -1,6 +1,9 @@
 import 'package:go_router/go_router.dart';
+import 'go_router_refresh_stream.dart';
 import 'route_guards.dart';
 
+import '../../di/injection.dart';
+import '../../features/authentication/presentation/bloc/session_cubit.dart';
 import '../../features/authentication/presentation/pages/splash_page.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
@@ -18,6 +21,7 @@ import '../../features/clients/presentation/pages/clients_page.dart';
 import '../../features/clients/presentation/pages/client_profile_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/subscriptions/presentation/pages/subscription_inactive_page.dart';
 import '../../features/tasks/domain/entities/task_item.dart';
 import '../../features/tasks/presentation/pages/task_form_page.dart';
 import '../../shared/presentation/pages/main_layout.dart';
@@ -33,13 +37,19 @@ class AppRouter {
   static const String clients = '/clients';
   static const String alerts = '/alerts';
   static const String profile = '/profile';
+  static const String subscriptionInactive = '/subscription-inactive';
 
   static final router = GoRouter(
     initialLocation: splash,
     redirect: RouteGuards.authGuard,
+    refreshListenable: GoRouterRefreshStream(getIt<SessionCubit>().stream),
     routes: [
       GoRoute(path: splash, builder: (context, state) => const SplashPage()),
       GoRoute(path: login, builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: subscriptionInactive,
+        builder: (context, state) => const SubscriptionInactivePage(),
+      ),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),
         routes: [

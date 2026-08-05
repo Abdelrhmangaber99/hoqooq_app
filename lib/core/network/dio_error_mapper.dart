@@ -23,6 +23,11 @@ Failure mapDioError(DioException e) {
         ? UnauthorizedFailure(backendMessage)
         : const UnauthorizedFailure();
   }
+  if (statusCode == 402) {
+    return backendMessage != null
+        ? SubscriptionInactiveFailure(backendMessage)
+        : const SubscriptionInactiveFailure();
+  }
   if (statusCode == 400) {
     return backendMessage != null
         ? ValidationFailure(backendMessage)

@@ -16,6 +16,8 @@ import 'package:hqooq/core/network/dio_client.dart' as _i893;
 import 'package:hqooq/core/network/interceptors/auth_interceptor.dart' as _i404;
 import 'package:hqooq/core/network/interceptors/refresh_interceptor.dart'
     as _i722;
+import 'package:hqooq/core/network/interceptors/subscription_interceptor.dart'
+    as _i724;
 import 'package:hqooq/core/storage/token_storage.dart' as _i23;
 import 'package:hqooq/core/theme/theme_bloc.dart' as _i926;
 import 'package:hqooq/features/authentication/data/repository/auth_repository.dart'
@@ -92,6 +94,12 @@ import 'package:hqooq/features/lookups/data/repository/lookup_repository.dart'
     as _i792;
 import 'package:hqooq/features/lookups/domain/repository/i_lookup_repository.dart'
     as _i359;
+import 'package:hqooq/features/subscriptions/data/repository/subscription_repository.dart'
+    as _i836;
+import 'package:hqooq/features/subscriptions/domain/repository/i_subscription_repository.dart'
+    as _i943;
+import 'package:hqooq/features/subscriptions/presentation/bloc/subscription_reactivation_bloc.dart'
+    as _i800;
 import 'package:hqooq/features/tasks/data/repository/task_repository.dart'
     as _i23;
 import 'package:hqooq/features/tasks/domain/repository/i_task_repository.dart'
@@ -119,6 +127,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i404.AuthInterceptor>(
       () => _i404.AuthInterceptor(gh<_i81.SessionCubit>()),
     );
+    gh.factory<_i724.SubscriptionInterceptor>(
+      () => _i724.SubscriptionInterceptor(gh<_i81.SessionCubit>()),
+    );
     gh.factory<_i722.RefreshInterceptor>(
       () => _i722.RefreshInterceptor(
         gh<_i23.TokenStorage>(),
@@ -129,7 +140,17 @@ extension GetItInjectableX on _i174.GetIt {
       () => networkModule.dio(
         gh<_i404.AuthInterceptor>(),
         gh<_i722.RefreshInterceptor>(),
+        gh<_i724.SubscriptionInterceptor>(),
       ),
+    );
+    gh.lazySingleton<_i543.ICourtRepository>(
+      () => _i150.CourtRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i598.IAuthRepository>(
+      () => _i494.AuthRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i196.LoginUseCase>(
+      () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
     );
     gh.lazySingleton<_i320.ICaseRepository>(
       () => _i981.CaseRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
@@ -149,11 +170,22 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i995.CaseDetailsBloc>(
       () => _i995.CaseDetailsBloc(gh<_i320.ICaseRepository>()),
     );
+    gh.factory<_i1026.AuthBloc>(
+      () => _i1026.AuthBloc(
+        gh<_i196.LoginUseCase>(),
+        gh<_i598.IAuthRepository>(),
+        gh<_i81.SessionCubit>(),
+        gh<_i23.TokenStorage>(),
+      ),
+    );
     gh.lazySingleton<_i495.ICalendarRepository>(
       () => _i225.CalendarRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i949.ITaskRepository>(
       () => _i23.TaskRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i943.ISubscriptionRepository>(
+      () => _i836.SubscriptionRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i359.ILookupRepository>(
       () => _i792.LookupRepository(gh<_i361.Dio>()),
@@ -173,6 +205,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i51.DocumentUploadBloc>(
       () => _i51.DocumentUploadBloc(gh<_i622.IDocumentRepository>()),
     );
+    gh.factory<_i800.SubscriptionReactivationBloc>(
+      () => _i800.SubscriptionReactivationBloc(
+        gh<_i943.ISubscriptionRepository>(),
+      ),
+    );
     gh.lazySingleton<_i723.GetClientsUseCase>(
       () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
     );
@@ -191,12 +228,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i141.IUserRepository>(
       () => _i867.UserRepository(gh<_i361.Dio>()),
     );
-    gh.lazySingleton<_i543.ICourtRepository>(
-      () => _i150.CourtRepository(gh<_i361.Dio>()),
-    );
-    gh.lazySingleton<_i598.IAuthRepository>(
-      () => _i494.AuthRepository(gh<_i361.Dio>()),
-    );
     gh.factory<_i165.ClientsBloc>(
       () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
     );
@@ -206,9 +237,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i141.IUserRepository>(),
         gh<_i320.ICaseRepository>(),
       ),
-    );
-    gh.lazySingleton<_i196.LoginUseCase>(
-      () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
     );
     gh.factory<_i421.HearingFormBloc>(
       () => _i421.HearingFormBloc(
@@ -224,14 +252,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i141.IUserRepository>(),
         gh<_i794.IClientRepository>(),
         gh<_i359.ILookupRepository>(),
-      ),
-    );
-    gh.factory<_i1026.AuthBloc>(
-      () => _i1026.AuthBloc(
-        gh<_i196.LoginUseCase>(),
-        gh<_i598.IAuthRepository>(),
-        gh<_i81.SessionCubit>(),
-        gh<_i23.TokenStorage>(),
       ),
     );
     gh.factory<_i389.CaseHearingsBloc>(

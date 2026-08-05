@@ -27,3 +27,17 @@ class UnauthorizedFailure extends Failure {
 class ValidationFailure extends Failure {
   const ValidationFailure(super.message);
 }
+
+/// 402 Payment Required — `SubscriptionGuard` blocks the request because
+/// the tenant's subscription isn't `ACTIVE`/unexpired. Confirmed
+/// intentional by the backend team (API_CONTRACT.md finding M), not a bug
+/// to route around. Callers generally don't need to handle this directly
+/// — `SubscriptionInterceptor` already transitions `SessionCubit` to
+/// `SessionSubscriptionInactive` before this reaches a repository, which
+/// the app-wide blocking screen reacts to — but the typed failure still
+/// exists for any repository call site that wants to distinguish it.
+class SubscriptionInactiveFailure extends Failure {
+  const SubscriptionInactiveFailure([
+    super.message = 'Subscription inactive or expired',
+  ]);
+}
