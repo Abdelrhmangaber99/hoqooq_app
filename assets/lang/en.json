@@ -213,5 +213,9 @@
   "reactivate_subscription": "Reactivate Subscription",
   "subscription_inactive_title": "Subscription Inactive",
   "subscription_inactive_message": "Your firm's subscription is inactive or has expired. Contact your firm admin to reactivate it.",
-  "subscription_inactive_admin_message": "Your firm's subscription is inactive or has expired. Reactivate it to continue using the app."
+  "subscription_inactive_admin_message": "Your firm's subscription is inactive or has expired. Reactivate it to continue using the app.",
+  "page_not_found": "This page isn't available.",
+  "go_home": "Go Home",
+  "no_permission_title": "No Permission",
+  "no_permission_message": "You don't have permission to perform this action. Contact your firm admin if you believe this is a mistake."
 }

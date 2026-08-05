@@ -41,3 +41,15 @@ class RouteGuards {
     return null;
   }
 }
+
+/// Safely reads `state.extra` as `T`, returning `null` instead of throwing
+/// when it's missing or the wrong type. Every `edit` route relies on
+/// `context.push(..., extra: someObject)` from in-app navigation — that
+/// object is never actually serialized, so an Android process-death +
+/// state restoration (or any future deep link into one of these paths)
+/// resumes the route with `extra == null`, and a bare `state.extra as X`
+/// throws an unhandled `TypeError` instead of failing gracefully.
+T? typedExtra<T>(GoRouterState state) {
+  final extra = state.extra;
+  return extra is T ? extra : null;
+}

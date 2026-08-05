@@ -213,5 +213,9 @@
   "reactivate_subscription": "إعادة تفعيل الاشتراك",
   "subscription_inactive_title": "الاشتراك غير مفعّل",
   "subscription_inactive_message": "اشتراك مكتبك غير مفعّل أو منتهي الصلاحية. يرجى التواصل مع مسؤول المكتب لإعادة تفعيله.",
-  "subscription_inactive_admin_message": "اشتراك مكتبك غير مفعّل أو منتهي الصلاحية. أعد تفعيله لمتابعة استخدام التطبيق."
+  "subscription_inactive_admin_message": "اشتراك مكتبك غير مفعّل أو منتهي الصلاحية. أعد تفعيله لمتابعة استخدام التطبيق.",
+  "page_not_found": "هذه الصفحة غير متاحة.",
+  "go_home": "الصفحة الرئيسية",
+  "no_permission_title": "لا توجد صلاحية",
+  "no_permission_message": "ليس لديك صلاحية لتنفيذ هذا الإجراء. تواصل مع مسؤول المكتب إذا كنت تعتقد أن هذا خطأ."
 }

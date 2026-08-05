@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'go_router_refresh_stream.dart';
 import 'route_guards.dart';
@@ -6,6 +7,11 @@ import '../../di/injection.dart';
 import '../../features/authentication/presentation/bloc/session_cubit.dart';
 import '../../features/authentication/presentation/pages/splash_page.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
+import '../localization/app_localizations.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
+import '../widgets/app_button.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/calendar/presentation/pages/calendar_event_form_page.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
@@ -43,6 +49,8 @@ class AppRouter {
     initialLocation: splash,
     redirect: RouteGuards.authGuard,
     refreshListenable: GoRouterRefreshStream(getIt<SessionCubit>().stream),
+    errorBuilder: (context, state) =>
+        _RouteNotFoundPage(onGoHome: () => context.go(home)),
     routes: [
       GoRoute(path: splash, builder: (context, state) => const SplashPage()),
       GoRoute(path: login, builder: (context, state) => const LoginPage()),
@@ -63,8 +71,10 @@ class AppRouter {
               ),
               GoRoute(
                 path: 'tasks/:taskId/edit',
+                redirect: (context, state) =>
+                    typedExtra<TaskItem>(state) == null ? home : null,
                 builder: (context, state) =>
-                    TaskFormPage(existingTask: state.extra as TaskItem),
+                    TaskFormPage(existingTask: typedExtra<TaskItem>(state)),
               ),
             ],
           ),
@@ -93,8 +103,13 @@ class AppRouter {
                 routes: [
                   GoRoute(
                     path: 'edit',
-                    builder: (context, state) =>
-                        CaseFormPage(existingCase: state.extra as LegalCase),
+                    redirect: (context, state) =>
+                        typedExtra<LegalCase>(state) == null
+                        ? '$cases/${state.pathParameters['id']}'
+                        : null,
+                    builder: (context, state) => CaseFormPage(
+                      existingCase: typedExtra<LegalCase>(state),
+                    ),
                   ),
                   GoRoute(
                     path: 'hearings/new',
@@ -103,9 +118,13 @@ class AppRouter {
                   ),
                   GoRoute(
                     path: 'hearings/:hearingId/edit',
+                    redirect: (context, state) =>
+                        typedExtra<Hearing>(state) == null
+                        ? '$cases/${state.pathParameters['id']}'
+                        : null,
                     builder: (context, state) => HearingFormPage(
                       caseId: state.pathParameters['id']!,
-                      existingHearing: state.extra as Hearing,
+                      existingHearing: typedExtra<Hearing>(state),
                     ),
                   ),
                 ],
@@ -127,8 +146,13 @@ class AppRouter {
                 routes: [
                   GoRoute(
                     path: 'edit',
-                    builder: (context, state) =>
-                        ClientFormPage(existingClient: state.extra as Client),
+                    redirect: (context, state) =>
+                        typedExtra<Client>(state) == null
+                        ? '$clients/${state.pathParameters['id']}'
+                        : null,
+                    builder: (context, state) => ClientFormPage(
+                      existingClient: typedExtra<Client>(state),
+                    ),
                   ),
                 ],
               ),
@@ -146,4 +170,44 @@ class AppRouter {
       ),
     ],
   );
+}
+
+/// Shown for any unmatched route (`GoRouter.errorBuilder`) — previously
+/// unset, so any navigation to an unregistered path fell through to
+/// go_router's default error page instead of something in-brand.
+class _RouteNotFoundPage extends StatelessWidget {
+  final VoidCallback onGoHome;
+  const _RouteNotFoundPage({required this.onGoHome});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.l),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.explore_off_outlined,
+                  size: 64,
+                  color: AppColors.textHint,
+                ),
+                const SizedBox(height: AppSpacing.l),
+                Text(
+                  context.tr('page_not_found'),
+                  style: AppTypography.h3,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.l),
+                AppButton(text: context.tr('go_home'), onPressed: onGoHome),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
