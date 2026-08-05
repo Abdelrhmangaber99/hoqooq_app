@@ -32,9 +32,20 @@ abstract class NetworkModule {
     dio.interceptors.add(subscriptionInterceptor);
     dio.interceptors.add(EnvelopeInterceptor());
     dio.interceptors.add(
+      // Method/URL/status-code logging only — deliberately never headers or
+      // bodies. `LogInterceptor()`'s own bare defaults already log
+      // `requestHeader`/`responseHeader` (which would include the bearer
+      // token on every single request), and this app previously also
+      // explicitly turned on `requestBody`/`responseBody` (login/change-
+      // password plaintext, full client/case PII on every response).
+      // `Logger()`'s default filter keeps this out of release builds, but
+      // that's not a reason to log tokens/PII in every dev session either —
+      // fixed at the source instead of relying on the build-mode gate.
       LogInterceptor(
-        requestBody: true,
-        responseBody: true,
+        requestHeader: false,
+        requestBody: false,
+        responseHeader: false,
+        responseBody: false,
         logPrint: (object) => Logger().d(object),
       ),
     );
