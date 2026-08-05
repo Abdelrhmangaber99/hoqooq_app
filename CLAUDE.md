@@ -102,10 +102,10 @@ Full rule set: BRD §7 (BR-001 – BR-037). Ask before writing code that could v
 lib/
   core/
     auth/               # user_role.dart (unused by auth now; still referenced nowhere outside itself)
-    errors/             # failures.dart
+    errors/             # failures.dart (+SubscriptionInactiveFailure M5)
     localization/       # app_localizations.dart (JSON-based), locale_bloc/event/state
-    network/            # api_config.dart, dio_client.dart, dio_error_mapper.dart, interceptors/{auth,refresh,envelope}_interceptor.dart (envelope added in the backend-source fix pass), api_result.dart
-    router/             # app_router.dart, route_guards.dart
+    network/            # api_config.dart, dio_client.dart, dio_error_mapper.dart (+402 branch M5), interceptors/{auth,refresh,envelope,subscription}_interceptor.dart (envelope added in the backend-source fix pass; subscription added M5, transitions SessionCubit on any 402), api_result.dart
+    router/             # app_router.dart, route_guards.dart (+SessionSubscriptionInactive redirect M5), go_router_refresh_stream.dart (added M5 — SessionCubit-driven redirect re-evaluation, not just on next navigation)
     storage/            # token_storage.dart (added M1)
     theme/              # app_colors/radius/spacing/typography, theme_bloc/event/state
     widgets/            # app_button.dart, app_text_field.dart
@@ -121,7 +121,7 @@ lib/
         repository/      # i_auth_repository.dart
         usecases/        # login_use_case.dart
       presentation/
-        bloc/            # auth_bloc, auth_event, auth_state, session_cubit, session_state (session_cubit added M1)
+        bloc/            # auth_bloc, auth_event, auth_state, session_cubit, session_state (session_cubit added M1; `SessionSubscriptionInactive` state + `subscriptionInactive()`/`subscriptionReactivated()` added M5)
         pages/           # login, splash (sign_up_page.dart kept but unrouted, see PLAN.md)
     calendar/
       data/
@@ -134,13 +134,13 @@ lib/
         timeline_display_helpers.dart  # (added M3)
     cases/
       data/
-        models/          # update_case_request.dart (added M4, excludes caseTypeId/caseNumber/clientId)
-        repository/      # case_repository.dart (real, added M2; +updateCase M4) — no mock left
-      domain/entities/    # legal_case, case_status, case_priority, case_type_lookup, court, case_team_member (added M2; corrected pre-M3 — caseType/primaryLawyer/team[].user are nullable, team[].role renamed to roleOnCase, see session log), case_summary (added M3 — thin case shape nested in Hearing/TaskItem/DocumentItem/TimelineItem)
+        models/          # update_case_request.dart (added M4, excludes caseTypeId/caseNumber/clientId; primaryLawyerId field removed M5 — gone from backend schema); create_case_request.dart, assign_case_request.dart (added M5)
+        repository/      # case_repository.dart (real, added M2; +updateCase M4; +createCase/+assignTeamMember M5, tenantId sourced from SessionCubit at the wire boundary for createCase) — no mock left
+      domain/entities/    # legal_case (primaryLawyer/primaryLawyerId removed M5 — gone from backend schema entirely, not just unloaded), case_status, case_priority, case_type_lookup, court, case_team_member (added M2; corrected pre-M3 — caseType/team[].user nullable; corrected M5 — real field is accessLevel not roleOnCase, team.user now reliably populated), case_access_level.dart (added M5), case_summary (added M3 — thin case shape nested in Hearing/TaskItem/DocumentItem/TimelineItem)
       presentation/
-        bloc/            # cases_bloc/event/state, case_details_bloc/event/state (added M2); case_hearings_bloc/event/state, case_documents_bloc/event/state (added M3, sibling blocs to case_details_bloc); case_form_bloc/event/state (added M4, edit-only — caseType/caseNumber redisplayed read-only, loads Courts+Users as reference data)
-        pages/           # cases_page.dart (added M2), case_details_page.dart (rewritten M2, Hearings/Documents sections added M3, Edit button + Documents-upload UI added M4), case_form_page.dart (added M4)
-        case_display_helpers.dart  # enum → label/color mapping (added M2)
+        bloc/            # cases_bloc/event/state, case_details_bloc/event/state (added M2); case_hearings_bloc/event/state, case_documents_bloc/event/state (added M3, sibling blocs to case_details_bloc); case_form_bloc/event/state (added M4, edit-only; create mode + Lookups(CASE_TYPE)/Clients reference data added M5 — existingCase now nullable); case_team_assignment_bloc/event/state (added M5, powers the "Add team member" bottom sheet on CaseDetailsPage)
+        pages/           # cases_page.dart (added M2, FAB added M5), case_details_page.dart (rewritten M2, Hearings/Documents sections added M3, Edit button + Documents-upload UI added M4, New Hearing + Add-team-member actions added M5), case_form_page.dart (added M4 edit-only, create mode added M5)
+        case_display_helpers.dart  # enum → label/color mapping (added M2; caseAccessLevelLabel/Color added M5)
     clients/
       data/
         models/          # create_client_request.dart, update_client_request.dart (added M4)
@@ -164,10 +164,11 @@ lib/
       presentation/bloc/  # document_upload_bloc/event/state (added M4) — no presentation/pages of its own, upload UI surfaces inside case_details_page.dart's Documents section
     hearings/
       data/
-        models/          # update_hearing_request.dart (added M4, excludes caseId/hearingTypeId/circuitId)
+        models/          # update_hearing_request.dart (added M4, excludes caseId/hearingTypeId/circuitId — hearingTypeId exclusion is now a deliberate M5 scope decision, not an unbrowsable-Lookup blocker); create_hearing_request.dart (added M5)
       domain/{entities,repository}, presentation/hearing_display_helpers.dart  # (added M3)
-      presentation/bloc/  # hearing_form_bloc/event/state (added M4, edit-only, loads Courts as reference data)
-      presentation/pages/ # hearing_form_page.dart (added M4) — status change here covers "complete a hearing" (status: COMPLETED + outcomeText)
+      presentation/bloc/  # hearing_form_bloc/event/state (added M4, edit-only; create mode + Lookups(HEARING_TYPE) reference data added M5 — existingHearing now nullable, caseId now required)
+      presentation/pages/ # hearing_form_page.dart (added M4, create mode added M5) — status change here covers "complete a hearing" (status: COMPLETED + outcomeText)
+    lookups/               # (added M5) data/repository, domain/{entities,repository} — GET /lookups?kind=... (API_CONTRACT.md finding K), Lookup{id,tenantId,kind,labelEn,labelAr,isActive}, labels resolved by locale via Lookup.labelFor(), not the JSON context.tr() system. Backs the caseTypeId/hearingTypeId pickers on Case/Hearing creation.
     tasks/
       data/
         models/          # create_task_request.dart, update_task_request.dart (added M4)
@@ -175,6 +176,7 @@ lib/
       domain/{entities,repository}, presentation/task_display_helpers.dart  # (added M3)
       presentation/bloc/  # task_form_bloc/event/state (added M4, loads Users+Cases as reference data, no Lookup dependency unlike Cases/Hearings — assignedById always defaults to current user)
       presentation/pages/ # task_form_page.dart (added M4, shared create/edit)
+    subscriptions/         # (added M5) domain/{entities,repository} (Subscription, SubscriptionStatus), data/repository (POST /subscriptions/activate), presentation/bloc (subscription_reactivation_bloc — FIRM_ADMIN-only "Reactivate" action), presentation/pages/subscription_inactive_page.dart — the app-wide blocking screen for BR-010/012, entered via SessionCubit + AppRouter's redirect, not a normal push route
     users/                 # (added M4) data/repository, domain/repository — GET /users only, reuses authentication's existing User entity; reference data for Case/Task edit forms
     notifications/        # still static UI — untouched, out of scope so far
     profile/              # still static UI — untouched, out of scope so far
@@ -184,13 +186,17 @@ lib/
 l10n.yaml               # gen-l10n config (added M1)
 test/
   core/network/interceptors/refresh_interceptor_test.dart  # +FormData-clone-on-retry regression test (M4)
-  features/authentication/{data/repository, domain/entities, presentation/{bloc,pages}}/*_test.dart
-  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ includes cases_page_test.dart (post-M2 retrospective) and case_form_page_test.dart (M4); presentation/bloc/ includes case_hearings_bloc_test.dart/case_documents_bloc_test.dart (M3), case_form_bloc_test.dart (M4)
+  core/network/interceptors/subscription_interceptor_test.dart  # (added M5)
+  core/network/dio_error_mapper_test.dart  # (added M5 — first-ever direct test of this function; previously only exercised indirectly through repository tests)
+  features/authentication/{data/repository, domain/entities, presentation/{bloc,pages}}/*_test.dart  # +session_cubit_test.dart (added M5, first-ever direct test of SessionCubit)
+  features/cases/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ includes cases_page_test.dart (post-M2 retrospective) and case_form_page_test.dart (M4, +create-mode coverage M5); presentation/bloc/ includes case_hearings_bloc_test.dart/case_documents_bloc_test.dart (M3), case_form_bloc_test.dart (M4, +create-mode M5)
   features/clients/{data/repository, presentation/{bloc,pages}}/*_test.dart  # pages/ (clients_page_test.dart, client_profile_page_test.dart) added post-M2 retrospective follow-up; client_form_page_test.dart added M4
-  features/{calendar,dashboard,documents,hearings,tasks}/  # M3: data/repository (all 5), presentation/bloc (calendar, dashboard), presentation/pages (calendar, dashboard). M4 additions: presentation/bloc (calendar_event_form, document_upload, hearing_form, task_form), presentation/pages (calendar_event_form_page, task_form_page, hearing_form_page)
+  features/{calendar,dashboard,documents,hearings,tasks}/  # M3: data/repository (all 5), presentation/bloc (calendar, dashboard), presentation/pages (calendar, dashboard). M4 additions: presentation/bloc (calendar_event_form, document_upload, hearing_form, task_form), presentation/pages (calendar_event_form_page, task_form_page, hearing_form_page). M5: hearing_form_bloc_test.dart/hearing_form_page_test.dart gain create-mode coverage.
   features/{courts,users}/data/repository/  # (added M4)
+  features/lookups/data/repository/  # (added M5)
+  features/subscriptions/{data/repository, presentation/{bloc,pages}}/  # (added M5)
 ```
-Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. As of M5: Auth, Cases, Clients, Hearings, Documents, Tasks, Calendar, and Dashboard are all real, with create/update writes implemented per module including Case and Hearing creation (unblocked M5 via a new `lookups` feature — see M5 session log for the full folder additions); delete stays deferred everywhere as a deliberate scope cut. Only Notifications/Profile remain static, untouched so far.
+Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. As of M5: Auth, Cases, Clients, Hearings, Documents, Tasks, Calendar, and Dashboard are all real, with create/update writes implemented per module including Case and Hearing creation (unblocked M5 via a new `lookups` feature) and app-wide 402 handling via a new `subscriptions` feature — see M5 session log for the full writeup; delete stays deferred everywhere as a deliberate scope cut. Only Notifications/Profile remain static, untouched so far.
 
 ## Coding conventions
 
@@ -255,3 +261,12 @@ Each feature: `data/repository` → `domain/{entities,repository,usecases}` → 
   - **Documents** (`feat(documents): upload`) — `IDocumentRepository.uploadDocument` mirrors `POST /documents/upload` exactly: `file` (multipart, required) + `caseId` (optional) are the *only* fields the real backend accepts, confirmed by reading `DocumentsController`/`DocumentsService` directly — no description/category/folderId despite the response DTO carrying (always-null) placeholders for them. Fixed the multipart-retry bug flagged in the Write Readiness Review: `RefreshInterceptor` now calls `FormData.clone()` (available in dio 5.10+, purpose-built for exactly this retry scenario) before resending on a 401, instead of replaying the original already-finalized (single-use) instance — regression test reproduces a 401 mid-upload and asserts the retry carries a distinct, non-finalized clone.
   - **Calendar** (`feat(calendar): custom event creation`) — `CreateEventRequest.userId` is required by the backend DTO and, unlike `tenantId`, is **not** overridden server-side (`CalendarService.create` spreads the DTO as-is) — confirmed by reading the service directly. `CalendarEventFormPage` defaults it to the current user rather than exposing it as a field, same non-editable-field pattern as Tasks' `assignedById`. `CalendarPage` gained a FAB, wrapped in a `Builder` proactively (same fix class as the Clients/Cases search-bar bug) rather than waiting to discover the identical bug there too.
   - 166 tests total (was 105 at M3 close), all green; `flutter analyze` clean; `dart format` clean on every file touched — an incidental formatter sweep of two untouched files (`appointment_details_page.dart`/`new_appointment_page.dart`, caught during the Calendar pass) was reverted to keep that commit's diff scoped, same discipline as M1–M3. See `PLAN.md`'s M4 section for the full Definition of Done and deferred-items list. M5 not started.
+
+- **2026-08-05 (M5: second backend re-sync + implementation)** — User reported the backend team completed another round of fixes and gave three specific facts to treat as confirmed, not re-derive: a real Lookup-listing endpoint now exists (unblocking Case/Hearing creation), Firm Admin is now determined by a `FIRM_ADMIN` role (not `ownerUserId`), and the `SubscriptionGuard` 402 behavior is intentional application behavior to handle, not a bug. Per explicit instruction, re-verified every finding from the M4-era re-sync from scratch against the current source rather than assuming any still held — see `API_CONTRACT.md` findings K–Q for the full writeup. This surfaced more than the three confirmed facts: `Case.primaryLawyer`/`primaryLawyerId` are gone from the backend schema entirely (not just unloaded, as the M3 fix had assumed); `CaseTeam`'s real field is `accessLevel`, not `roleOnCase` (the M3 fix's `roleOnCase` correction was itself wrong — it read the backend's own DTO, which documents a name that doesn't match its own entity); `POST /cases/:id/assignments` and `POST /cases/:id/notes` are back after being removed pre-M2; and a genuine backend bug (duplicate `EmployeesController` route collision) not relevant to this app but worth relaying. Docs updated and committed *before* any code, per explicit instruction — one commit for `API_CONTRACT.md`/`CLAUDE.md`/`PLAN.md` before implementation started.
+  - One real ambiguity surfaced during planning, asked rather than assumed: `POST /subscriptions/activate` only works for a tenant with an existing (even if expired) subscription row, and does a no-real-payment "simulate successful payment" reactivation — asked the user who should see this self-service action on the blocking screen. Confirmed: `FIRM_ADMIN` only, everyone else sees an explanatory message with no action.
+  - **Firm Admin mechanism** (`feat(auth)` commit): `User.isFirmAdmin` is now a synchronous getter (`roles.any((r) => r.code == 'FIRM_ADMIN')`) instead of `AuthBloc._resolveIsFirmAdmin()`'s network call to `GET /tenants/my-firm`. `MyFirm` entity and `IAuthRepository.getMyFirm()` removed entirely — nothing else used that endpoint.
+  - **Lookups + Case/Hearing creation + team assignment** (`feat(cases,hearings,lookups)` commit): new `lookups` feature (`GET /lookups?kind=...`, labels resolved by locale via `Lookup.labelFor()`, deliberately not routed through the JSON `context.tr()` system since they're tenant-authored data, not app strings). `CaseFormPage`/`HearingFormPage` gained create mode — `existingCase`/`existingHearing` now nullable, same shared-screen pattern as `ClientFormPage`/`TaskFormPage`; `caseTypeId`/`hearingTypeId` are real dropdowns in create mode, stay read-only-redisplay in edit mode (case-type label resolution client-side fixes what was previously an always-"Unknown" display, since `caseType` is still never nested in the response). `primaryLawyer`/`primaryLawyerId` removed from `LegalCase` entirely to match the schema change; `CaseTeamMember.roleOnCase` renamed to `accessLevel` (a real `CaseAccessLevel` enum). Case team assignment (`POST /cases/:id/assignments`) wired as an "Add team member" bottom sheet via a new `CaseTeamAssignmentBloc` — case notes (`POST /cases/:id/notes`, also restored) deliberately **not** built, since `GET /cases/:id` still doesn't return `caseNotes`, making a notes UI write-only and not worth shipping. Icon collision caught by an existing test: the new "New Hearing" action initially reused `Icons.add_circle_outline` (already used by the Documents-upload action on the same screen), breaking `find.byIcon`-based test lookups — changed to `Icons.event_available_outlined` to disambiguate, a real UX improvement independent of the test fix.
+  - **402 handling** (`feat(subscriptions)` commit): new `SubscriptionInterceptor` catches any 402 and transitions `SessionCubit` to a new `SessionSubscriptionInactive` state (distinct from `SessionUnauthenticated` — not a logout, the token stays valid). Unlike the existing 401→logout path, this needed `AppRouter`'s redirect to react *immediately*, not just on the next user-initiated navigation — a blocked read leaves no natural next action for the user to take, unlike a failed-then-abandoned screen. Added a `GoRouterRefreshStream` (`ChangeNotifier` wrapping `SessionCubit.stream`) wired to `GoRouter`'s `refreshListenable` for this — the existing 401 path also now benefits from the faster redirect, though it didn't strictly need it. `SubscriptionInactivePage` is reached only via this redirect, not a normal push route.
+  - Also fixed, unprompted but directly relevant: the backend reference directory (`Hoqooq-main/`, gitignored) was re-provided with a trailing space in its name (`Hoqooq-main `), which the existing `.gitignore` pattern didn't match — it showed as untracked and one `git add -A` away from committing 220 TypeScript files of reference-only source into this repo's history. Caught via routine `git status` review before staging; fixed by adding the exact-match variant to `.gitignore`, own small commit.
+  - Several now-stale doc comments from the pre-Lookups era were corrected in the same pass (courts/clients/hearings repository files that referenced the old "no Lookup endpoint" finding as a reason for read-only fields — corrected to reflect the deliberate M5 scope decision instead, since the field is now technically re-selectable but wasn't asked for).
+  - 202 tests total (was 166 at M4 close), all green; `flutter analyze` clean; `dart format` clean on every file touched — two more incidental formatter sweeps of untouched auth files (`auth_state.dart`/`login_page.dart`/`sign_up_page.dart`/`splash_page.dart`, pre-existing formatting debt unrelated to this milestone) were caught and reverted, same discipline as every prior milestone. Five commits: docs, `feat(auth)`, `chore` (gitignore fix), `feat(cases,hearings,lookups)`, `feat(subscriptions)`. Known gap, not silently skipped: `RouteGuards.authGuard` has no dedicated test (`GoRouterState` is awkward to construct outside the `go_router` package) — a pre-existing gap the 401 path already had, not newly introduced this milestone; the `SessionCubit` state transitions it depends on are fully covered instead. M6 not started.
