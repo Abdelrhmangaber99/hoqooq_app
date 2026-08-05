@@ -450,3 +450,52 @@ New strings (Edit Case/Edit Hearing/Create-Edit Client/Create-Edit Task/Create E
 - A real, previously unknown bug was found and fixed as a byproduct of this milestone, not something introduced by it: `CasesPage`/`ClientsPage`'s search-bar `TextField.onChanged` called `context.read<XBloc>()` using the outer `build(BuildContext context)` parameter — an ancestor of, not a descendant of, that same build's own `BlocProvider` — so the read always threw `ProviderNotFoundException`. Fixed by wrapping each `Scaffold` in a `Builder`; the same fix was applied proactively to `CalendarPage`'s new FAB (`context.push`/`context.read` inside `onPressed`) rather than waiting to discover the identical bug there too.
 - Everything the M4 draft explicitly deferred (Case/Hearing creation, delete/archive, notification preferences, document metadata edit/download, `circuitId`) remains deferred — no new information arrived this milestone to revisit any of them; the Lookup-listing endpoint re-verification (final check before implementation) reconfirmed zero HTTP-exposed listing endpoint, 4 independent ways, so Case/Hearing creation stays blocked as planned.
 - Full EN/AR widget-test duplication for every M4 screen remains a known gap (English-only smoke coverage), consistent with the precedent M2/M3 already established — not a new gap this milestone introduced.
+
+---
+
+# Milestone 5 — Case/Hearing creation, Firm Admin mechanism fix, Subscription gate
+
+**Status: APPROVED, implementing this session (2026-08-05).**
+
+## Framing
+
+The backend team completed a second round of fixes after M4 closed. Three of them directly unblock or change work this project already deferred or built against a since-superseded assumption — see `API_CONTRACT.md` findings K–P for the full source-verified writeup:
+
+1. **A real `GET /lookups?kind=...` endpoint now exists** — the exact gap that forced Case and Hearing creation out of M4's scope. Both are back in scope.
+2. **Firm Admin detection changed.** The backend now has a real `FIRM_ADMIN` role, confirmed by the backend team as the mechanism their own authorization code uses — not `Tenant.ownerUserId`, which this app has relied on since M2. The old mechanism must be replaced, not merely supplemented.
+3. **A global `SubscriptionGuard` now 402s every authenticated request** (reads included) for a tenant without an active subscription — confirmed intentional by the backend team, not something to route around. This app has no handling for it today, which is a real gap in already-shipped functionality, not just new-feature scope.
+
+Also folded in as smaller fixes surfaced by the same re-verification: `Case.primaryLawyer`/`primaryLawyerId` are gone from the backend schema entirely (not just unloaded — M2/M3 code modeled them as nullable, which is no longer sufficient, they need to be removed from the Dart model); `CaseTeam`'s real field is `accessLevel`, not `roleOnCase`; `POST /cases/:id/assignments` (team assignment) is back after being removed pre-M2.
+
+## Scope
+
+| Item | Scope |
+|---|---|
+| **Firm Admin mechanism** | Replace `AuthBloc._resolveIsFirmAdmin()` (network call to `GET /tenants/my-firm`, `ownerUserId` comparison) with a synchronous `User.isFirmAdmin` getter (`roles.any((r) => r.code == 'FIRM_ADMIN')`). Remove `MyFirm` entity, `IAuthRepository.getMyFirm()`/`AuthRepository.getMyFirm()` — nothing else uses `GET /tenants/my-firm`. |
+| **Lookups module** | New `lookups` feature: `ILookupRepository.getLookups({required LookupKind kind})` → `GET /lookups?kind=...`, `Lookup{id, tenantId, kind, labelEn, labelAr, isActive, createdAt, updatedAt}`. Localization: pick `labelEn`/`labelAr` by current locale, not through the JSON `context.tr()` system (these are tenant-authored data, not app strings). |
+| **Case creation** | `CreateCaseRequest{tenantId-free, caseNumber, clientId, caseTypeId, defaultCourtId?, status?, openingDate?, closingDate?, outcomeSummary?, agreedFee?, priority?}` — `tenantId` sourced from `SessionCubit` at the repository layer, same pattern as `ClientRepository.createClient()`. `CaseFormBloc` gains create mode: loads Courts+Users+Lookups(CASE_TYPE) as reference data. `CaseFormPage`'s `existingCase` becomes nullable (`existingCase == null` → create mode, same shared-screen pattern as `ClientFormPage`/`TaskFormPage`). `caseTypeId` becomes a real dropdown in create mode (backed by Lookups), stays read-only-redisplay in edit mode (resolved to a label via the same loaded Lookups list — fixes the edit form's previously-always-"Unknown" case-type display, since `caseType` is still never nested in the response). `CasesPage` gets a FAB → `/cases/new`, same pattern as `ClientsPage`/`CalendarPage`. **`primaryLawyerId` field removed entirely from the form** — no longer exists on the backend. |
+| **Case team assignment** | `POST /cases/:id/assignments` is real again. Added as a lightweight "Add team member" action on `CaseDetailsPage` (`AssignCaseRequest{userId, accessLevel}`, `CaseAccessLevel` enum: `fullAccess/readOnly/uploadDocuments/assignHearing`) — reuses the Users repository already loaded for other forms. Case notes (`POST /cases/:id/notes`) are **not** built this pass — `GET /cases/:id` still doesn't return `caseNotes`, so a notes UI would be write-only; flagged as a follow-up once the read side exists, not silently skipped. |
+| **Hearing creation** | `CreateHearingRequest{caseId, courtId, hearingTypeId, scheduledAt, circuitId?, judgeName?, status?, outcomeText?, nextHearingAt?}`. `HearingFormBloc` gains create mode, loads Courts+Lookups(HEARING_TYPE). `HearingFormPage`'s `existingHearing` becomes nullable. Entry point: a "New Hearing" action on `CaseDetailsPage`'s Hearings section header, passing the current `caseId` (hearing creation is always scoped to a specific case, unlike Task creation's optional case link). **New 403 case to surface distinctly, not as a generic error**: `HearingsService.create` requires the caller to be Firm Admin or hold a `FULL_ACCESS`/`ASSIGN_HEARING` team assignment on the target case — a non-privileged user attempting this will 403 with a specific reason, worth a clearer message than the generic `ServerFailure` text if the backend's own message string is usable as-is (it is — `mapDioError` already surfaces the real backend `message`). |
+| **`CaseTeamMember` fix** | `roleOnCase` (String) → `accessLevel` (new `CaseAccessLevel` enum). `case_display_helpers.dart` gains `caseAccessLevelLabel`/`caseAccessLevelColor`, same pattern as existing status/priority helpers. `user` stays nullable (defensive) but is expected to be populated now that `team.user` is joined server-side. |
+| **Subscription (402) handling** | `SubscriptionInactiveFailure` added to `mapDioError()` for 402. `SessionCubit` gains a way to represent "authenticated but subscription-blocked" — a dedicated full-screen blocking route intercepts *all* navigation when this state is active (not a banner: the backend blocks reads too, so a partial degrade isn't achievable). `FIRM_ADMIN` users see a "Reactivate" button calling `POST /subscriptions/activate`; every other role sees an explanatory message only, no action (confirmed with the user 2026-08-05 — a scoped decision, not assumed). |
+
+## Explicitly deferred, not forgotten
+
+- Case notes UI (write-only until `GET /cases/:id` returns `caseNotes`).
+- Delete/archive for every module — still its own future milestone, unaffected by this pass.
+- Document category (`categoryId`) on upload — `Lookup` now supports `DOCUMENT_CATEGORY`, but `POST /documents/upload` still doesn't accept the field server-side.
+- A `GET /subscriptions/me`-style proactive status check — doesn't exist; the app only learns of a 402 reactively, from whatever call happens to trigger it.
+
+## Tests
+
+Same bar as M4: repository tests (dio-mocked, request-body-shape asserted field-for-field, 400/401/403 mapping) for every new write method; bloc tests for reference-data loading + submit success/failure; at least one widget test per new/changed screen. Additional this milestone: a `User.isFirmAdmin` unit test covering role-code matching; a `dio_error_mapper` test for the 402 branch (first-ever direct test of that function — previously only exercised indirectly through repository tests, per the M5 health-review's own finding); a widget test for the subscription-blocked screen's FIRM_ADMIN-vs-other-role branching.
+
+## Definition of done
+
+- [ ] `isFirmAdmin` derived from `FIRM_ADMIN` role code; `MyFirm`/`getMyFirm()` removed.
+- [ ] Lookups module built and used by both Case and Hearing create forms.
+- [ ] Case creation, Hearing creation, Case team assignment all real and tested.
+- [ ] `CaseTeamMember.accessLevel` replaces `roleOnCase`; `LegalCase.primaryLawyer`/`primaryLawyerId` removed.
+- [ ] 402 handled app-wide via a dedicated blocking screen, FIRM_ADMIN-gated reactivate action.
+- [ ] `API_CONTRACT.md`/`CLAUDE.md` updated with the second re-sync's findings (this pass, done before implementation per explicit instruction).
+- [ ] `flutter analyze` clean; `dart format` clean on every file touched; tests passing.

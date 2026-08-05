@@ -88,6 +88,41 @@ Read directly from `Hoqooq-main/` ahead of drafting M4 (writes). Findings below 
 
 ---
 
+## ⚠️ Findings from the second backend-source re-sync (2026-08-05) — supersedes findings A–J where noted
+
+The backend team completed a further round of fixes after M4. Per explicit instruction, this pass treated the current backend source as the only source of truth and re-verified every finding above from scratch rather than assuming any of them still held. Confirmed directly from `Hoqooq-main/src/`.
+
+### K. Lookup-listing endpoint now exists — resolves finding J's Case/Hearing-creation blocker
+`GET /lookups?kind=CASE_TYPE|HEARING_TYPE|DOCUMENT_CATEGORY|EXPENSE_CATEGORY` (`src/modules/settings/controllers/lookups.controller.ts`), guarded `JwtAuthGuard`+`PermissionsGuard`, requires `lookups.read`. Tenant-scoped (`Lookup.tenantId` is a required column; the service always filters by `user.tenantId`). Response is the raw `Lookup` entity array (no `plainToInstance`): `{id, tenantId, kind, labelEn, labelAr, isActive, createdAt, updatedAt, archivedAt, isArchived}`. A separate `GET /lookups/enums` returns a static dictionary of backend enums (`CaseStatus`, `CasePriority`, `TaskStatus`, `TaskPriority`, `HearingStatus`, `InvoiceStatus`) — informational only, not needed since this app already hand-models these from entity source. **`CreateCaseDto.caseTypeId` and `CreateHearingDto.hearingTypeId` can now be populated from a real, listable source.** Case and Hearing creation are no longer blocked. **Fixed:** new `lookups` feature module (`ILookupRepository`), used by `CaseFormBloc`/`HearingFormBloc`'s reference-data loading for both the create-mode type picker and the (previously always-"Unknown") edit-mode type label.
+
+### L. Firm Admin mechanism replaced — `ownerUserId` is no longer authoritative
+Confirmed by the backend team directly, and independently verified by reading every server-side "is this user a firm admin" check in the current source (`cases.service.ts`, `hearings.service.ts`, `tasks.service.ts`, `documents.service.ts`, `dashboard.service.ts`): all of them now check `roles.includes('FIRM_ADMIN') || user.isSuperAdmin`, a real role code — not `Tenant.ownerUserId`. `FIRM_ADMIN` now exists as a real seeded role (`src/infrastructure/database/seeds/seed.ts`) and is granted every non-`system.*` permission. **This finding supersedes finding D outright — the `ownerUserId` mechanism this app has used since M2 is no longer what the backend itself uses to decide Firm Admin status, and should not be relied on going forward.** `Tenant.ownerUserId` still exists as a column but is not what any authorization check in the backend reads. **Fixed:** `isFirmAdmin` is now a `User` getter (`roles.any((r) => r.code == 'FIRM_ADMIN')`), computed synchronously from the already-fetched `/users/me` response — no separate network call needed. `MyFirm`/`IAuthRepository.getMyFirm()`/`GET /tenants/my-firm` call removed from the app entirely; nothing else used that endpoint.
+
+### M. `SubscriptionGuard` — confirmed intentional, not a bug
+`src/core/guards/subscription.guard.ts`, a global `APP_GUARD` (`core.module.ts`), runs on every authenticated request except paths containing `/api/subscriptions`. Blocks with **402 Payment Required** — reads included, not just writes — whenever the tenant has no `Subscription` row, or `status !== 'ACTIVE'`, or `currentPeriodEnd` has passed. Exact messages returned (all via the standard error envelope, `message` field): `"No active subscription found. Please contact support."` / `"Your subscription has expired. Please update your billing details."` / `"Your subscription is inactive or has expired. Please update your billing details."`. Confirmed by the backend team as intentional application behavior, not a bug to work around. `POST /subscriptions/activate` (bearer-only, defaults to the caller's own `tenantId`) does a no-real-payment "simulate successful payment" reactivation — **but only if a `Subscription` row already exists**; it 404s for a tenant with none at all (only reachable via a pre-`/auth/signup` account, e.g. the seeded super-admin, which has no `tenantId` and is exempt from the guard entirely). **Fixed:** `SubscriptionInactiveFailure` added to `mapDioError()` for 402; `SessionCubit` gains a subscription-inactive state; a dedicated blocking screen intercepts navigation app-wide, with a self-service "Reactivate" action shown to `FIRM_ADMIN` users only (confirmed with the user 2026-08-05 — other roles see an explanatory message, no reactivate action, since billing self-service for non-admin staff wasn't part of the ask).
+
+### N. `Case.primaryLawyer`/`primaryLawyerId` removed from the schema entirely — not merely unloaded
+Previously (finding from the M3 pre-planning re-verification) these were nullable because `CasesService` never loaded the relation. **They no longer exist on the `Case` entity at all** (confirmed by reading `case.entity.ts` directly) — the "primary lawyer" concept has been replaced by `team[]`/`CaseTeam`, now manageable through a real endpoint (`POST /cases/:id/assignments`, see finding P below). `CreateCaseDto`/`UpdateCaseDto` no longer accept `primaryLawyerId` either. **Fixed:** `LegalCase.primaryLawyer`/`primaryLawyerId` deleted from the Dart model (not kept nullable); `CaseFormPage`'s primary-lawyer picker removed; `case_details_page.dart`'s team rendering now relies solely on `team[]`.
+
+### O. `CaseTeam`'s real field is `accessLevel`, not `roleOnCase` — and `team.user` is now reliably joined
+`CaseTeam.accessLevel: CaseAccessLevel` (`FULL_ACCESS|READ_ONLY|UPLOAD_DOCUMENTS|ASSIGN_HEARING`) is the real column. `roleOnCase` only exists as a backward-compatibility **type alias for the enum type**, not a property name (`export const RoleOnCase = CaseAccessLevel`) — it never appears as a JSON key. Separately, `CasesService` was rewritten from a `relations:[...]` array to a query builder that explicitly joins `team.user` (`.leftJoinAndSelect('team.user', 'teamUser')`) — previously never loaded, now reliably populated. **Fixed:** `CaseTeamMember.roleOnCase` renamed to `accessLevel`, modeled as a real `CaseAccessLevel` enum instead of a free display string; `user` stays nullable defensively (a deleted user is still theoretically possible) but is no longer expected to be routinely absent.
+
+### P. `POST /cases/:id/assignments` and `POST /cases/:id/notes` are back — a previously-flagged regression is resolved
+Both endpoints (removed in the pre-M2 backend update, flagged as a regression at the time — no way to add a case-team member or a note existed) are real again. `AssignCaseDto = {userId, accessLevel, role?}` (`role` is a legacy alias, prefer `accessLevel`), returns the raw `CaseTeam` row. `CreateCaseNoteDto = {content}`, returns the raw `CaseNote` row. **Caveat, not yet fixed:** `caseNotes` is not joined into `GET /cases/:id` (`cases.service.ts`'s query builder doesn't include it) — a note can be added but not read back from the case-detail response. **Not built this pass**: a Notes UI would be write-only as things stand, which isn't worth shipping; flagged as a follow-up once the read side exists. Team-assignment UI **was** worth building since `team[]` is already returned in full on every case fetch.
+
+### Q. Still Open — re-confirmed unchanged in this pass
+- **Hearings/Tasks hard-delete** (`hearingRepository.remove()`/`taskRepository.remove()`, not soft) — unchanged. Irrelevant while delete stays deferred.
+- **Clients `create` still accepts a client-supplied `tenantId` unchecked** (`ClientsService.create` doesn't override it, unlike Cases/Hearings) — `findOne`/`update`/`remove` were fixed to be tenant-scoped in the prior pass; `create` was not. No Flutter action needed (Flutter already sources `tenantId` correctly at the repository layer); re-flagged to the backend team.
+- **DELETE status-code inconsistency** (only Clients has real `@HttpCode(204)`) — unchanged.
+- **`ValidationPipe`/`HttpExceptionFilter` message-collapsing** (`message[0]` only, multi-field forms surface one error per submit) — unchanged.
+- **Duplicate `EmployeesController` route collision** — new finding, not previously documented: both `UsersModule` and `EmployeesModule` register a controller at `@Controller('employees')`; `UsersModule` is imported first in `app.module.ts`, so its thin `User`-backed controller silently wins `GET/PATCH/DELETE /employees/:id`, and the real `Employee`-profile-backed controller only has `POST /employees/onboard` and the `:id/permissions` routes reachable. Not a Flutter concern (this app doesn't use the Employees module — BRD staff-management flag remains out of scope), flagged for the backend team.
+- **Document upload still has no `categoryId` field**, despite `Lookup` now supporting a `DOCUMENT_CATEGORY` kind — `POST /documents/upload` still only accepts `file`+`caseId`.
+- **`plainToInstance`/DTO enforcement expanded** (now also applied to Opponents, Users, Courts, Notifications, both Employees controllers) but **Cases, Hearings, Tasks, Calendar are still raw-entity, unenforced** — the reasoning behind building those four modules' Flutter models off each service's `relations`/query-builder joins (not the documented DTO) still applies.
+- **Pagination** — still absent on every list endpoint except `GET /calendar/timeline`, re-checked across every module.
+- **Response envelope / error shape** — unchanged, confirmed byte-for-byte.
+
+---
+
 ## ⚠️ Breaking changes since the M1 version of this file (2026-07-30, same day)
 
 This is not a re-randomization of examples — the collection went from 97 requests to 87, gained a global `/api` prefix, and several core entities were structurally rebuilt to match the BRD's actual data dictionary far more closely. Full diff method available: old export preserved as `/tmp/postman_full.json` from the M1 session, new one at `/tmp/postman_full_v2.json` (both outside the repo).
@@ -234,7 +269,15 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 - `team[]` — present (`'team'` is in the `relations` array), but each entry's real field name is **`roleOnCase`**, not `role` (the backend's own `CaseResponseDto` documents `role` — it doesn't match its own entity, `CaseTeam`). Each entry's `user` is **never populated** (`relations: ['team']` loads the `CaseTeam` rows themselves but not `'team.user'`) — only `userId` is reliably present.
 - `client` — present and correct (`'client'` is in the `relations` array).
 
-**Impact:** this is a real, confirmed regression in the already-shipped M2 code — `LegalCase`/`CaseTeamMember` had `caseType`/`primaryLawyer`/`team[].user` as `required` non-nullable fields, which throws against a real backend. **Fixed** (see CLAUDE.md session log): all four are now nullable, `team[].role` renamed to `roleOnCase` to match the real field, `team[].userId` added since it's always present even when `user` isn't, and `case_details_page.dart`/`client_profile_page.dart` degrade gracefully (fallback to the raw id or a placeholder string) instead of assuming the nested objects exist. **This same "DTO documents X, but nothing enforces it — the real shape is governed by each service's TypeORM `relations` array" pattern applies to Hearings, Tasks, Calendar, and Documents' list endpoint too** (see finding I) — `ClientsController` and the Documents *upload* response are the only two places in the whole API that actually call `plainToInstance`.
+**Impact:** this is a real, confirmed regression in the already-shipped M2 code — `LegalCase`/`CaseTeamMember` had `caseType`/`primaryLawyer`/`team[].user` as `required` non-nullable fields, which throws against a real backend. **Fixed** (see CLAUDE.md session log): all four were made nullable at the time, `team[].role` renamed to `roleOnCase` to match the real field, `team[].userId` added since it's always present even when `user` isn't, and `case_details_page.dart`/`client_profile_page.dart` degrade gracefully (fallback to the raw id or a placeholder string) instead of assuming the nested objects exist. **This same "DTO documents X, but nothing enforces it — the real shape is governed by each service's TypeORM `relations` array" pattern applies to Hearings, Tasks, Calendar, and Documents' list endpoint too** (see finding I) — `ClientsController` and the Documents *upload* response were, at the time, the only two places in the whole API that actually called `plainToInstance` (now also Opponents/Users/Courts/Notifications/Employees — see finding Q — but still not Cases/Hearings/Tasks/Calendar).
+
+**⚠️ Superseded 2026-08-05 (finding N/O) — re-read this section, some of the above is now wrong, not just incomplete:**
+- `primaryLawyer`/`primaryLawyerId` are **no longer nullable fields to work around — they're gone from the schema entirely.** `CreateCaseDto`/`UpdateCaseDto` no longer accept `primaryLawyerId` either. The "primary lawyer" concept has been replaced by `team[]`, now addable via `POST /cases/:id/assignments`.
+- `team[].role` is **not** `roleOnCase` at the wire level — the real column is `accessLevel` (enum `FULL_ACCESS|READ_ONLY|UPLOAD_DOCUMENTS|ASSIGN_HEARING`). `roleOnCase` was a reasonable read of the backend's own (also-wrong) `CaseResponseDto` at the time, but the real entity's field is `accessLevel`; `roleOnCase` only exists as a backward-compat type alias for the enum type, never a JSON key.
+- `team[].user` **is now reliably populated** — `CasesService`'s query builder explicitly joins `team.user`, unlike when this section was first written.
+- `caseType` is still never nested in the response (unchanged) — but it no longer needs to be: `caseTypeId` can now be resolved to a name client-side via `GET /lookups?kind=CASE_TYPE` (finding K).
+
+**Case creation is now unblocked (2026-08-05, finding K):** `CreateCaseDto` requires `tenantId` (client-suppliable but always overridden server-side, `CasesService.create` spreads it last — same pattern as before), `caseNumber`, `clientId`, `caseTypeId` (now populatable via Lookups). Optional: `defaultCourtId`, `status`, `openingDate`, `closingDate`, `outcomeSummary`, `agreedFee`, `priority`. No `primaryLawyerId` on create (see above — team assignment is a separate call).
 
 **No more `title`, no more free-text `description`, no more `assignments[]`/`notes[]`, no more `POST /cases/{id}/assignments` or `/notes` endpoints.** `status` examples seen: `DRAFT`, `ACTIVE`, `SUSPENDED`, `CLOSED`, `ARCHIVED` (confirmed exhaustive from source). `priority`: `LOW`, `NORMAL`, `HIGH`, `URGENT` (confirmed exhaustive from source). This is much closer to BRD's case model than before, but the loss of any note-taking or hearings/documents sub-resources on the case itself means a Case Detail screen now has **less** to show than the previous (mock) version assumed, not more — only Overview + Team via `team[]`.
 
@@ -248,7 +291,9 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 
 ## 11. Hearings — shape adjusted, now closer to BRD
 
-`{caseId, courtId, hearingTypeId?, scheduledAt, circuitId?, judgeName?, status, outcomeText?, nextHearingAt?}`. `status` enum now `SCHEDULED/COMPLETED/ADJOURNED` (was `SCHEDULED/COMPLETED/POSTPONED`) — matches BRD's hearings model (§8.4) almost exactly now, including `circuitId` (though still no nested circuit object or standalone circuits endpoint) and `outcomeText`/`nextHearingAt` (BR-020). Still no `/complete` action — just a raw `status` field via PATCH. **Correction (M3 pre-planning re-check, see finding I below): DELETE is actually a hard delete here** (`HearingsService.remove` calls `.remove()`, not `.softRemove()`) — the blanket "confirmed soft" claim from finding C did not hold for this module; don't wire a destructive hearings UI action without re-confirming with the backend team first.
+`{caseId, courtId, hearingTypeId, scheduledAt, circuitId?, judgeName?, status?, outcomeText?, nextHearingAt?}` (`hearingTypeId` is required, not optional — corrected 2026-08-05, see below). `status` enum now `SCHEDULED/COMPLETED/ADJOURNED` (was `SCHEDULED/COMPLETED/POSTPONED`) — matches BRD's hearings model (§8.4) almost exactly now, including `circuitId` (though still no nested circuit object or standalone circuits endpoint) and `outcomeText`/`nextHearingAt` (BR-020). Still no `/complete` action — just a raw `status` field via PATCH. **Correction (M3 pre-planning re-check, see finding I below): DELETE is actually a hard delete here** (`HearingsService.remove` calls `.remove()`, not `.softRemove()`) — the blanket "confirmed soft" claim from finding C did not hold for this module; don't wire a destructive hearings UI action without re-confirming with the backend team first. **Re-confirmed unchanged 2026-08-05.**
+
+**Hearing creation is now unblocked (2026-08-05, finding K):** `hearingTypeId` is now populatable via `GET /lookups?kind=HEARING_TYPE`. `HearingsService.create` also enforces a new authorization rule not previously documented: a non-firm-admin caller must have a `CaseTeam` assignment on the target case with `accessLevel` of `FULL_ACCESS` or `ASSIGN_HEARING`, or the request 403s (`ForbiddenException`) — worth surfacing distinctly in the UI if a non-admin's hearing-creation attempt fails for this reason, rather than a generic error.
 
 ## 12. Finance — shape adjusted
 
@@ -272,7 +317,15 @@ Generic key-value store, same as M1 version. Same limitation: no typed lookups e
 
 ## 17. Modules removed since M1 (see breaking change #5)
 
-`employees` (all 5 endpoints), `reviews` (2 endpoints), `consultations` (1 endpoint) — gone. `POST /cases/{id}/assignments` and `POST /cases/{id}/notes` also gone (folded into the Case rebuild above).
+`reviews` (2 endpoints), `consultations` (1 endpoint) — gone, confirmed still gone as of the 2026-08-05 re-sync. `employees` is technically back (two colliding controllers, see finding Q) but not usable/not used by this app. `POST /cases/{id}/assignments` and `POST /cases/{id}/notes`, both flagged as removed in the original M1→re-sync diff, are **back as of the 2026-08-05 re-sync** — see finding P.
+
+## 18. Lookups (new, 2026-08-05) — see finding K
+
+`GET /lookups?kind=CASE_TYPE|HEARING_TYPE|DOCUMENT_CATEGORY|EXPENSE_CATEGORY` (bearer, `lookups.read` permission), tenant-scoped. Response: raw `Lookup[]` — `{id, tenantId, kind, labelEn, labelAr, isActive, createdAt, updatedAt}`. `GET /lookups/enums` (bearer, any authenticated user) returns a static dictionary of backend enums, not used by this app (enums are hand-modeled from entity source per project convention). This is the endpoint that unblocks Case/Hearing creation — see §8/§11 below.
+
+## 19. Subscriptions (new, 2026-08-05) — see finding M
+
+`GET /subscriptions/plans` (public). `POST /subscriptions/activate` (bearer, defaults to caller's own `tenantId`) — reactivates an *existing* subscription row only (404 if none exists at all). `POST /subscriptions/:tenantId/{activate,deactivate}` — Super Admin only (`system.subscriptions.manage`). No `GET /subscriptions/me`-style status-check endpoint exists — the only way the app learns its tenant's subscription state is by getting a 402 on some other call. Global `SubscriptionGuard` blocks every authenticated request (reads included) with 402 unless the tenant's subscription is `ACTIVE` and unexpired — confirmed intentional by the backend team, not a bug.
 
 ---
 
@@ -302,3 +355,26 @@ Generic key-value store, same as M1 version. Same limitation: no typed lookups e
 - Employee/staff-management module removed entirely — BRD §6.2.3 now has zero backing (regression from M1's already-imperfect version, not an improvement).
 - Case note-taking capability removed entirely (both the `notes[]` field and the endpoint to add one).
 - Case-to-employee assignment endpoint removed (`team[]` is now presumably populated some other way not visible in this collection — unclear how a mobile client would ever add someone to a case's team, since no endpoint exists for it).
+
+### Resolved in the second backend re-sync (2026-08-05) — see findings K–P
+- **Lookup-listing endpoint** (`GET /lookups?kind=...`) — Case and Hearing creation, both blocked since M4 planning, are unblocked.
+- **Firm Admin mechanism** — real `FIRM_ADMIN` role now exists; `ownerUserId`-based detection is obsolete, superseded by finding L.
+- **Case-team-assignment endpoint** (`POST /cases/:id/assignments`) — restored, previously flagged as a lost-since-M1 regression.
+- **Case note-adding endpoint** (`POST /cases/:id/notes`) — restored, though `GET /cases/:id` still doesn't return notes back (write-only until that's also fixed).
+- **Clients tenant-scoping** — `findOne`/`update`/`remove` fixed (still open on `create` only, see finding Q).
+
+### Still open (re-confirmed 2026-08-05, see finding Q for detail)
+- No MFA endpoint, no invite-activation endpoint, no device/FCM registration, no `/me/notification_prefs`.
+- No case-timeline endpoint (BR-017) despite the `CaseTimelineEvent` entity/relation existing server-side.
+- No document-versions-list/restore endpoint (BR-024) despite `versionNumber`/`DocumentVersion` existing on the model.
+- No document category field on upload, despite `Lookup` now supporting `DOCUMENT_CATEGORY`.
+- No AI entitlement/credit-preflight endpoint (BR-031), no classify/extract actions.
+- No expenses module at all.
+- No payment-reversal/compensating-transaction endpoint (BR-029).
+- Hearings/Tasks hard-delete (not soft) — irrelevant while delete stays deferred app-wide.
+- Clients `create` still accepts a client-supplied, unvalidated `tenantId`.
+- DELETE status-code inconsistency (only Clients has real `@HttpCode(204)`).
+- `ValidationPipe`/`HttpExceptionFilter` still collapses multi-field validation errors to one message per submit.
+- `tenantId` still client-suppliable (though overridden server-side) on `POST /cases`/`POST /hearings`/`POST/PATCH /users`.
+- `auth/signup` still exists, still contradicts BR-001. `public/lawyers` marketplace still exists, still a BR-scope concern.
+- **New this pass:** duplicate `EmployeesController` route collision (backend bug, not a Flutter concern — see finding Q).

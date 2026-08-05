@@ -31,6 +31,8 @@ The Postman collection does **not** describe the product the BRD and spec define
 
 There's also **no subscription/billing surface at all** in the collection — no plan, no status field, no `X-Subscription-Status` header anywhere. BR-010/012's read-only-mode mechanism (which the spec's whole `ReadOnlyGuard` is built around) has no data source to read from in this API. Same for MFA (BR-033/6.1.3 says mandatory for Firm Admin — no `/auth/mfa/verify` exists) and case timeline (BR-017 — no `GET /cases/{id}/timeline`).
 
+**⚠️ The subscription gap above is stale as of 2026-08-05 — this paragraph describes the Postman collection only, not the current backend.** A real `subscriptions` module now exists server-side, enforced by a global `SubscriptionGuard` that's stricter than the `ReadOnlyGuard` degrade this paragraph assumed — see the BR-010 row above and API_CONTRACT.md finding M. MFA and case-timeline are still genuinely absent, unchanged.
+
 **Decision (confirmed 2026-07-30): treat the collection as literal ground truth.** Build the `dio` client and repositories against exactly what's callable today. This does NOT mean wiring every endpoint blindly — still flag a BR conflict inline the moment a milestone would use it (e.g. don't wire a destructive UI action to `DELETE /cases/{id}` without asking first), but don't block work waiting for a backend fix.
 
 ## ⚠️ Pre-existing codebase — not a blank slate
@@ -47,7 +49,7 @@ This repo already contains a working UI-only prototype (see `PROJECT_SUMMARY.md`
 | Routing | `go_router` | `go_router` ✓ (matches) |
 | HTTP | `dio` | `dio` ✓ (matches; as of M1, `dio_client.dart` uses `ApiConfig.baseUrl` + `AuthInterceptor` + `RefreshInterceptor`. `TenantInterceptor` has been removed — see M1 session log) |
 
-Originally, every feature (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) was wired to **mock repositories** returning fake data. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. As of M4, authentication/cases/clients/hearings/documents/tasks/calendar/dashboard are all real, and writes (create/update, upload) are implemented per module — see the M4 session log for exact per-module scope (Case/Hearing creation stay blocked on the missing `Lookup` endpoint; delete is deferred everywhere). notifications/profile remain static (untouched, out of scope so far).
+Originally, every feature (`lib/features/`: authentication, calendar, cases, clients, dashboard, notifications, profile) was wired to **mock repositories** returning fake data. **Decision (confirmed 2026-07-30): keep the existing stack.** flutter_bloc/get_it/Hive stay; the spec's Riverpod/drift recommendation is superseded. As of M5, authentication/cases/clients/hearings/documents/tasks/calendar/dashboard are all real, with create/update writes per module including Case and Hearing creation (unblocked 2026-08-05 once a real `Lookup`-listing endpoint appeared — see API_CONTRACT.md finding K; delete stays deferred everywhere, still a deliberate scope cut). notifications/profile remain static (untouched, out of scope so far).
 
 ---
 
@@ -56,10 +58,10 @@ Originally, every feature (`lib/features/`: authentication, calendar, cases, cli
 | ID | Rule | App must do |
 |---|---|---|
 | BR-003 | Tenant isolation, row-scoped | Never send `tenant_id`/`tenantId` from the client (backend derives it from the JWT). `TenantInterceptor`'s client-side header injection was removed in M1 for this reason — **still note the collection's `POST/PATCH /users` request bodies accept a client-supplied `tenantId` field; don't populate it from any future staff-management screen.** Cross-tenant fetch → 404 rendered as "Not found," never "Forbidden." |
-| BR-005 | Firm Admin full CRUD, non-restrictable | Never hide a module from Firm Admin in UI gating. |
-| BR-010 | Subscription lifecycle → read-only mode | On `SUSPENDED`/`PAST_DUE`, disable all create/update/delete UI with a banner. **No data source for this in the current API contract — flagged above.** |
+| BR-005 | Firm Admin full CRUD, non-restrictable | Never hide a module from Firm Admin in UI gating. **Firm Admin detection changed 2026-08-05 (API_CONTRACT.md finding L):** a real `FIRM_ADMIN` role now exists and is what the backend itself checks (`roles.includes('FIRM_ADMIN')` in every server-side authorization check) — confirmed directly by the backend team. The `Tenant.ownerUserId == user.id` mechanism this app used since M2 is **obsolete, do not use it going forward**; `isFirmAdmin` is now `User.roles.any((r) => r.code == 'FIRM_ADMIN')`, a synchronous getter on the already-fetched user, no separate network call. |
+| BR-010 | Subscription lifecycle → read-only mode | **Superseded 2026-08-05 (API_CONTRACT.md finding M) — the "read-only mode with a banner" UX this row originally described does not match real backend behavior and should not be built.** A global `SubscriptionGuard` blocks *every* authenticated request (reads included, not just writes) with `402 Payment Required` whenever the tenant's subscription isn't `ACTIVE` and unexpired — confirmed intentional by the backend team, not a bug to work around. The app's actual behavior: catch 402 anywhere via `mapDioError()` → `SubscriptionInactiveFailure`, transition to a dedicated app-wide blocking screen (not a banner — reads are blocked too, so a degraded-but-usable UI isn't possible), with a self-service "Reactivate" action (`POST /subscriptions/activate`) shown to `FIRM_ADMIN` users only. |
 | BR-016/BR-024/BR-028/BR-029 | No hard delete (cases, documents, financial records) | **Confirmed satisfied for the entities these rules cover (2026-07-30, backend-source re-sync):** cases/clients/documents/tenants/calendar-events all use TypeORM soft-delete (`@DeleteDateColumn`/`isArchived` via `.softRemove()` — see `API_CONTRACT.md` finding C). Earlier versions of this file wrongly claimed hard delete everywhere, inferred from the Postman collection's lack of implementation visibility; that inference was wrong for these entities. **Does not generalize:** M3 pre-planning research (`API_CONTRACT.md` finding I) found `hearings` and `tasks` DO hard-delete (`.remove()`, not `.softRemove()`) despite having the same soft-delete columns available — a real backend inconsistency, not something these BR numbers cover (neither hearings nor tasks are named in BR-016/024/028/029), but don't wire a destructive UI action to either without checking per-module first. |
-| BR-026 | Case-fee visibility restricted to Firm Admin / `finance.read` | **Fixed 2026-07-30:** `agreedFee` on `LegalCase` is hidden unless `SessionCubit`'s authenticated user reports `isFirmAdmin`, now computed for real via `Tenant.ownerUserId == user.id` (see `API_CONTRACT.md` finding D) instead of a hardcoded `false`. Apply the same hide-by-default pattern (default `false` on any failure/ambiguity) to any other finance-gated field. |
+| BR-026 | Case-fee visibility restricted to Firm Admin / `finance.read` | **Fixed 2026-07-30, mechanism updated 2026-08-05:** `agreedFee` on `LegalCase` is hidden unless `SessionCubit`'s authenticated user reports `isFirmAdmin`. Originally computed via `Tenant.ownerUserId == user.id` (API_CONTRACT.md finding D, now obsolete — see BR-005 row); now computed via the real `FIRM_ADMIN` role code (finding L). Apply the same hide-by-default pattern (default `false` on any failure/ambiguity) to any other finance-gated field. |
 | BR-030 | Per-firm isolated RAG | AI chat renders only `sources[]` the backend returns; never merge/cache across tenants. |
 | BR-032 | AI is advisory | Every AI output shows "AI-generated — verify before use"; human edits always win over AI output. |
 | BR-033 | Auth | Access token short-lived, in memory only; refresh token in `flutter_secure_storage` only, never plain SharedPreferences/Hive. |
@@ -86,9 +88,13 @@ Full rule set: BRD §7 (BR-001 – BR-037). Ask before writing code that could v
 
 **Resolved 2026-07-30 (backend-source re-sync — see session log entry below and `API_CONTRACT.md`):**
 - Base URL — confirmed `http://localhost:3005` from `docker-compose.yml`.
-- `isFirmAdmin` — no longer a `User` property (was hardcoded `false`); computed in `AuthBloc._resolveIsFirmAdmin()` from `Tenant.ownerUserId == user.id` via a new `GET /tenants/my-firm` call, stored on `SessionAuthenticated.isFirmAdmin`.
 - Response envelope (`{success, statusCode, message, data}`) and error shape (`{success:false, statusCode, message, error, timestamp}`) — previously invisible, now unwrapped/parsed by `EnvelopeInterceptor` and `mapDioError()` respectively.
 - Delete semantics — confirmed soft-delete throughout, not hard delete (see BR table above).
+
+**Resolved 2026-08-05 (second backend-source re-sync — see M5 session log entry and API_CONTRACT.md findings K–P):**
+- `isFirmAdmin` — mechanism replaced. No longer computed via `GET /tenants/my-firm` + `ownerUserId` comparison (that call/entity are gone from the app entirely); now a synchronous `User.isFirmAdmin` getter checking `roles.any((r) => r.code == 'FIRM_ADMIN')`, since a real `FIRM_ADMIN` role now exists and is what the backend's own authorization checks use.
+- Case/Hearing creation — unblocked by a real `GET /lookups?kind=...` endpoint (see API_CONTRACT.md finding K).
+- Subscription/read-only-mode data source — resolved, but not the way BR-010 originally assumed (see BR-010 row above): a global 402 gate, not a partial read-only degrade.
 
 ## Folder structure (as it exists today)
 
@@ -111,7 +117,7 @@ lib/
         models/         # login_request, refresh_request, forgot/reset/change_password_request, auth_response (added M1)
         repository/      # auth_repository.dart (real, added M1) — no mock left
       domain/
-        entities/       # user, role, permission, tenant_ref (rebuilt M1 to match API_CONTRACT.md), my_firm (added in the backend-source fix pass, backs isFirmAdmin derivation only)
+        entities/       # user, role, permission, tenant_ref (rebuilt M1 to match API_CONTRACT.md); `User.isFirmAdmin` getter added M5 (checks roles for FIRM_ADMIN code) — `my_firm.dart`/`getMyFirm()` (added in the backend-source fix pass, ownerUserId-based) removed M5, superseded, see M5 session log
         repository/      # i_auth_repository.dart
         usecases/        # login_use_case.dart
       presentation/
@@ -184,7 +190,7 @@ test/
   features/{calendar,dashboard,documents,hearings,tasks}/  # M3: data/repository (all 5), presentation/bloc (calendar, dashboard), presentation/pages (calendar, dashboard). M4 additions: presentation/bloc (calendar_event_form, document_upload, hearing_form, task_form), presentation/pages (calendar_event_form_page, task_form_page, hearing_form_page)
   features/{courts,users}/data/repository/  # (added M4)
 ```
-Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. As of M4: Auth, Cases, Clients, Hearings, Documents, Tasks, Calendar, and Dashboard are all real, with create/update writes now implemented per module (see BR-### table's context and the M4 session log below for exact per-module scope — Case/Hearing creation stay blocked on the missing `Lookup` endpoint, delete is deferred everywhere). Only Notifications/Profile remain static, untouched so far.
+Each feature: `data/repository` → `domain/{entities,repository,usecases}` → `presentation/bloc` + `presentation/pages`. As of M5: Auth, Cases, Clients, Hearings, Documents, Tasks, Calendar, and Dashboard are all real, with create/update writes implemented per module including Case and Hearing creation (unblocked M5 via a new `lookups` feature — see M5 session log for the full folder additions); delete stays deferred everywhere as a deliberate scope cut. Only Notifications/Profile remain static, untouched so far.
 
 ## Coding conventions
 
