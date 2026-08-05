@@ -21,10 +21,13 @@ import '../../../documents/domain/entities/document_item.dart';
 import '../../../documents/presentation/bloc/document_upload_bloc.dart';
 import '../../../hearings/domain/entities/hearing.dart';
 import '../../../hearings/presentation/hearing_display_helpers.dart';
+import '../../data/models/assign_case_request.dart';
+import '../../domain/entities/case_access_level.dart';
 import '../../domain/entities/legal_case.dart';
 import '../bloc/case_details_bloc.dart';
 import '../bloc/case_documents_bloc.dart';
 import '../bloc/case_hearings_bloc.dart';
+import '../bloc/case_team_assignment_bloc.dart';
 import '../case_display_helpers.dart';
 
 enum _UploadSource { camera, file }
@@ -98,8 +101,8 @@ class CaseDetailsPage extends StatelessWidget {
 
   Widget _buildContent(BuildContext context, LegalCase legalCase) {
     // BR-026: agreedFee is finance-gated. isFirmAdmin is derived at login
-    // (ownerUserId == user.id — see SessionCubit.authenticated); default
-    // to hidden whenever there's no authenticated session at all.
+    // (FIRM_ADMIN role code — see User.isFirmAdmin); default to hidden
+    // whenever there's no authenticated session at all.
     final sessionState = getIt<SessionCubit>().state;
     final isFirmAdmin =
         sessionState is SessionAuthenticated && sessionState.isFirmAdmin;
@@ -131,11 +134,44 @@ class CaseDetailsPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.m),
           _buildOverview(context, legalCase, showAgreedFee: isFirmAdmin),
           const SizedBox(height: AppSpacing.l),
-          Text(context.tr('team'), style: AppTypography.h3),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(context.tr('team'), style: AppTypography.h3),
+              GestureDetector(
+                onTap: () => _showAssignTeamMemberSheet(context, legalCase.id),
+                child: const Icon(
+                  Icons.person_add_alt_1_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.m),
           _buildTeam(context, legalCase),
           const SizedBox(height: AppSpacing.l),
-          Text(context.tr('hearings'), style: AppTypography.h3),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(context.tr('hearings'), style: AppTypography.h3),
+              GestureDetector(
+                onTap: () async {
+                  final created = await context.push<bool>(
+                    '${AppRouter.cases}/${legalCase.id}/hearings/new',
+                  );
+                  if (created == true && context.mounted) {
+                    context.read<CaseHearingsBloc>().add(
+                      FetchCaseHearingsRequested(caseId),
+                    );
+                  }
+                },
+                child: const Icon(
+                  Icons.event_available_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.m),
           _buildHearingsSection(context),
           const SizedBox(height: AppSpacing.l),
@@ -519,18 +555,15 @@ class CaseDetailsPage extends StatelessWidget {
   }
 
   Widget _buildTeam(BuildContext context, LegalCase legalCase) {
-    final members = [
-      if (legalCase.primaryLawyerId != null)
-        _TeamEntry(
-          user: legalCase.primaryLawyer,
-          userId: legalCase.primaryLawyerId!,
-          roleLabel: context.tr('primary_lawyer'),
-        ),
-      ...legalCase.team.map(
-        (m) =>
-            _TeamEntry(user: m.user, userId: m.userId, roleLabel: m.roleOnCase),
-      ),
-    ];
+    final members = legalCase.team
+        .map(
+          (m) => _TeamEntry(
+            user: m.user,
+            userId: m.userId,
+            roleLabel: caseAccessLevelLabel(context, m.accessLevel),
+          ),
+        )
+        .toList();
     return Column(
       children: members
           .map(
@@ -557,6 +590,27 @@ class CaseDetailsPage extends StatelessWidget {
           .toList(),
     );
   }
+
+  Future<void> _showAssignTeamMemberSheet(
+    BuildContext context,
+    String caseId,
+  ) async {
+    final caseDetailsBloc = context.read<CaseDetailsBloc>();
+    final assigned = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      builder: (sheetContext) => BlocProvider(
+        create: (_) =>
+            getIt<CaseTeamAssignmentBloc>()
+              ..add(LoadCaseTeamAssignmentReferenceDataRequested()),
+        child: _AssignTeamMemberSheet(caseId: caseId),
+      ),
+    );
+    if (assigned == true && context.mounted) {
+      caseDetailsBloc.add(FetchCaseDetailsRequested(caseId));
+    }
+  }
 }
 
 class _TeamEntry {
@@ -568,4 +622,146 @@ class _TeamEntry {
     required this.userId,
     required this.roleLabel,
   });
+}
+
+class _AssignTeamMemberSheet extends StatefulWidget {
+  final String caseId;
+  const _AssignTeamMemberSheet({required this.caseId});
+
+  @override
+  State<_AssignTeamMemberSheet> createState() => _AssignTeamMemberSheetState();
+}
+
+class _AssignTeamMemberSheetState extends State<_AssignTeamMemberSheet> {
+  String? _userId;
+  CaseAccessLevel _accessLevel = CaseAccessLevel.readOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<CaseTeamAssignmentBloc, CaseTeamAssignmentState>(
+      listener: (context, state) {
+        if (state is CaseTeamAssignmentSuccess) {
+          Navigator.of(context).pop(true);
+        } else if (state is CaseTeamAssignmentReady &&
+            state.submitError != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.submitError!)));
+        }
+      },
+      child: BlocBuilder<CaseTeamAssignmentBloc, CaseTeamAssignmentState>(
+        builder: (context, state) {
+          if (state is CaseTeamAssignmentLoading ||
+              state is CaseTeamAssignmentInitial) {
+            return const Padding(
+              padding: EdgeInsets.all(AppSpacing.xl),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            );
+          }
+          if (state is! CaseTeamAssignmentReady) return const SizedBox();
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: AppSpacing.m,
+              right: AppSpacing.m,
+              top: AppSpacing.m,
+              bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.m,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(context.tr('add_team_member'), style: AppTypography.h3),
+                const SizedBox(height: AppSpacing.m),
+                Text(
+                  context.tr('team_member').toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      value: _userId,
+                      isExpanded: true,
+                      dropdownColor: AppColors.surfaceLight,
+                      items: state.users
+                          .map(
+                            (u) => DropdownMenuItem(
+                              value: u.id,
+                              child: Text(u.fullName),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _userId = v),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.m),
+                Text(
+                  context.tr('access_level').toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<CaseAccessLevel>(
+                      value: _accessLevel,
+                      isExpanded: true,
+                      dropdownColor: AppColors.surfaceLight,
+                      items: CaseAccessLevel.values
+                          .where((l) => l != CaseAccessLevel.unknown)
+                          .map(
+                            (l) => DropdownMenuItem(
+                              value: l,
+                              child: Text(caseAccessLevelLabel(context, l)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _accessLevel = v!),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.l),
+                AppButton(
+                  text: context.tr('assign'),
+                  isLoading: state.isSubmitting,
+                  onPressed: () {
+                    final userId = _userId;
+                    if (userId == null) return;
+                    context.read<CaseTeamAssignmentBloc>().add(
+                      CaseTeamAssignmentSubmitted(
+                        widget.caseId,
+                        AssignCaseRequest(
+                          userId: userId,
+                          accessLevel: _accessLevel,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
 }

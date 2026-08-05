@@ -196,5 +196,22 @@
   "start_date": "تاريخ البدء",
   "end_date": "تاريخ الانتهاء",
   "location": "الموقع",
-  "all_day": "طوال اليوم"
+  "all_day": "طوال اليوم",
+  "full_access": "وصول كامل",
+  "read_only": "قراءة فقط",
+  "upload_documents": "رفع المستندات",
+  "assign_hearing": "تحديد الجلسات",
+  "new_case": "قضية جديدة",
+  "create_case": "إنشاء قضية",
+  "add_team_member": "إضافة عضو فريق",
+  "team_member": "عضو الفريق",
+  "access_level": "مستوى الوصول",
+  "new_hearing": "جلسة جديدة",
+  "create_hearing": "إنشاء جلسة",
+  "hearing_type": "نوع الجلسة",
+  "assign": "تعيين",
+  "reactivate_subscription": "إعادة تفعيل الاشتراك",
+  "subscription_inactive_title": "الاشتراك غير مفعّل",
+  "subscription_inactive_message": "اشتراك مكتبك غير مفعّل أو منتهي الصلاحية. يرجى التواصل مع مسؤول المكتب لإعادة تفعيله.",
+  "subscription_inactive_admin_message": "اشتراك مكتبك غير مفعّل أو منتهي الصلاحية. أعد تفعيله لمتابعة استخدام التطبيق."
 }

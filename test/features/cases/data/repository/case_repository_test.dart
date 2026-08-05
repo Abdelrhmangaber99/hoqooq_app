@@ -1,8 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
+import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
+import 'package:hqooq/features/authentication/domain/entities/user.dart';
+import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
+import 'package:hqooq/features/cases/data/models/assign_case_request.dart';
+import 'package:hqooq/features/cases/data/models/create_case_request.dart';
 import 'package:hqooq/features/cases/data/models/update_case_request.dart';
 import 'package:hqooq/features/cases/data/repository/case_repository.dart';
+import 'package:hqooq/features/cases/domain/entities/case_access_level.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,11 +17,27 @@ class MockDio extends Mock implements Dio {}
 
 void main() {
   late MockDio dio;
+  late SessionCubit sessionCubit;
   late CaseRepository repository;
+
+  final user = User(
+    id: 'u1',
+    email: 'lawyer@firm.com',
+    fullName: 'Jane Doe',
+    isSuperAdmin: false,
+    status: 'ACTIVE',
+    mfaEnabled: false,
+    createdAt: DateTime(2026, 1, 1),
+    updatedAt: DateTime(2026, 1, 1),
+    roles: const [],
+    tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
+  );
 
   setUp(() {
     dio = MockDio();
-    repository = CaseRepository(dio);
+    sessionCubit = SessionCubit();
+    sessionCubit.authenticated(user, 'token', isFirmAdmin: false);
+    repository = CaseRepository(dio, sessionCubit);
   });
 
   Response<T> okResponse<T>(String path, T data) {
@@ -26,17 +48,17 @@ void main() {
     );
   }
 
-  // Full shape actually returned by the real backend (verified from source,
-  // pre-M3): CasesController never applies plainToInstance/
-  // ClassSerializerInterceptor, so the wire shape is governed by
-  // CasesService's TypeORM `relations: ['client', 'defaultCourt', 'team',
-  // 'opponents', 'timelineEvents']` array, not by the (also never-enforced)
-  // CaseResponseDto. `caseType` and `primaryLawyer` are NOT in that list and
-  // are never returned by a real server, despite `caseTypeId`/
-  // `primaryLawyerId` always being present. `team[]` entries carry `userId`
-  // and `roleOnCase` (not `role` — the backend's own DTO documents the
-  // wrong field name) but never a nested `user` (only `'team'` is
-  // requested, not `'team.user'`).
+  // Full shape actually returned by the real backend (verified from source):
+  // CasesController never applies plainToInstance/ClassSerializerInterceptor,
+  // so the wire shape is governed by CasesService's query builder joins
+  // (client, defaultCourt, team, team.user, opponents, timelineEvents), not
+  // by the (also never-enforced) CaseResponseDto. `caseType` is NOT among
+  // them and is never returned by a real server, despite `caseTypeId`
+  // always being present. `primaryLawyer`/`primaryLawyerId` no longer exist
+  // on the entity at all (API_CONTRACT.md finding N, 2026-08-05) — not
+  // modeled here. `team[]` entries carry `userId`/`accessLevel` (not
+  // `roleOnCase` — see finding O) and, since `team.user` is now joined, a
+  // nested `user` object too.
   Map<String, dynamic> caseJson({
     String id = 'c1',
     String status = 'ACTIVE',
@@ -65,7 +87,6 @@ void main() {
         'phones': ['+1 555-0100'],
         'addresses': ['88 Canal St'],
       },
-      'primaryLawyerId': 'u1',
       'defaultCourtId': 'co1',
       'defaultCourt': {
         'id': 'co1',
@@ -80,7 +101,23 @@ void main() {
       'outcomeSummary': null,
       'agreedFee': 5000.0,
       'team': [
-        {'id': 'ct-1', 'userId': 'u2', 'roleOnCase': 'LAWYER'},
+        {
+          'id': 'ct-1',
+          'userId': 'u2',
+          'accessLevel': 'FULL_ACCESS',
+          'user': {
+            'id': 'u2',
+            'email': 'lead@firm.com',
+            'fullName': 'Lead Lawyer',
+            'isSuperAdmin': false,
+            'status': 'ACTIVE',
+            'mfaEnabled': false,
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+            'roles': <Map<String, dynamic>>[],
+            'tenant': {'id': 't1', 'name': 'Reynolds & Associates'},
+          },
+        },
       ],
     };
   }
@@ -101,17 +138,16 @@ void main() {
         expect(cases.first.priority, CasePriority.high);
         expect(cases.first.client.fullName, 'Carlos Hernandez');
         expect(cases.first.agreedFee, 5000.0);
-        // caseType/primaryLawyer are never returned by the real backend
-        // (not in CasesService's TypeORM `relations` array) — must parse to
-        // null, not throw.
+        // caseType is never returned by the real backend (not in
+        // CasesService's query builder joins) — must parse to null, not
+        // throw. primaryLawyer no longer exists on the model at all.
         expect(cases.first.caseType, isNull);
-        expect(cases.first.primaryLawyer, isNull);
-        expect(cases.first.primaryLawyerId, 'u1');
-        // team[] carries userId/roleOnCase but never a nested user object.
+        // team[] carries userId/accessLevel and, since team.user is now
+        // joined, a nested user object too.
         expect(cases.first.team, hasLength(1));
         expect(cases.first.team.first.userId, 'u2');
-        expect(cases.first.team.first.roleOnCase, 'LAWYER');
-        expect(cases.first.team.first.user, isNull);
+        expect(cases.first.team.first.accessLevel, CaseAccessLevel.fullAccess);
+        expect(cases.first.team.first.user?.fullName, 'Lead Lawyer');
       });
     });
 
@@ -204,6 +240,125 @@ void main() {
 
       result.fold(
         (failure) => expect(failure, isA<ValidationFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('createCase', () {
+    test(
+      'POSTs /cases with the full body including a sourced tenantId',
+      () async {
+        when(
+          () => dio.post('/cases', data: any(named: 'data')),
+        ).thenAnswer((_) async => okResponse('/cases', caseJson()));
+
+        const request = CreateCaseRequest(
+          caseNumber: 'CASE-2026-00002',
+          clientId: 'cl1',
+          caseTypeId: 'ct1',
+        );
+        final result = await repository.createCase(request);
+
+        final captured = verify(
+          () => dio.post('/cases', data: captureAny(named: 'data')),
+        ).captured;
+        final body = captured.single as Map<String, dynamic>;
+        expect(body['caseNumber'], 'CASE-2026-00002');
+        expect(body['clientId'], 'cl1');
+        expect(body['caseTypeId'], 'ct1');
+        expect(body['tenantId'], 't1');
+        result.fold(
+          (_) => fail('expected Right'),
+          (legalCase) => expect(legalCase.id, 'c1'),
+        );
+      },
+    );
+
+    test('maps a 400 to ValidationFailure', () async {
+      when(() => dio.post('/cases', data: any(named: 'data'))).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/cases'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/cases'),
+            statusCode: 400,
+            data: {'message': 'caseTypeId should not be empty'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      const request = CreateCaseRequest(
+        caseNumber: 'CASE-2026-00002',
+        clientId: 'cl1',
+        caseTypeId: '',
+      );
+      final result = await repository.createCase(request);
+
+      result.fold(
+        (failure) => expect(failure, isA<ValidationFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('assignTeamMember', () {
+    test(
+      'POSTs /cases/{id}/assignments and parses the created member',
+      () async {
+        when(
+          () => dio.post('/cases/c1/assignments', data: any(named: 'data')),
+        ).thenAnswer(
+          (_) async => okResponse('/cases/c1/assignments', {
+            'id': 'ct-2',
+            'userId': 'u3',
+            'accessLevel': 'READ_ONLY',
+          }),
+        );
+
+        const request = AssignCaseRequest(
+          userId: 'u3',
+          accessLevel: CaseAccessLevel.readOnly,
+        );
+        final result = await repository.assignTeamMember('c1', request);
+
+        final captured = verify(
+          () => dio.post(
+            '/cases/c1/assignments',
+            data: captureAny(named: 'data'),
+          ),
+        ).captured;
+        expect(captured.single, {'userId': 'u3', 'accessLevel': 'READ_ONLY'});
+        result.fold(
+          (_) => fail('expected Right'),
+          (member) => expect(member.accessLevel, CaseAccessLevel.readOnly),
+        );
+      },
+    );
+
+    test('maps a 403 to ServerFailure (no FULL_ACCESS/firm-admin)', () async {
+      when(
+        () => dio.post('/cases/c1/assignments', data: any(named: 'data')),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/cases/c1/assignments'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/cases/c1/assignments'),
+            statusCode: 403,
+            data: {'message': 'Only firm admin or case managers can assign.'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      const request = AssignCaseRequest(
+        userId: 'u3',
+        accessLevel: CaseAccessLevel.readOnly,
+      );
+      final result = await repository.assignTeamMember('c1', request);
+
+      result.fold(
+        (failure) => expect(failure, isA<ServerFailure>()),
         (_) => fail('expected Left'),
       );
     });

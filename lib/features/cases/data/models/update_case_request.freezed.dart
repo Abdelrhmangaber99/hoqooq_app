@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UpdateCaseRequest {
 
-@JsonKey(includeIfNull: false) String? get primaryLawyerId;@JsonKey(includeIfNull: false) String? get defaultCourtId;@JsonKey(includeIfNull: false) CaseStatus? get status;@JsonKey(includeIfNull: false) DateTime? get openingDate;@JsonKey(includeIfNull: false) DateTime? get closingDate;@JsonKey(includeIfNull: false) String? get outcomeSummary;@JsonKey(includeIfNull: false) double? get agreedFee;@JsonKey(includeIfNull: false) CasePriority? get priority;
+@JsonKey(includeIfNull: false) String? get defaultCourtId;@JsonKey(includeIfNull: false) CaseStatus? get status;@JsonKey(includeIfNull: false) DateTime? get openingDate;@JsonKey(includeIfNull: false) DateTime? get closingDate;@JsonKey(includeIfNull: false) String? get outcomeSummary;@JsonKey(includeIfNull: false) double? get agreedFee;@JsonKey(includeIfNull: false) CasePriority? get priority;
 /// Create a copy of UpdateCaseRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $UpdateCaseRequestCopyWith<UpdateCaseRequest> get copyWith => _$UpdateCaseReques
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpdateCaseRequest&&(identical(other.primaryLawyerId, primaryLawyerId) || other.primaryLawyerId == primaryLawyerId)&&(identical(other.defaultCourtId, defaultCourtId) || other.defaultCourtId == defaultCourtId)&&(identical(other.status, status) || other.status == status)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.agreedFee, agreedFee) || other.agreedFee == agreedFee)&&(identical(other.priority, priority) || other.priority == priority));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpdateCaseRequest&&(identical(other.defaultCourtId, defaultCourtId) || other.defaultCourtId == defaultCourtId)&&(identical(other.status, status) || other.status == status)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.agreedFee, agreedFee) || other.agreedFee == agreedFee)&&(identical(other.priority, priority) || other.priority == priority));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,primaryLawyerId,defaultCourtId,status,openingDate,closingDate,outcomeSummary,agreedFee,priority);
+int get hashCode => Object.hash(runtimeType,defaultCourtId,status,openingDate,closingDate,outcomeSummary,agreedFee,priority);
 
 @override
 String toString() {
-  return 'UpdateCaseRequest(primaryLawyerId: $primaryLawyerId, defaultCourtId: $defaultCourtId, status: $status, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, agreedFee: $agreedFee, priority: $priority)';
+  return 'UpdateCaseRequest(defaultCourtId: $defaultCourtId, status: $status, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, agreedFee: $agreedFee, priority: $priority)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $UpdateCaseRequestCopyWith<$Res>  {
   factory $UpdateCaseRequestCopyWith(UpdateCaseRequest value, $Res Function(UpdateCaseRequest) _then) = _$UpdateCaseRequestCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(includeIfNull: false) String? primaryLawyerId,@JsonKey(includeIfNull: false) String? defaultCourtId,@JsonKey(includeIfNull: false) CaseStatus? status,@JsonKey(includeIfNull: false) DateTime? openingDate,@JsonKey(includeIfNull: false) DateTime? closingDate,@JsonKey(includeIfNull: false) String? outcomeSummary,@JsonKey(includeIfNull: false) double? agreedFee,@JsonKey(includeIfNull: false) CasePriority? priority
+@JsonKey(includeIfNull: false) String? defaultCourtId,@JsonKey(includeIfNull: false) CaseStatus? status,@JsonKey(includeIfNull: false) DateTime? openingDate,@JsonKey(includeIfNull: false) DateTime? closingDate,@JsonKey(includeIfNull: false) String? outcomeSummary,@JsonKey(includeIfNull: false) double? agreedFee,@JsonKey(includeIfNull: false) CasePriority? priority
 });
 
 
@@ -65,10 +65,9 @@ class _$UpdateCaseRequestCopyWithImpl<$Res>
 
 /// Create a copy of UpdateCaseRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? primaryLawyerId = freezed,Object? defaultCourtId = freezed,Object? status = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? priority = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? defaultCourtId = freezed,Object? status = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? priority = freezed,}) {
   return _then(_self.copyWith(
-primaryLawyerId: freezed == primaryLawyerId ? _self.primaryLawyerId : primaryLawyerId // ignore: cast_nullable_to_non_nullable
-as String?,defaultCourtId: freezed == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
+defaultCourtId: freezed == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
 as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as CaseStatus?,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,closingDate: freezed == closingDate ? _self.closingDate : closingDate // ignore: cast_nullable_to_non_nullable
@@ -160,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  String? primaryLawyerId, @JsonKey(includeIfNull: false)  String? defaultCourtId, @JsonKey(includeIfNull: false)  CaseStatus? status, @JsonKey(includeIfNull: false)  DateTime? openingDate, @JsonKey(includeIfNull: false)  DateTime? closingDate, @JsonKey(includeIfNull: false)  String? outcomeSummary, @JsonKey(includeIfNull: false)  double? agreedFee, @JsonKey(includeIfNull: false)  CasePriority? priority)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  String? defaultCourtId, @JsonKey(includeIfNull: false)  CaseStatus? status, @JsonKey(includeIfNull: false)  DateTime? openingDate, @JsonKey(includeIfNull: false)  DateTime? closingDate, @JsonKey(includeIfNull: false)  String? outcomeSummary, @JsonKey(includeIfNull: false)  double? agreedFee, @JsonKey(includeIfNull: false)  CasePriority? priority)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UpdateCaseRequest() when $default != null:
-return $default(_that.primaryLawyerId,_that.defaultCourtId,_that.status,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.priority);case _:
+return $default(_that.defaultCourtId,_that.status,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.priority);case _:
   return orElse();
 
 }
@@ -181,10 +180,10 @@ return $default(_that.primaryLawyerId,_that.defaultCourtId,_that.status,_that.op
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  String? primaryLawyerId, @JsonKey(includeIfNull: false)  String? defaultCourtId, @JsonKey(includeIfNull: false)  CaseStatus? status, @JsonKey(includeIfNull: false)  DateTime? openingDate, @JsonKey(includeIfNull: false)  DateTime? closingDate, @JsonKey(includeIfNull: false)  String? outcomeSummary, @JsonKey(includeIfNull: false)  double? agreedFee, @JsonKey(includeIfNull: false)  CasePriority? priority)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  String? defaultCourtId, @JsonKey(includeIfNull: false)  CaseStatus? status, @JsonKey(includeIfNull: false)  DateTime? openingDate, @JsonKey(includeIfNull: false)  DateTime? closingDate, @JsonKey(includeIfNull: false)  String? outcomeSummary, @JsonKey(includeIfNull: false)  double? agreedFee, @JsonKey(includeIfNull: false)  CasePriority? priority)  $default,) {final _that = this;
 switch (_that) {
 case _UpdateCaseRequest():
-return $default(_that.primaryLawyerId,_that.defaultCourtId,_that.status,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.priority);case _:
+return $default(_that.defaultCourtId,_that.status,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.priority);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +200,10 @@ return $default(_that.primaryLawyerId,_that.defaultCourtId,_that.status,_that.op
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  String? primaryLawyerId, @JsonKey(includeIfNull: false)  String? defaultCourtId, @JsonKey(includeIfNull: false)  CaseStatus? status, @JsonKey(includeIfNull: false)  DateTime? openingDate, @JsonKey(includeIfNull: false)  DateTime? closingDate, @JsonKey(includeIfNull: false)  String? outcomeSummary, @JsonKey(includeIfNull: false)  double? agreedFee, @JsonKey(includeIfNull: false)  CasePriority? priority)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  String? defaultCourtId, @JsonKey(includeIfNull: false)  CaseStatus? status, @JsonKey(includeIfNull: false)  DateTime? openingDate, @JsonKey(includeIfNull: false)  DateTime? closingDate, @JsonKey(includeIfNull: false)  String? outcomeSummary, @JsonKey(includeIfNull: false)  double? agreedFee, @JsonKey(includeIfNull: false)  CasePriority? priority)?  $default,) {final _that = this;
 switch (_that) {
 case _UpdateCaseRequest() when $default != null:
-return $default(_that.primaryLawyerId,_that.defaultCourtId,_that.status,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.priority);case _:
+return $default(_that.defaultCourtId,_that.status,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.priority);case _:
   return null;
 
 }
@@ -216,10 +215,9 @@ return $default(_that.primaryLawyerId,_that.defaultCourtId,_that.status,_that.op
 @JsonSerializable()
 
 class _UpdateCaseRequest implements UpdateCaseRequest {
-  const _UpdateCaseRequest({@JsonKey(includeIfNull: false) this.primaryLawyerId, @JsonKey(includeIfNull: false) this.defaultCourtId, @JsonKey(includeIfNull: false) this.status, @JsonKey(includeIfNull: false) this.openingDate, @JsonKey(includeIfNull: false) this.closingDate, @JsonKey(includeIfNull: false) this.outcomeSummary, @JsonKey(includeIfNull: false) this.agreedFee, @JsonKey(includeIfNull: false) this.priority});
+  const _UpdateCaseRequest({@JsonKey(includeIfNull: false) this.defaultCourtId, @JsonKey(includeIfNull: false) this.status, @JsonKey(includeIfNull: false) this.openingDate, @JsonKey(includeIfNull: false) this.closingDate, @JsonKey(includeIfNull: false) this.outcomeSummary, @JsonKey(includeIfNull: false) this.agreedFee, @JsonKey(includeIfNull: false) this.priority});
   factory _UpdateCaseRequest.fromJson(Map<String, dynamic> json) => _$UpdateCaseRequestFromJson(json);
 
-@override@JsonKey(includeIfNull: false) final  String? primaryLawyerId;
 @override@JsonKey(includeIfNull: false) final  String? defaultCourtId;
 @override@JsonKey(includeIfNull: false) final  CaseStatus? status;
 @override@JsonKey(includeIfNull: false) final  DateTime? openingDate;
@@ -241,16 +239,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpdateCaseRequest&&(identical(other.primaryLawyerId, primaryLawyerId) || other.primaryLawyerId == primaryLawyerId)&&(identical(other.defaultCourtId, defaultCourtId) || other.defaultCourtId == defaultCourtId)&&(identical(other.status, status) || other.status == status)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.agreedFee, agreedFee) || other.agreedFee == agreedFee)&&(identical(other.priority, priority) || other.priority == priority));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpdateCaseRequest&&(identical(other.defaultCourtId, defaultCourtId) || other.defaultCourtId == defaultCourtId)&&(identical(other.status, status) || other.status == status)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.agreedFee, agreedFee) || other.agreedFee == agreedFee)&&(identical(other.priority, priority) || other.priority == priority));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,primaryLawyerId,defaultCourtId,status,openingDate,closingDate,outcomeSummary,agreedFee,priority);
+int get hashCode => Object.hash(runtimeType,defaultCourtId,status,openingDate,closingDate,outcomeSummary,agreedFee,priority);
 
 @override
 String toString() {
-  return 'UpdateCaseRequest(primaryLawyerId: $primaryLawyerId, defaultCourtId: $defaultCourtId, status: $status, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, agreedFee: $agreedFee, priority: $priority)';
+  return 'UpdateCaseRequest(defaultCourtId: $defaultCourtId, status: $status, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, agreedFee: $agreedFee, priority: $priority)';
 }
 
 
@@ -261,7 +259,7 @@ abstract mixin class _$UpdateCaseRequestCopyWith<$Res> implements $UpdateCaseReq
   factory _$UpdateCaseRequestCopyWith(_UpdateCaseRequest value, $Res Function(_UpdateCaseRequest) _then) = __$UpdateCaseRequestCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(includeIfNull: false) String? primaryLawyerId,@JsonKey(includeIfNull: false) String? defaultCourtId,@JsonKey(includeIfNull: false) CaseStatus? status,@JsonKey(includeIfNull: false) DateTime? openingDate,@JsonKey(includeIfNull: false) DateTime? closingDate,@JsonKey(includeIfNull: false) String? outcomeSummary,@JsonKey(includeIfNull: false) double? agreedFee,@JsonKey(includeIfNull: false) CasePriority? priority
+@JsonKey(includeIfNull: false) String? defaultCourtId,@JsonKey(includeIfNull: false) CaseStatus? status,@JsonKey(includeIfNull: false) DateTime? openingDate,@JsonKey(includeIfNull: false) DateTime? closingDate,@JsonKey(includeIfNull: false) String? outcomeSummary,@JsonKey(includeIfNull: false) double? agreedFee,@JsonKey(includeIfNull: false) CasePriority? priority
 });
 
 
@@ -278,10 +276,9 @@ class __$UpdateCaseRequestCopyWithImpl<$Res>
 
 /// Create a copy of UpdateCaseRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? primaryLawyerId = freezed,Object? defaultCourtId = freezed,Object? status = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? priority = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? defaultCourtId = freezed,Object? status = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? priority = freezed,}) {
   return _then(_UpdateCaseRequest(
-primaryLawyerId: freezed == primaryLawyerId ? _self.primaryLawyerId : primaryLawyerId // ignore: cast_nullable_to_non_nullable
-as String?,defaultCourtId: freezed == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
+defaultCourtId: freezed == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
 as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as CaseStatus?,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,closingDate: freezed == closingDate ? _self.closingDate : closingDate // ignore: cast_nullable_to_non_nullable

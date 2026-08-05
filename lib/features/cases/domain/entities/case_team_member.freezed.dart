@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CaseTeamMember {
 
- String get id; String get roleOnCase; String get userId; User? get user;
+ String get id;@JsonKey(unknownEnumValue: CaseAccessLevel.unknown) CaseAccessLevel get accessLevel; String get userId; User? get user;
 /// Create a copy of CaseTeamMember
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $CaseTeamMemberCopyWith<CaseTeamMember> get copyWith => _$CaseTeamMemberCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CaseTeamMember&&(identical(other.id, id) || other.id == id)&&(identical(other.roleOnCase, roleOnCase) || other.roleOnCase == roleOnCase)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.user, user) || other.user == user));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CaseTeamMember&&(identical(other.id, id) || other.id == id)&&(identical(other.accessLevel, accessLevel) || other.accessLevel == accessLevel)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.user, user) || other.user == user));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,roleOnCase,userId,user);
+int get hashCode => Object.hash(runtimeType,id,accessLevel,userId,user);
 
 @override
 String toString() {
-  return 'CaseTeamMember(id: $id, roleOnCase: $roleOnCase, userId: $userId, user: $user)';
+  return 'CaseTeamMember(id: $id, accessLevel: $accessLevel, userId: $userId, user: $user)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $CaseTeamMemberCopyWith<$Res>  {
   factory $CaseTeamMemberCopyWith(CaseTeamMember value, $Res Function(CaseTeamMember) _then) = _$CaseTeamMemberCopyWithImpl;
 @useResult
 $Res call({
- String id, String roleOnCase, String userId, User? user
+ String id,@JsonKey(unknownEnumValue: CaseAccessLevel.unknown) CaseAccessLevel accessLevel, String userId, User? user
 });
 
 
@@ -65,11 +65,11 @@ class _$CaseTeamMemberCopyWithImpl<$Res>
 
 /// Create a copy of CaseTeamMember
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? roleOnCase = null,Object? userId = null,Object? user = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? accessLevel = null,Object? userId = null,Object? user = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,roleOnCase: null == roleOnCase ? _self.roleOnCase : roleOnCase // ignore: cast_nullable_to_non_nullable
-as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
+as String,accessLevel: null == accessLevel ? _self.accessLevel : accessLevel // ignore: cast_nullable_to_non_nullable
+as CaseAccessLevel,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,user: freezed == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as User?,
   ));
@@ -168,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String roleOnCase,  String userId,  User? user)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(unknownEnumValue: CaseAccessLevel.unknown)  CaseAccessLevel accessLevel,  String userId,  User? user)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CaseTeamMember() when $default != null:
-return $default(_that.id,_that.roleOnCase,_that.userId,_that.user);case _:
+return $default(_that.id,_that.accessLevel,_that.userId,_that.user);case _:
   return orElse();
 
 }
@@ -189,10 +189,10 @@ return $default(_that.id,_that.roleOnCase,_that.userId,_that.user);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String roleOnCase,  String userId,  User? user)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(unknownEnumValue: CaseAccessLevel.unknown)  CaseAccessLevel accessLevel,  String userId,  User? user)  $default,) {final _that = this;
 switch (_that) {
 case _CaseTeamMember():
-return $default(_that.id,_that.roleOnCase,_that.userId,_that.user);case _:
+return $default(_that.id,_that.accessLevel,_that.userId,_that.user);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +209,10 @@ return $default(_that.id,_that.roleOnCase,_that.userId,_that.user);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String roleOnCase,  String userId,  User? user)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(unknownEnumValue: CaseAccessLevel.unknown)  CaseAccessLevel accessLevel,  String userId,  User? user)?  $default,) {final _that = this;
 switch (_that) {
 case _CaseTeamMember() when $default != null:
-return $default(_that.id,_that.roleOnCase,_that.userId,_that.user);case _:
+return $default(_that.id,_that.accessLevel,_that.userId,_that.user);case _:
   return null;
 
 }
@@ -224,11 +224,11 @@ return $default(_that.id,_that.roleOnCase,_that.userId,_that.user);case _:
 @JsonSerializable()
 
 class _CaseTeamMember implements CaseTeamMember {
-  const _CaseTeamMember({required this.id, required this.roleOnCase, required this.userId, this.user});
+  const _CaseTeamMember({required this.id, @JsonKey(unknownEnumValue: CaseAccessLevel.unknown) required this.accessLevel, required this.userId, this.user});
   factory _CaseTeamMember.fromJson(Map<String, dynamic> json) => _$CaseTeamMemberFromJson(json);
 
 @override final  String id;
-@override final  String roleOnCase;
+@override@JsonKey(unknownEnumValue: CaseAccessLevel.unknown) final  CaseAccessLevel accessLevel;
 @override final  String userId;
 @override final  User? user;
 
@@ -245,16 +245,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CaseTeamMember&&(identical(other.id, id) || other.id == id)&&(identical(other.roleOnCase, roleOnCase) || other.roleOnCase == roleOnCase)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.user, user) || other.user == user));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CaseTeamMember&&(identical(other.id, id) || other.id == id)&&(identical(other.accessLevel, accessLevel) || other.accessLevel == accessLevel)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.user, user) || other.user == user));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,roleOnCase,userId,user);
+int get hashCode => Object.hash(runtimeType,id,accessLevel,userId,user);
 
 @override
 String toString() {
-  return 'CaseTeamMember(id: $id, roleOnCase: $roleOnCase, userId: $userId, user: $user)';
+  return 'CaseTeamMember(id: $id, accessLevel: $accessLevel, userId: $userId, user: $user)';
 }
 
 
@@ -265,7 +265,7 @@ abstract mixin class _$CaseTeamMemberCopyWith<$Res> implements $CaseTeamMemberCo
   factory _$CaseTeamMemberCopyWith(_CaseTeamMember value, $Res Function(_CaseTeamMember) _then) = __$CaseTeamMemberCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String roleOnCase, String userId, User? user
+ String id,@JsonKey(unknownEnumValue: CaseAccessLevel.unknown) CaseAccessLevel accessLevel, String userId, User? user
 });
 
 
@@ -282,11 +282,11 @@ class __$CaseTeamMemberCopyWithImpl<$Res>
 
 /// Create a copy of CaseTeamMember
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? roleOnCase = null,Object? userId = null,Object? user = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? accessLevel = null,Object? userId = null,Object? user = freezed,}) {
   return _then(_CaseTeamMember(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,roleOnCase: null == roleOnCase ? _self.roleOnCase : roleOnCase // ignore: cast_nullable_to_non_nullable
-as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
+as String,accessLevel: null == accessLevel ? _self.accessLevel : accessLevel // ignore: cast_nullable_to_non_nullable
+as CaseAccessLevel,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
 as String,user: freezed == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as User?,
   ));

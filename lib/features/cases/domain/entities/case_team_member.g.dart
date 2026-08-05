@@ -9,7 +9,11 @@ part of 'case_team_member.dart';
 _CaseTeamMember _$CaseTeamMemberFromJson(Map<String, dynamic> json) =>
     _CaseTeamMember(
       id: json['id'] as String,
-      roleOnCase: json['roleOnCase'] as String,
+      accessLevel: $enumDecode(
+        _$CaseAccessLevelEnumMap,
+        json['accessLevel'],
+        unknownValue: CaseAccessLevel.unknown,
+      ),
       userId: json['userId'] as String,
       user: json['user'] == null
           ? null
@@ -19,7 +23,15 @@ _CaseTeamMember _$CaseTeamMemberFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$CaseTeamMemberToJson(_CaseTeamMember instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'roleOnCase': instance.roleOnCase,
+      'accessLevel': _$CaseAccessLevelEnumMap[instance.accessLevel]!,
       'userId': instance.userId,
       'user': instance.user,
     };
+
+const _$CaseAccessLevelEnumMap = {
+  CaseAccessLevel.fullAccess: 'FULL_ACCESS',
+  CaseAccessLevel.readOnly: 'READ_ONLY',
+  CaseAccessLevel.uploadDocuments: 'UPLOAD_DOCUMENTS',
+  CaseAccessLevel.assignHearing: 'ASSIGN_HEARING',
+  CaseAccessLevel.unknown: 'unknown',
+};

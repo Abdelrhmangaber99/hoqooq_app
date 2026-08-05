@@ -8,7 +8,6 @@ part of 'update_case_request.dart';
 
 _UpdateCaseRequest _$UpdateCaseRequestFromJson(Map<String, dynamic> json) =>
     _UpdateCaseRequest(
-      primaryLawyerId: json['primaryLawyerId'] as String?,
       defaultCourtId: json['defaultCourtId'] as String?,
       status: $enumDecodeNullable(_$CaseStatusEnumMap, json['status']),
       openingDate: json['openingDate'] == null
@@ -24,7 +23,6 @@ _UpdateCaseRequest _$UpdateCaseRequestFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$UpdateCaseRequestToJson(_UpdateCaseRequest instance) =>
     <String, dynamic>{
-      'primaryLawyerId': ?instance.primaryLawyerId,
       'defaultCourtId': ?instance.defaultCourtId,
       'status': ?_$CaseStatusEnumMap[instance.status],
       'openingDate': ?instance.openingDate?.toIso8601String(),

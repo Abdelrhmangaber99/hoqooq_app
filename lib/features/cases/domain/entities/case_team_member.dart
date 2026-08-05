@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../authentication/domain/entities/user.dart';
+import 'case_access_level.dart';
 
 part 'case_team_member.freezed.dart';
 part 'case_team_member.g.dart';
@@ -7,20 +8,24 @@ part 'case_team_member.g.dart';
 /// Wire shape for entries in the `team[]` array on `GET/POST/PATCH /cases`
 /// per API_CONTRACT.md §8.
 ///
-/// **Corrected 2026-07-30 (backend-source re-verification, pre-M3):** the
-/// real entity (`CaseTeam`, `src/modules/cases/entities/case-team.entity.ts`)
-/// names the role field `roleOnCase`, not `role` — the backend's own
-/// (never-enforced) `CaseResponseDto` documents `role`, which doesn't match
-/// its own entity. `CasesService` only requests `relations: ['team']`, not
-/// `'team.user'`, so the nested `user` object is never populated even
-/// though `userId` always is — `user` corrected to nullable, `userId` added
-/// so a team entry is still identifiable when `user` is absent (which is
-/// always, under current backend behavior).
+/// **Corrected 2026-08-05 (API_CONTRACT.md finding O) — supersedes the
+/// earlier `roleOnCase` naming.** The real entity
+/// (`CaseTeam`, `src/modules/cases/entities/case-team.entity.ts`) names
+/// the field `accessLevel`, a real enum (`CaseAccessLevel`) — `roleOnCase`
+/// only ever existed as a backward-compatibility *type alias* for that
+/// enum type in the backend source, never a JSON key; the earlier fix
+/// (M3 pre-planning) misread the backend's own never-enforced
+/// `CaseResponseDto`, which itself documents the wrong name.
+///
+/// **Also corrected 2026-08-05:** `CasesService` now explicitly joins
+/// `team.user` (previously only `'team'`, so `user` was always absent) —
+/// `user` stays nullable defensively, but is expected to be populated now.
 @freezed
 abstract class CaseTeamMember with _$CaseTeamMember {
   const factory CaseTeamMember({
     required String id,
-    required String roleOnCase,
+    @JsonKey(unknownEnumValue: CaseAccessLevel.unknown)
+    required CaseAccessLevel accessLevel,
     required String userId,
     User? user,
   }) = _CaseTeamMember;

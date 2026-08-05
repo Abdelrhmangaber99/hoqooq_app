@@ -31,6 +31,18 @@ class CasesPage extends StatelessWidget {
       child: Builder(
         builder: (context) => Scaffold(
           backgroundColor: AppColors.background,
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: AppColors.primary,
+            onPressed: () async {
+              final created = await context.push<bool>(
+                '${AppRouter.cases}/new',
+              );
+              if (created == true && context.mounted) {
+                context.read<CasesBloc>().add(FetchCasesRequested());
+              }
+            },
+            child: const Icon(Icons.add),
+          ),
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),

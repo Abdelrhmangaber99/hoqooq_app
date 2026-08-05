@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
+import '../domain/entities/case_access_level.dart';
 import '../domain/entities/case_priority.dart';
 import '../domain/entities/case_status.dart';
 
@@ -64,6 +65,36 @@ Color casePriorityColor(CasePriority priority) {
     case CasePriority.urgent:
       return AppColors.error;
     case CasePriority.unknown:
+      return AppColors.textHint;
+  }
+}
+
+String caseAccessLevelLabel(BuildContext context, CaseAccessLevel level) {
+  switch (level) {
+    case CaseAccessLevel.fullAccess:
+      return context.tr('full_access');
+    case CaseAccessLevel.readOnly:
+      return context.tr('read_only');
+    case CaseAccessLevel.uploadDocuments:
+      return context.tr('upload_documents');
+    case CaseAccessLevel.assignHearing:
+      return context.tr('assign_hearing');
+    case CaseAccessLevel.unknown:
+      return context.tr('unknown');
+  }
+}
+
+Color caseAccessLevelColor(CaseAccessLevel level) {
+  switch (level) {
+    case CaseAccessLevel.fullAccess:
+      return AppColors.success;
+    case CaseAccessLevel.readOnly:
+      return AppColors.textSecondary;
+    case CaseAccessLevel.uploadDocuments:
+      return AppColors.info;
+    case CaseAccessLevel.assignHearing:
+      return AppColors.warning;
+    case CaseAccessLevel.unknown:
       return AppColors.textHint;
   }
 }

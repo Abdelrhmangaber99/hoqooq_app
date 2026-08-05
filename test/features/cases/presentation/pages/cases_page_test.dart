@@ -5,8 +5,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/di/injection.dart';
-import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
-import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
 import 'package:hqooq/features/cases/domain/entities/case_type_lookup.dart';
@@ -65,19 +63,6 @@ void main() {
       emails: const [],
       phones: const [],
       addresses: const [],
-    ),
-    primaryLawyerId: 'u1',
-    primaryLawyer: User(
-      id: 'u1',
-      email: 'lawyer@firm.com',
-      fullName: 'Jane Doe',
-      isSuperAdmin: false,
-      status: 'ACTIVE',
-      mfaEnabled: false,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-      roles: const [],
-      tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
     ),
     caseType: const CaseTypeLookup(id: 'ct1', name: 'Civil'),
     defaultCourtId: 'co1',

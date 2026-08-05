@@ -196,5 +196,22 @@
   "start_date": "Start Date",
   "end_date": "End Date",
   "location": "Location",
-  "all_day": "All Day"
+  "all_day": "All Day",
+  "full_access": "Full Access",
+  "read_only": "Read Only",
+  "upload_documents": "Upload Documents",
+  "assign_hearing": "Assign Hearing",
+  "new_case": "New Case",
+  "create_case": "Create Case",
+  "add_team_member": "Add Team Member",
+  "team_member": "Team Member",
+  "access_level": "Access Level",
+  "new_hearing": "New Hearing",
+  "create_hearing": "Create Hearing",
+  "hearing_type": "Hearing Type",
+  "assign": "Assign",
+  "reactivate_subscription": "Reactivate Subscription",
+  "subscription_inactive_title": "Subscription Inactive",
+  "subscription_inactive_message": "Your firm's subscription is inactive or has expired. Contact your firm admin to reactivate it.",
+  "subscription_inactive_admin_message": "Your firm's subscription is inactive or has expired. Reactivate it to continue using the app."
 }

@@ -2,11 +2,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
-import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
-import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
-import 'package:hqooq/features/cases/domain/entities/case_type_lookup.dart';
 import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
 import 'package:hqooq/features/cases/domain/repository/i_case_repository.dart';
@@ -44,20 +41,6 @@ void main() {
       phones: const [],
       addresses: const [],
     ),
-    primaryLawyerId: 'u1',
-    primaryLawyer: User(
-      id: 'u1',
-      email: 'lawyer@firm.com',
-      fullName: 'Jane Doe',
-      isSuperAdmin: false,
-      status: 'ACTIVE',
-      mfaEnabled: false,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-      roles: const [],
-      tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
-    ),
-    caseType: const CaseTypeLookup(id: 'ct1', name: 'Civil'),
     defaultCourtId: 'co1',
     defaultCourt: Court(
       id: 'co1',

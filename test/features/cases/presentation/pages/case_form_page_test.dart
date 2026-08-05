@@ -100,7 +100,12 @@ void main() {
     whenListen(
       bloc,
       const Stream<CaseFormState>.empty(),
-      initialState: CaseFormReady(courts: [court], users: const []),
+      initialState: CaseFormReady(
+        courts: [court],
+        users: const [],
+        clients: const [],
+        caseTypes: const [],
+      ),
     );
   });
 
@@ -108,13 +113,13 @@ void main() {
     await getIt.reset();
   });
 
-  Widget buildTestable() {
+  Widget buildTestable({LegalCase? existingCase}) {
     final router = GoRouter(
       initialLocation: '/form',
       routes: [
         GoRoute(
           path: '/form',
-          builder: (context, state) => CaseFormPage(existingCase: legalCase),
+          builder: (context, state) => CaseFormPage(existingCase: existingCase),
         ),
       ],
     );
@@ -134,7 +139,7 @@ void main() {
   testWidgets('renders the edit form with the existing case\'s values', (
     tester,
   ) async {
-    await tester.pumpWidget(buildTestable());
+    await tester.pumpWidget(buildTestable(existingCase: legalCase));
     await tester.pumpAndSettle();
 
     expect(find.text('Edit Case'), findsOneWidget);
@@ -143,7 +148,7 @@ void main() {
   });
 
   testWidgets('hides agreedFee for a non-Firm-Admin session', (tester) async {
-    await tester.pumpWidget(buildTestable());
+    await tester.pumpWidget(buildTestable(existingCase: legalCase));
     await tester.pumpAndSettle();
 
     expect(find.text('AGREED FEE'), findsNothing);
@@ -168,7 +173,7 @@ void main() {
       () => sessionCubit.state,
     ).thenReturn(SessionAuthenticated(user, isFirmAdmin: true));
 
-    await tester.pumpWidget(buildTestable());
+    await tester.pumpWidget(buildTestable(existingCase: legalCase));
     await tester.pumpAndSettle();
 
     expect(find.text('AGREED FEE'), findsOneWidget);
@@ -183,9 +188,19 @@ void main() {
       initialState: CaseFormLoading(),
     );
 
-    await tester.pumpWidget(buildTestable());
+    await tester.pumpWidget(buildTestable(existingCase: legalCase));
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('renders the create-mode form with empty fields and a client/'
+      'case-type picker', (tester) async {
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('New Case'), findsOneWidget);
+    expect(find.text('Create Case'), findsOneWidget);
+    expect(find.textContaining('CASE-2026-00001'), findsNothing);
   });
 }

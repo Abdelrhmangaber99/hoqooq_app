@@ -50,6 +50,8 @@ import 'package:hqooq/features/cases/presentation/bloc/case_form_bloc.dart'
     as _i728;
 import 'package:hqooq/features/cases/presentation/bloc/case_hearings_bloc.dart'
     as _i389;
+import 'package:hqooq/features/cases/presentation/bloc/case_team_assignment_bloc.dart'
+    as _i743;
 import 'package:hqooq/features/cases/presentation/bloc/cases_bloc.dart'
     as _i546;
 import 'package:hqooq/features/clients/data/repository/client_repository.dart'
@@ -86,6 +88,10 @@ import 'package:hqooq/features/hearings/domain/repository/i_hearing_repository.d
     as _i844;
 import 'package:hqooq/features/hearings/presentation/bloc/hearing_form_bloc.dart'
     as _i421;
+import 'package:hqooq/features/lookups/data/repository/lookup_repository.dart'
+    as _i792;
+import 'package:hqooq/features/lookups/domain/repository/i_lookup_repository.dart'
+    as _i359;
 import 'package:hqooq/features/tasks/data/repository/task_repository.dart'
     as _i23;
 import 'package:hqooq/features/tasks/domain/repository/i_task_repository.dart'
@@ -125,17 +131,32 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i722.RefreshInterceptor>(),
       ),
     );
+    gh.lazySingleton<_i320.ICaseRepository>(
+      () => _i981.CaseRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
+    );
+    gh.lazySingleton<_i613.GetCasesUseCase>(
+      () => _i613.GetCasesUseCase(gh<_i320.ICaseRepository>()),
+    );
+    gh.factory<_i546.CasesBloc>(
+      () => _i546.CasesBloc(gh<_i613.GetCasesUseCase>()),
+    );
     gh.lazySingleton<_i794.IClientRepository>(
       () => _i351.ClientRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
     );
     gh.factory<_i730.ClientFormBloc>(
       () => _i730.ClientFormBloc(gh<_i794.IClientRepository>()),
     );
+    gh.factory<_i995.CaseDetailsBloc>(
+      () => _i995.CaseDetailsBloc(gh<_i320.ICaseRepository>()),
+    );
     gh.lazySingleton<_i495.ICalendarRepository>(
       () => _i225.CalendarRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i949.ITaskRepository>(
       () => _i23.TaskRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i359.ILookupRepository>(
+      () => _i792.LookupRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i622.IDocumentRepository>(
       () => _i106.DocumentRepository(gh<_i361.Dio>()),
@@ -155,14 +176,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i723.GetClientsUseCase>(
       () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
     );
+    gh.factory<_i283.ClientDetailsBloc>(
+      () => _i283.ClientDetailsBloc(
+        gh<_i794.IClientRepository>(),
+        gh<_i320.ICaseRepository>(),
+      ),
+    );
     gh.lazySingleton<_i1072.IDashboardRepository>(
       () => _i773.DashboardRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i844.IHearingRepository>(
       () => _i506.HearingRepository(gh<_i361.Dio>()),
-    );
-    gh.lazySingleton<_i320.ICaseRepository>(
-      () => _i981.CaseRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i141.IUserRepository>(
       () => _i867.UserRepository(gh<_i361.Dio>()),
@@ -172,12 +196,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i598.IAuthRepository>(
       () => _i494.AuthRepository(gh<_i361.Dio>()),
-    );
-    gh.factory<_i421.HearingFormBloc>(
-      () => _i421.HearingFormBloc(
-        gh<_i844.IHearingRepository>(),
-        gh<_i543.ICourtRepository>(),
-      ),
     );
     gh.factory<_i165.ClientsBloc>(
       () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
@@ -192,21 +210,21 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i196.LoginUseCase>(
       () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
     );
-    gh.lazySingleton<_i613.GetCasesUseCase>(
-      () => _i613.GetCasesUseCase(gh<_i320.ICaseRepository>()),
-    );
-    gh.factory<_i546.CasesBloc>(
-      () => _i546.CasesBloc(gh<_i613.GetCasesUseCase>()),
+    gh.factory<_i421.HearingFormBloc>(
+      () => _i421.HearingFormBloc(
+        gh<_i844.IHearingRepository>(),
+        gh<_i543.ICourtRepository>(),
+        gh<_i359.ILookupRepository>(),
+      ),
     );
     gh.factory<_i728.CaseFormBloc>(
       () => _i728.CaseFormBloc(
         gh<_i320.ICaseRepository>(),
         gh<_i543.ICourtRepository>(),
         gh<_i141.IUserRepository>(),
+        gh<_i794.IClientRepository>(),
+        gh<_i359.ILookupRepository>(),
       ),
-    );
-    gh.factory<_i995.CaseDetailsBloc>(
-      () => _i995.CaseDetailsBloc(gh<_i320.ICaseRepository>()),
     );
     gh.factory<_i1026.AuthBloc>(
       () => _i1026.AuthBloc(
@@ -219,17 +237,17 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i389.CaseHearingsBloc>(
       () => _i389.CaseHearingsBloc(gh<_i844.IHearingRepository>()),
     );
+    gh.factory<_i743.CaseTeamAssignmentBloc>(
+      () => _i743.CaseTeamAssignmentBloc(
+        gh<_i320.ICaseRepository>(),
+        gh<_i141.IUserRepository>(),
+      ),
+    );
     gh.factory<_i548.DashboardBloc>(
       () => _i548.DashboardBloc(
         gh<_i1072.IDashboardRepository>(),
         gh<_i949.ITaskRepository>(),
         gh<_i81.SessionCubit>(),
-      ),
-    );
-    gh.factory<_i283.ClientDetailsBloc>(
-      () => _i283.ClientDetailsBloc(
-        gh<_i794.IClientRepository>(),
-        gh<_i320.ICaseRepository>(),
       ),
     );
     return this;

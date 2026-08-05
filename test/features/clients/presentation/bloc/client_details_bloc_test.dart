@@ -2,8 +2,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
-import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
-import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
 import 'package:hqooq/features/cases/domain/entities/case_type_lookup.dart';
@@ -39,19 +37,6 @@ void main() {
     addresses: const [],
   );
 
-  final lawyer = User(
-    id: 'u1',
-    email: 'lawyer@firm.com',
-    fullName: 'Jane Doe',
-    isSuperAdmin: false,
-    status: 'ACTIVE',
-    mfaEnabled: false,
-    createdAt: DateTime(2026, 1, 1),
-    updatedAt: DateTime(2026, 1, 1),
-    roles: const [],
-    tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
-  );
-
   final court = Court(
     id: 'co1',
     name: 'District Court',
@@ -73,8 +58,6 @@ void main() {
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
       client: client,
-      primaryLawyerId: lawyer.id,
-      primaryLawyer: lawyer,
       caseType: const CaseTypeLookup(id: 'ct1', name: 'Civil'),
       defaultCourtId: court.id,
       defaultCourt: court,

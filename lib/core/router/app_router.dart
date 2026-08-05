@@ -73,6 +73,10 @@ class AppRouter {
             builder: (context, state) => const CasesPage(),
             routes: [
               GoRoute(
+                path: 'new',
+                builder: (context, state) => const CaseFormPage(),
+              ),
+              GoRoute(
                 path: ':id',
                 builder: (context, state) =>
                     CaseDetailsPage(caseId: state.pathParameters['id']!),
@@ -83,8 +87,14 @@ class AppRouter {
                         CaseFormPage(existingCase: state.extra as LegalCase),
                   ),
                   GoRoute(
+                    path: 'hearings/new',
+                    builder: (context, state) =>
+                        HearingFormPage(caseId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
                     path: 'hearings/:hearingId/edit',
                     builder: (context, state) => HearingFormPage(
+                      caseId: state.pathParameters['id']!,
                       existingHearing: state.extra as Hearing,
                     ),
                   ),

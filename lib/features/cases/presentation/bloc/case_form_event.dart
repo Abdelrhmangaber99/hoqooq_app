@@ -9,6 +9,14 @@ abstract class CaseFormEvent extends Equatable {
 
 class LoadCaseFormReferenceDataRequested extends CaseFormEvent {}
 
+class CreateCaseSubmitted extends CaseFormEvent {
+  final CreateCaseRequest request;
+  const CreateCaseSubmitted(this.request);
+
+  @override
+  List<Object?> get props => [request];
+}
+
 class UpdateCaseSubmitted extends CaseFormEvent {
   final String id;
   final UpdateCaseRequest request;

@@ -5,6 +5,7 @@ import '../../../../core/network/api_result.dart';
 import '../../../../core/network/dio_error_mapper.dart';
 import '../../domain/entities/hearing.dart';
 import '../../domain/repository/i_hearing_repository.dart';
+import '../models/create_hearing_request.dart';
 import '../models/update_hearing_request.dart';
 
 /// Real implementation of [IHearingRepository] against `GET /hearings`.
@@ -24,6 +25,16 @@ class HearingRepository implements IHearingRepository {
             .map((json) => Hearing.fromJson(json as Map<String, dynamic>))
             .toList(),
       );
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+
+  @override
+  ApiResult<Hearing> createHearing(CreateHearingRequest request) async {
+    try {
+      final response = await _dio.post('/hearings', data: request.toJson());
+      return Right(Hearing.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
     }

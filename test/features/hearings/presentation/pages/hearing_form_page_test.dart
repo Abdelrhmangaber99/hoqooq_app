@@ -70,7 +70,7 @@ void main() {
     whenListen(
       bloc,
       const Stream<HearingFormState>.empty(),
-      initialState: HearingFormReady(courts: [court]),
+      initialState: HearingFormReady(courts: [court], hearingTypes: const []),
     );
   });
 
@@ -78,14 +78,14 @@ void main() {
     await getIt.reset();
   });
 
-  Widget buildTestable() {
+  Widget buildTestable({Hearing? existingHearing}) {
     final router = GoRouter(
       initialLocation: '/form',
       routes: [
         GoRoute(
           path: '/form',
           builder: (context, state) =>
-              HearingFormPage(existingHearing: hearing),
+              HearingFormPage(caseId: 'c1', existingHearing: existingHearing),
         ),
       ],
     );
@@ -105,7 +105,7 @@ void main() {
   testWidgets('renders the edit form with the existing hearing\'s values', (
     tester,
   ) async {
-    await tester.pumpWidget(buildTestable());
+    await tester.pumpWidget(buildTestable(existingHearing: hearing));
     await tester.pumpAndSettle();
 
     expect(find.text('Edit Hearing'), findsOneWidget);
@@ -122,7 +122,7 @@ void main() {
       initialState: HearingFormLoading(),
     );
 
-    await tester.pumpWidget(buildTestable());
+    await tester.pumpWidget(buildTestable(existingHearing: hearing));
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -134,16 +134,27 @@ void main() {
       Stream<HearingFormState>.fromIterable([
         HearingFormReady(
           courts: [court],
+          hearingTypes: const [],
           submitError: 'scheduledAt is invalid',
         ),
       ]),
-      initialState: HearingFormReady(courts: [court]),
+      initialState: HearingFormReady(courts: [court], hearingTypes: const []),
     );
 
-    await tester.pumpWidget(buildTestable());
+    await tester.pumpWidget(buildTestable(existingHearing: hearing));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('scheduledAt is invalid'), findsOneWidget);
+  });
+
+  testWidgets('renders the create-mode form with a hearing-type picker '
+      'and empty fields', (tester) async {
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('New Hearing'), findsOneWidget);
+    expect(find.text('Create Hearing'), findsOneWidget);
+    expect(find.text('Judge Smith'), findsNothing);
   });
 }

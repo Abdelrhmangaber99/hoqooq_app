@@ -25,10 +25,6 @@ _LegalCase _$LegalCaseFromJson(Map<String, dynamic> json) => _LegalCase(
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
   client: Client.fromJson(json['client'] as Map<String, dynamic>),
-  primaryLawyerId: json['primaryLawyerId'] as String?,
-  primaryLawyer: json['primaryLawyer'] == null
-      ? null
-      : User.fromJson(json['primaryLawyer'] as Map<String, dynamic>),
   caseType: json['caseType'] == null
       ? null
       : CaseTypeLookup.fromJson(json['caseType'] as Map<String, dynamic>),
@@ -61,8 +57,6 @@ Map<String, dynamic> _$LegalCaseToJson(_LegalCase instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'client': instance.client,
-      'primaryLawyerId': instance.primaryLawyerId,
-      'primaryLawyer': instance.primaryLawyer,
       'caseType': instance.caseType,
       'defaultCourtId': instance.defaultCourtId,
       'defaultCourt': instance.defaultCourt,

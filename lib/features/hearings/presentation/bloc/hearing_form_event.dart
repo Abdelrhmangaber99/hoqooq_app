@@ -9,6 +9,14 @@ abstract class HearingFormEvent extends Equatable {
 
 class LoadHearingFormReferenceDataRequested extends HearingFormEvent {}
 
+class CreateHearingSubmitted extends HearingFormEvent {
+  final CreateHearingRequest request;
+  const CreateHearingSubmitted(this.request);
+
+  @override
+  List<Object?> get props => [request];
+}
+
 class UpdateHearingSubmitted extends HearingFormEvent {
   final String id;
   final UpdateHearingRequest request;
