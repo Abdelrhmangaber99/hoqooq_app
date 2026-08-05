@@ -163,6 +163,8 @@
   "uploading": "Uploading...",
   "upload_failed": "Upload failed",
   "camera_permission_denied": "Camera permission denied",
+  "upload_file_too_large": "File is too large (max 20 MB)",
+  "upload_file_type_unsupported": "Unsupported file type. Allowed: PDF, DOC, DOCX, JPG, PNG, HEIC",
   "download_unavailable": "Download not available yet",
   "due_date": "Due Date",
   "no_due_date": "No due date",

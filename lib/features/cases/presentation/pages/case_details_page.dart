@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +22,7 @@ import '../../../../shared/widgets/error_view.dart';
 import '../../../authentication/domain/entities/user.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../../documents/domain/entities/document_item.dart';
+import '../../../documents/domain/upload_file_validation.dart';
 import '../../../documents/presentation/bloc/document_upload_bloc.dart';
 import '../../../hearings/domain/entities/hearing.dart';
 import '../../../hearings/presentation/hearing_display_helpers.dart';
@@ -441,6 +444,20 @@ class CaseDetailsPage extends StatelessWidget {
     }
 
     if (filePath == null) return;
+
+    final sizeBytes = await File(filePath).length();
+    final validationError = validateUploadFile(filePath, sizeBytes);
+    if (validationError != null) {
+      if (!context.mounted) return;
+      final message = validationError == UploadValidationError.tooLarge
+          ? context.tr('upload_file_too_large')
+          : context.tr('upload_file_type_unsupported');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+
     bloc.add(DocumentUploadRequested(filePath: filePath, caseId: caseId));
   }
 
