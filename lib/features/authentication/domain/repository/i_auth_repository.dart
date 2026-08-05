@@ -1,6 +1,5 @@
 import '../../../../core/network/api_result.dart';
 import '../../data/models/auth_response.dart';
-import '../entities/my_firm.dart';
 import '../entities/user.dart';
 
 /// Mirrors API_CONTRACT.md §1 (Auth) — the endpoints M1/M2 need. `POST
@@ -18,11 +17,6 @@ abstract class IAuthRepository {
   ApiResult<void> logout({required String refreshToken});
 
   ApiResult<User> getCurrentUser();
-
-  /// `GET /tenants/my-firm` — used only to derive `isFirmAdmin`
-  /// (`ownerUserId == user.id`, see `MyFirm`'s doc comment). Not a general
-  /// firm-profile fetch; no firm-settings screen exists yet.
-  ApiResult<MyFirm> getMyFirm();
 
   ApiResult<void> forgotPassword({required String email});
 

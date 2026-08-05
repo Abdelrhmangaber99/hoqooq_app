@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
 import 'package:hqooq/core/storage/token_storage.dart';
 import 'package:hqooq/features/authentication/data/models/auth_response.dart';
-import 'package:hqooq/features/authentication/domain/entities/my_firm.dart';
+import 'package:hqooq/features/authentication/domain/entities/role.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/domain/repository/i_auth_repository.dart';
@@ -40,17 +40,16 @@ void main() {
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
   );
 
+  final firmAdminUser = user.copyWith(
+    id: 'u2',
+    roles: const [
+      Role(id: 'r1', code: 'FIRM_ADMIN', scope: 'TENANT', permissions: []),
+    ],
+  );
+
   const authResponse = AuthResponse(
     accessToken: 'access-123',
     refreshToken: 'refresh-456',
-  );
-
-  // ownerUserId deliberately does not match `user.id` — isFirmAdmin should
-  // resolve false by default in tests that don't care about it.
-  const notOwnerFirm = MyFirm(
-    id: 't1',
-    name: 'Reynolds & Associates',
-    ownerUserId: 'someone-else',
   );
 
   setUpAll(() {
@@ -74,9 +73,6 @@ void main() {
       ),
     ).thenReturn(null);
     when(() => sessionCubit.unauthenticated()).thenReturn(null);
-    when(
-      () => authRepository.getMyFirm(),
-    ).thenAnswer((_) async => const Right(notOwnerFirm));
   });
 
   AuthBloc buildBloc() =>
@@ -114,8 +110,8 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [Loading, Authenticated] and marks isFirmAdmin true when '
-      'GET /tenants/my-firm.ownerUserId matches the user id',
+      'emits [Loading, Authenticated] and marks isFirmAdmin true when the '
+      'user holds a FIRM_ADMIN role (BR-005, no network call involved)',
       build: () {
         when(
           () => loginUseCase.execute(
@@ -125,31 +121,25 @@ void main() {
         ).thenAnswer((_) async => const Right(authResponse));
         when(
           () => authRepository.getCurrentUser(),
-        ).thenAnswer((_) async => Right(user));
-        when(() => authRepository.getMyFirm()).thenAnswer(
-          (_) async => Right(
-            MyFirm(
-              id: 't1',
-              name: 'Reynolds & Associates',
-              ownerUserId: user.id,
-            ),
-          ),
-        );
+        ).thenAnswer((_) async => Right(firmAdminUser));
         return buildBloc();
       },
       act: (bloc) =>
           bloc.add(const LoginRequested('lawyer@firm.com', 'secret123')),
-      expect: () => [isA<AuthLoading>(), AuthAuthenticated(user)],
+      expect: () => [isA<AuthLoading>(), AuthAuthenticated(firmAdminUser)],
       verify: (_) {
         verify(
-          () =>
-              sessionCubit.authenticated(user, 'access-123', isFirmAdmin: true),
+          () => sessionCubit.authenticated(
+            firmAdminUser,
+            'access-123',
+            isFirmAdmin: true,
+          ),
         ).called(1);
       },
     );
 
     blocTest<AuthBloc, AuthState>(
-      'defaults isFirmAdmin to false (not everyone) when GET /tenants/my-firm fails',
+      'marks isFirmAdmin false for a user with no FIRM_ADMIN role',
       build: () {
         when(
           () => loginUseCase.execute(
@@ -160,9 +150,6 @@ void main() {
         when(
           () => authRepository.getCurrentUser(),
         ).thenAnswer((_) async => Right(user));
-        when(
-          () => authRepository.getMyFirm(),
-        ).thenAnswer((_) async => const Left(ServerFailure()));
         return buildBloc();
       },
       act: (bloc) =>

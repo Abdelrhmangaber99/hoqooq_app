@@ -59,4 +59,30 @@ void main() {
       expect(user.hasPerm('cases.delete'), isFalse);
     });
   });
+
+  group('isFirmAdmin', () {
+    test('is true when any role has code FIRM_ADMIN', () {
+      final user = buildUser(
+        roles: const [
+          Role(id: 'r1', code: 'FIRM_ADMIN', scope: 'TENANT', permissions: []),
+        ],
+      );
+
+      expect(user.isFirmAdmin, isTrue);
+    });
+
+    test('is false when no role has code FIRM_ADMIN', () {
+      final user = buildUser(
+        roles: const [
+          Role(id: 'r1', code: 'LAWYER', scope: 'TENANT', permissions: []),
+        ],
+      );
+
+      expect(user.isFirmAdmin, isFalse);
+    });
+
+    test('is false for a user with no roles', () {
+      expect(buildUser().isFirmAdmin, isFalse);
+    });
+  });
 }

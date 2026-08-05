@@ -15,8 +15,8 @@ class SessionUnknown extends SessionState {
 class SessionAuthenticated extends SessionState {
   final User user;
 
-  /// BR-005: true iff this user is the Firm Admin (owner) of their
-  /// tenant. See `MyFirm`'s doc comment for how this is derived.
+  /// BR-005: true iff this user holds the `FIRM_ADMIN` role. See
+  /// `User.isFirmAdmin`'s doc comment for how this is derived.
   final bool isFirmAdmin;
 
   const SessionAuthenticated(this.user, {required this.isFirmAdmin});

@@ -110,28 +110,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthError(failure.message));
       },
       (user) async {
-        final isFirmAdmin = await _resolveIsFirmAdmin(user);
         _sessionCubit.authenticated(
           user,
           accessToken,
-          isFirmAdmin: isFirmAdmin,
+          isFirmAdmin: user.isFirmAdmin,
         );
         emit(AuthAuthenticated(user));
       },
-    );
-  }
-
-  /// BR-005: a user is Firm Admin iff they own their tenant
-  /// (`myFirm.ownerUserId == user.id` — see `MyFirm`'s doc comment; there
-  /// is no dedicated role for this). If `GET /tenants/my-firm` fails for
-  /// any reason (e.g. a Super Admin with no tenant at all), default to
-  /// `false` — the secure direction, same as the `agreedFee` gating this
-  /// exists for in the first place.
-  Future<bool> _resolveIsFirmAdmin(User user) async {
-    final myFirmResult = await _authRepository.getMyFirm();
-    return myFirmResult.fold(
-      (_) => false,
-      (myFirm) => myFirm.ownerUserId == user.id,
     );
   }
 

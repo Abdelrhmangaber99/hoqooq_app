@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../../core/network/dio_error_mapper.dart';
-import '../../domain/entities/my_firm.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repository/i_auth_repository.dart';
 import '../models/auth_response.dart';
@@ -66,16 +65,6 @@ class AuthRepository implements IAuthRepository {
     try {
       final response = await _dio.get('/users/me');
       return Right(User.fromJson(response.data as Map<String, dynamic>));
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
-    }
-  }
-
-  @override
-  ApiResult<MyFirm> getMyFirm() async {
-    try {
-      final response = await _dio.get('/tenants/my-firm');
-      return Right(MyFirm.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
     }

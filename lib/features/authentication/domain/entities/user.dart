@@ -44,4 +44,14 @@ abstract class User with _$User {
       ),
     );
   }
+
+  /// BR-005: true iff this user holds the `FIRM_ADMIN` role — confirmed
+  /// by the backend team as the real mechanism (2026-08-05), and
+  /// independently confirmed by reading every server-side "is this user a
+  /// firm admin" check in the backend source, all of which check
+  /// `roles.includes('FIRM_ADMIN')`. Supersedes the earlier
+  /// `Tenant.ownerUserId == user.id` mechanism (API_CONTRACT.md finding
+  /// D), which is no longer what the backend itself uses and should not
+  /// be relied on going forward — see finding L.
+  bool get isFirmAdmin => roles.any((role) => role.code == 'FIRM_ADMIN');
 }

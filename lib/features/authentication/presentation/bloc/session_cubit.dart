@@ -20,10 +20,10 @@ class SessionCubit extends Cubit<SessionState> {
   /// In-memory only, per BR-033 — never persisted.
   String? get accessToken => _accessToken;
 
-  /// `isFirmAdmin` (BR-005) is computed by the caller as
-  /// `myFirm.ownerUserId == user.id` — see `AuthBloc._fetchCurrentUserAndEmit`
-  /// and `MyFirm`'s doc comment. Not a property of `User` itself: it
-  /// depends on cross-referencing the user against their tenant.
+  /// `isFirmAdmin` (BR-005) is `user.isFirmAdmin` — see that getter's doc
+  /// comment. Passed explicitly rather than read internally so this
+  /// method stays a plain setter; `AuthBloc._fetchCurrentUserAndEmit` is
+  /// the only caller.
   void authenticated(
     User user,
     String accessToken, {
