@@ -45,4 +45,7 @@ app.*.map.json
 /android/app/release
 
 # Backend reference source (read-only ground truth, not part of this Flutter app)
+# Note the trailing space in the directory name itself (as provided) --
+# both variants ignored in case it's ever re-provided without the space.
 /Hoqooq-main/
+/Hoqooq-main /
