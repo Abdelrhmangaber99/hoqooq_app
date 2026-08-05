@@ -76,14 +76,14 @@ A full end-to-end review across M1–M5 (2026-08-05) produced 13 findings across
 
 | # | Severity | Finding | Status (2026-08-05) | Disposition |
 |---|---|---|---|---|
-| 1 | Critical | `LogInterceptor` logs full request/response bodies (tokens, passwords) — `lib/core/network/dio_client.dart` | Still Present | **Fixing now** |
+| 1 | Critical | `LogInterceptor` logs full request/response bodies (tokens, passwords) — `lib/core/network/dio_client.dart` | **Resolved** (commit `70ce2a2`) | Fixed — all four of `requestHeader`/`requestBody`/`responseHeader`/`responseBody` now explicitly `false` |
 | 2 | Critical | `User.hasPerm()` has zero UI call sites — every write action shown regardless of permission | Still Present | **Fixing now** (gating the highest-traffic actions with verified real permission codes: `cases.create/update/assign`, `hearings.create/update`, `clients.create/update`) |
-| 3 | High | No `GoRouter.errorBuilder`; 4 routes do `state.extra as X` with no guard — crashes on cold deep-link/state-restoration | Still Present | **Fixing now** |
+| 3 | High | No `GoRouter.errorBuilder`; 4 routes do `state.extra as X` with no guard — crashes on cold deep-link/state-restoration | **Resolved** (commit `52fdf8a`) | Fixed — `errorBuilder` + `_RouteNotFoundPage`; `typedExtra<T>()` + `redirect` guards on all 4 edit routes |
 | 4 | High | 403 falls into generic `ServerFailure`; `ErrorView` always shows a (non-retryable-for-403) "Retry" button | Still Present | **Fixing now**, alongside #2 |
 | 5 | High | Zero offline/cache readiness — `Hive` only for prefs, `connectivity_plus` unused, `CacheFailure` dead code | Still Present | Deferred — genuine design decision (what to cache, TTLs, conflict handling vs. explicit-refetch), not a mechanical fix |
 | 6 | High | No CI; no crash reporting/analytics | Still Present | CI: **fixing now** (mechanical). Crash reporting: deferred — needs a vendor decision |
-| 7 | Medium | `CaseFormBloc`/`HearingFormBloc` load reference data via sequential `await`s, not `Future.wait` | Still Present | **Fixing now** |
-| 8 | Medium | `_buildDropdown`/`_buildDateField` duplicated across 3 form pages + 2 more inline instances in `case_details_page.dart`'s team-assignment sheet | Still Present | **Fixing now** |
+| 7 | Medium | `CaseFormBloc`/`HearingFormBloc` load reference data via sequential `await`s, not `Future.wait` | **Resolved** (commit `ec98742`) | Fixed — Futures started concurrently, awaited after (kept as separate typed futures, not `Future.wait`, since results have different generic types) |
+| 8 | Medium | `_buildDropdown`/`_buildDateField` duplicated across 3 form pages + 2 more inline instances in `case_details_page.dart`'s team-assignment sheet | **Resolved** (commit `3c7c7ca`) | Fixed — extracted to `lib/core/widgets/app_dropdown_field.dart`/`app_date_field.dart`, all 4 sites migrated |
 | 9 | Medium | `RouteGuards.authGuard` untested; no integration tests; thin AR/RTL widget coverage | Still Present | Deferred — `GoRouterRefreshStream`/redirect logic gets exercised indirectly by the #3 fix's tests; full integration-test infrastructure is its own initiative |
 | 10 | Medium | No certificate pinning; no upload file-size/type validation | Still Present | Cert pinning: deferred (no real prod host yet, dev/local only). Upload validation: **fixing now** (mechanical client-side cap) |
 | 11 | Medium | `domain/usecases/` exists in 3/10 features, silently dropped since M3 | Still Present | Deferred — needs a direction decision (backfill vs. retire), not urgent |
