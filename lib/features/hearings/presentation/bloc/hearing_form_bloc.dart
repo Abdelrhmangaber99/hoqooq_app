@@ -45,10 +45,14 @@ class HearingFormBloc extends Bloc<HearingFormEvent, HearingFormState> {
     Emitter<HearingFormState> emit,
   ) async {
     emit(HearingFormLoading());
-    final courtsResult = await _courtRepository.getCourts();
-    final hearingTypesResult = await _lookupRepository.getLookups(
+    // Started concurrently, awaited afterward — 1 round-trip instead of 2
+    // sequential ones. See CaseFormBloc._onLoad for the same pattern.
+    final courtsFuture = _courtRepository.getCourts();
+    final hearingTypesFuture = _lookupRepository.getLookups(
       kind: LookupKind.hearingType,
     );
+    final courtsResult = await courtsFuture;
+    final hearingTypesResult = await hearingTypesFuture;
     final courts = courtsResult.fold((_) => const <Court>[], (c) => c);
     final hearingTypes = hearingTypesResult.fold(
       (_) => const <Lookup>[],

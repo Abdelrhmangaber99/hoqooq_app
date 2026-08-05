@@ -58,12 +58,21 @@ class CaseFormBloc extends Bloc<CaseFormEvent, CaseFormState> {
     Emitter<CaseFormState> emit,
   ) async {
     emit(CaseFormLoading());
-    final courtsResult = await _courtRepository.getCourts();
-    final usersResult = await _userRepository.getUsers();
-    final clientsResult = await _clientRepository.getClients();
-    final caseTypesResult = await _lookupRepository.getLookups(
+    // Started concurrently (each call below returns its Future immediately
+    // and begins its own request), then awaited afterward — 1 round-trip
+    // of latency instead of 4 sequential ones. Kept as separate typed
+    // futures rather than `Future.wait` since the four results have
+    // different generic types.
+    final courtsFuture = _courtRepository.getCourts();
+    final usersFuture = _userRepository.getUsers();
+    final clientsFuture = _clientRepository.getClients();
+    final caseTypesFuture = _lookupRepository.getLookups(
       kind: LookupKind.caseType,
     );
+    final courtsResult = await courtsFuture;
+    final usersResult = await usersFuture;
+    final clientsResult = await clientsFuture;
+    final caseTypesResult = await caseTypesFuture;
     final courts = courtsResult.fold((_) => const <Court>[], (c) => c);
     final users = usersResult.fold((_) => const <User>[], (u) => u);
     final clients = clientsResult.fold((_) => const <Client>[], (c) => c);
