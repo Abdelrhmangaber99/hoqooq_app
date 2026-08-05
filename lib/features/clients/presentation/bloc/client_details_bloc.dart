@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../cases/domain/entities/legal_case.dart';
 import '../../../cases/domain/repository/i_case_repository.dart';
 import '../../domain/entities/client.dart';
@@ -35,7 +36,12 @@ class ClientDetailsBloc extends Bloc<ClientDetailsEvent, ClientDetailsState> {
     final clientResult = await _clientRepository.getClientDetails(event.id);
 
     await clientResult.fold(
-      (failure) async => emit(ClientDetailsError(failure.message)),
+      (failure) async => emit(
+        ClientDetailsError(
+          failure.message,
+          isForbidden: failure is ForbiddenFailure,
+        ),
+      ),
       (client) async {
         // If the cases fetch fails, don't fail the whole screen over a
         // secondary section — show the client with an empty case list.

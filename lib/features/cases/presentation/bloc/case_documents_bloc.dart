@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../documents/domain/entities/document_item.dart';
 import '../../../documents/domain/repository/i_document_repository.dart';
 
@@ -28,7 +29,12 @@ class CaseDocumentsBloc extends Bloc<CaseDocumentsEvent, CaseDocumentsState> {
     emit(CaseDocumentsLoading());
     final result = await _documentRepository.getDocuments();
     result.fold(
-      (failure) => emit(CaseDocumentsError(failure.message)),
+      (failure) => emit(
+        CaseDocumentsError(
+          failure.message,
+          isForbidden: failure is ForbiddenFailure,
+        ),
+      ),
       (documents) => emit(
         CaseDocumentsLoaded(
           documents.where((d) => d.caseId == event.caseId).toList(),

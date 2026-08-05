@@ -45,6 +45,7 @@ class DashboardPage extends StatelessWidget {
                     } else if (state is DashboardError) {
                       return ErrorView(
                         message: state.message,
+                        isForbidden: state.isForbidden,
                         onRetry: () => context.read<DashboardBloc>().add(
                           FetchDashboardRequested(),
                         ),

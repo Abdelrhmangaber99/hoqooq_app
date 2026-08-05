@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../domain/entities/client.dart';
 import '../../domain/entities/client_status.dart';
 import '../../domain/usecases/get_clients_use_case.dart';
@@ -31,10 +32,20 @@ class ClientsBloc extends Bloc<ClientsEvent, ClientsState> {
   ) async {
     emit(ClientsLoading());
     final result = await _getClientsUseCase.execute();
-    result.fold((failure) => emit(ClientsError(failure.message)), (clients) {
-      _allClients = clients;
-      emit(_buildLoadedState());
-    });
+    result.fold(
+      (failure) {
+        emit(
+          ClientsError(
+            failure.message,
+            isForbidden: failure is ForbiddenFailure,
+          ),
+        );
+      },
+      (clients) {
+        _allClients = clients;
+        emit(_buildLoadedState());
+      },
+    );
   }
 
   void _onStatusFilterChanged(

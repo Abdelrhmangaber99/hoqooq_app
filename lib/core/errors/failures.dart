@@ -24,6 +24,18 @@ class UnauthorizedFailure extends Failure {
   const UnauthorizedFailure([super.message = 'Unauthorized access']);
 }
 
+/// 403 Forbidden — the user is authenticated but lacks the permission this
+/// action requires (BR-034: RBAC is enforced server-side; UI gating via
+/// `User.hasPerm()` is UX-only and can't cover every path — e.g. a
+/// permission revoked mid-session, or an action this milestone didn't get
+/// around to gating yet). Distinct from `ServerFailure` so callers can
+/// skip a "Retry" action that will just 403 again.
+class ForbiddenFailure extends Failure {
+  const ForbiddenFailure([
+    super.message = 'You don\'t have permission to do this',
+  ]);
+}
+
 class ValidationFailure extends Failure {
   const ValidationFailure(super.message);
 }

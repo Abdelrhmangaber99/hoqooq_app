@@ -24,8 +24,9 @@ class ClientsLoaded extends ClientsState {
 
 class ClientsError extends ClientsState {
   final String message;
-  const ClientsError(this.message);
+  final bool isForbidden;
+  const ClientsError(this.message, {this.isForbidden = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isForbidden];
 }

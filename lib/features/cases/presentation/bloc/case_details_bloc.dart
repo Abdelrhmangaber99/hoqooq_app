@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../domain/entities/legal_case.dart';
 import '../../domain/repository/i_case_repository.dart';
 
@@ -19,7 +20,12 @@ class CaseDetailsBloc extends Bloc<CaseDetailsEvent, CaseDetailsState> {
       emit(CaseDetailsLoading());
       final result = await _repository.getCaseDetails(event.id);
       result.fold(
-        (failure) => emit(CaseDetailsError(failure.message)),
+        (failure) => emit(
+          CaseDetailsError(
+            failure.message,
+            isForbidden: failure is ForbiddenFailure,
+          ),
+        ),
         (legalCase) => emit(CaseDetailsLoaded(legalCase)),
       );
     });

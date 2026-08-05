@@ -21,8 +21,9 @@ class CaseHearingsLoaded extends CaseHearingsState {
 
 class CaseHearingsError extends CaseHearingsState {
   final String message;
-  const CaseHearingsError(this.message);
+  final bool isForbidden;
+  const CaseHearingsError(this.message, {this.isForbidden = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isForbidden];
 }

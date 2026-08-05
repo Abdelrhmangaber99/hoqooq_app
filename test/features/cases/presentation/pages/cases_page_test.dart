@@ -5,6 +5,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/di/injection.dart';
+import 'package:hqooq/features/authentication/domain/entities/permission.dart';
+import 'package:hqooq/features/authentication/domain/entities/role.dart';
+import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
+import 'package:hqooq/features/authentication/domain/entities/user.dart';
+import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
 import 'package:hqooq/features/cases/domain/entities/case_type_lookup.dart';
@@ -15,9 +20,13 @@ import 'package:hqooq/features/cases/presentation/pages/cases_page.dart';
 import 'package:hqooq/features/clients/domain/entities/client.dart';
 import 'package:hqooq/features/clients/domain/entities/client_status.dart';
 import 'package:hqooq/features/clients/domain/entities/client_type.dart';
+import 'package:mocktail/mocktail.dart';
 
 class MockCasesBloc extends MockBloc<CasesEvent, CasesState>
     implements CasesBloc {}
+
+class MockSessionCubit extends MockCubit<SessionState>
+    implements SessionCubit {}
 
 /// Preloaded synchronously — see case_details_page_test.dart / CLAUDE.md for
 /// why the real JSON delegate's async load is flaky across multiple
@@ -40,6 +49,27 @@ class _PreloadedAppLocalizationsDelegate
 void main() {
   late AppLocalizations preloadedEn;
   late MockCasesBloc bloc;
+  late MockSessionCubit sessionCubit;
+
+  final user = User(
+    id: 'u1',
+    email: 'lawyer@firm.com',
+    fullName: 'Jane Doe',
+    isSuperAdmin: false,
+    status: 'ACTIVE',
+    mfaEnabled: false,
+    createdAt: DateTime(2026, 1, 1),
+    updatedAt: DateTime(2026, 1, 1),
+    roles: const [
+      Role(
+        id: 'r1',
+        code: 'LAWYER',
+        scope: 'TENANT',
+        permissions: [Permission(id: 'p1', code: 'cases.create')],
+      ),
+    ],
+    tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
+  );
 
   final legalCase = LegalCase(
     id: 'c1',
@@ -85,7 +115,12 @@ void main() {
   setUp(() async {
     await getIt.reset();
     bloc = MockCasesBloc();
+    sessionCubit = MockSessionCubit();
     getIt.registerFactory<CasesBloc>(() => bloc);
+    getIt.registerSingleton<SessionCubit>(sessionCubit);
+    when(
+      () => sessionCubit.state,
+    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: false));
   });
 
   tearDown(() async {
@@ -150,6 +185,46 @@ void main() {
 
     expect(find.text('CASE-2026-00001'), findsNothing);
   });
+
+  testWidgets(
+    'architecture-review finding #2: shows the new-case FAB when the user '
+    'holds cases.create',
+    (tester) async {
+      whenListen(
+        bloc,
+        const Stream<CasesState>.empty(),
+        initialState: const CasesLoaded([]),
+      );
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'architecture-review finding #2: hides the new-case FAB when the user '
+    'lacks cases.create',
+    (tester) async {
+      when(() => sessionCubit.state).thenReturn(
+        SessionAuthenticated(
+          user.copyWith(roles: const []),
+          isFirmAdmin: false,
+        ),
+      );
+      whenListen(
+        bloc,
+        const Stream<CasesState>.empty(),
+        initialState: const CasesLoaded([]),
+      );
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsNothing);
+    },
+  );
 
   testWidgets('renders the case list on CasesLoaded', (tester) async {
     whenListen(

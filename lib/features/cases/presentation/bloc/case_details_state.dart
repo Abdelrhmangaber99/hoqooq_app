@@ -21,8 +21,9 @@ class CaseDetailsLoaded extends CaseDetailsState {
 
 class CaseDetailsError extends CaseDetailsState {
   final String message;
-  const CaseDetailsError(this.message);
+  final bool isForbidden;
+  const CaseDetailsError(this.message, {this.isForbidden = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isForbidden];
 }

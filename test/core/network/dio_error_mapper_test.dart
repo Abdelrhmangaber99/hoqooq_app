@@ -62,6 +62,18 @@ void main() {
     });
   });
 
+  test('maps 403 to ForbiddenFailure, surfacing the backend message', () {
+    final failure = mapDioError(
+      errorWith(
+        statusCode: 403,
+        data: {'message': 'Missing permission: cases.delete'},
+      ),
+    );
+
+    expect(failure, isA<ForbiddenFailure>());
+    expect(failure.message, 'Missing permission: cases.delete');
+  });
+
   test('maps 400 to ValidationFailure', () {
     final failure = mapDioError(
       errorWith(statusCode: 400, data: {'message': 'caseNumber is required'}),

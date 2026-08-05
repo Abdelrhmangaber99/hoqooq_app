@@ -28,6 +28,11 @@ Failure mapDioError(DioException e) {
         ? SubscriptionInactiveFailure(backendMessage)
         : const SubscriptionInactiveFailure();
   }
+  if (statusCode == 403) {
+    return backendMessage != null
+        ? ForbiddenFailure(backendMessage)
+        : const ForbiddenFailure();
+  }
   if (statusCode == 400) {
     return backendMessage != null
         ? ValidationFailure(backendMessage)

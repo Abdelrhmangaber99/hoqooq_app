@@ -23,8 +23,9 @@ class DashboardLoaded extends DashboardState {
 
 class DashboardError extends DashboardState {
   final String message;
-  const DashboardError(this.message);
+  final bool isForbidden;
+  const DashboardError(this.message, {this.isForbidden = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isForbidden];
 }

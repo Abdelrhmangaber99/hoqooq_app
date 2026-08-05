@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../hearings/domain/entities/hearing.dart';
 import '../../../hearings/domain/repository/i_hearing_repository.dart';
 
@@ -28,7 +29,12 @@ class CaseHearingsBloc extends Bloc<CaseHearingsEvent, CaseHearingsState> {
     emit(CaseHearingsLoading());
     final result = await _hearingRepository.getHearings();
     result.fold(
-      (failure) => emit(CaseHearingsError(failure.message)),
+      (failure) => emit(
+        CaseHearingsError(
+          failure.message,
+          isForbidden: failure is ForbiddenFailure,
+        ),
+      ),
       (hearings) => emit(
         CaseHearingsLoaded(
           hearings.where((h) => h.caseId == event.caseId).toList(),

@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../domain/entities/case_status.dart';
 import '../../domain/entities/legal_case.dart';
 import '../../domain/usecases/get_cases_use_case.dart';
@@ -31,10 +32,17 @@ class CasesBloc extends Bloc<CasesEvent, CasesState> {
   ) async {
     emit(CasesLoading());
     final result = await _getCasesUseCase.execute();
-    result.fold((failure) => emit(CasesError(failure.message)), (cases) {
-      _allCases = cases;
-      emit(_buildLoadedState());
-    });
+    result.fold(
+      (failure) {
+        emit(
+          CasesError(failure.message, isForbidden: failure is ForbiddenFailure),
+        );
+      },
+      (cases) {
+        _allCases = cases;
+        emit(_buildLoadedState());
+      },
+    );
   }
 
   void _onStatusFilterChanged(

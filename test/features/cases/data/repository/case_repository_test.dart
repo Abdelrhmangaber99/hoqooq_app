@@ -336,31 +336,34 @@ void main() {
       },
     );
 
-    test('maps a 403 to ServerFailure (no FULL_ACCESS/firm-admin)', () async {
-      when(
-        () => dio.post('/cases/c1/assignments', data: any(named: 'data')),
-      ).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: '/cases/c1/assignments'),
-          response: Response(
+    test(
+      'maps a 403 to ForbiddenFailure (no FULL_ACCESS/firm-admin)',
+      () async {
+        when(
+          () => dio.post('/cases/c1/assignments', data: any(named: 'data')),
+        ).thenThrow(
+          DioException(
             requestOptions: RequestOptions(path: '/cases/c1/assignments'),
-            statusCode: 403,
-            data: {'message': 'Only firm admin or case managers can assign.'},
+            response: Response(
+              requestOptions: RequestOptions(path: '/cases/c1/assignments'),
+              statusCode: 403,
+              data: {'message': 'Only firm admin or case managers can assign.'},
+            ),
+            type: DioExceptionType.badResponse,
           ),
-          type: DioExceptionType.badResponse,
-        ),
-      );
+        );
 
-      const request = AssignCaseRequest(
-        userId: 'u3',
-        accessLevel: CaseAccessLevel.readOnly,
-      );
-      final result = await repository.assignTeamMember('c1', request);
+        const request = AssignCaseRequest(
+          userId: 'u3',
+          accessLevel: CaseAccessLevel.readOnly,
+        );
+        final result = await repository.assignTeamMember('c1', request);
 
-      result.fold(
-        (failure) => expect(failure, isA<ServerFailure>()),
-        (_) => fail('expected Left'),
-      );
-    });
+        result.fold(
+          (failure) => expect(failure, isA<ForbiddenFailure>()),
+          (_) => fail('expected Left'),
+        );
+      },
+    );
   });
 }

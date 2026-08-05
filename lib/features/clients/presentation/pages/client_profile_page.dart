@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/auth/permission_check.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -41,6 +42,7 @@ class ClientProfilePage extends StatelessWidget {
               } else if (state is ClientDetailsError) {
                 return ErrorView(
                   message: state.message,
+                  isForbidden: state.isForbidden,
                   onRetry: () => context.read<ClientDetailsBloc>().add(
                     FetchClientDetailsRequested(clientId),
                   ),
@@ -67,22 +69,24 @@ class ClientProfilePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeaderCard(context, client),
-          const SizedBox(height: AppSpacing.m),
-          AppButton(
-            text: context.tr('edit_client'),
-            style: AppButtonStyle.outline,
-            onPressed: () async {
-              final updated = await context.push<bool>(
-                '${AppRouter.clients}/${client.id}/edit',
-                extra: client,
-              );
-              if (updated == true && context.mounted) {
-                context.read<ClientDetailsBloc>().add(
-                  FetchClientDetailsRequested(client.id),
+          if (currentUserHasPerm('clients.update')) ...[
+            const SizedBox(height: AppSpacing.m),
+            AppButton(
+              text: context.tr('edit_client'),
+              style: AppButtonStyle.outline,
+              onPressed: () async {
+                final updated = await context.push<bool>(
+                  '${AppRouter.clients}/${client.id}/edit',
+                  extra: client,
                 );
-              }
-            },
-          ),
+                if (updated == true && context.mounted) {
+                  context.read<ClientDetailsBloc>().add(
+                    FetchClientDetailsRequested(client.id),
+                  );
+                }
+              },
+            ),
+          ],
           const SizedBox(height: AppSpacing.l),
           Text(context.tr('contact_info'), style: AppTypography.h3),
           const SizedBox(height: AppSpacing.m),

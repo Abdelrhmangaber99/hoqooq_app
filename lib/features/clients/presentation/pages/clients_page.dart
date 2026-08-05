@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/auth/permission_check.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -25,18 +26,20 @@ class ClientsPage extends StatelessWidget {
       child: Builder(
         builder: (context) => Scaffold(
           backgroundColor: AppColors.background,
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: AppColors.primary,
-            onPressed: () async {
-              final created = await context.push<bool>(
-                '${AppRouter.clients}/new',
-              );
-              if (created == true && context.mounted) {
-                context.read<ClientsBloc>().add(FetchClientsRequested());
-              }
-            },
-            child: const Icon(Icons.add),
-          ),
+          floatingActionButton: currentUserHasPerm('clients.create')
+              ? FloatingActionButton(
+                  backgroundColor: AppColors.primary,
+                  onPressed: () async {
+                    final created = await context.push<bool>(
+                      '${AppRouter.clients}/new',
+                    );
+                    if (created == true && context.mounted) {
+                      context.read<ClientsBloc>().add(FetchClientsRequested());
+                    }
+                  },
+                  child: const Icon(Icons.add),
+                )
+              : null,
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
@@ -63,6 +66,7 @@ class ClientsPage extends StatelessWidget {
                         } else if (state is ClientsError) {
                           return ErrorView(
                             message: state.message,
+                            isForbidden: state.isForbidden,
                             onRetry: () => context.read<ClientsBloc>().add(
                               FetchClientsRequested(),
                             ),

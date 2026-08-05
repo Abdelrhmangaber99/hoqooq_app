@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../../../core/auth/permission_check.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -84,6 +85,7 @@ class CaseDetailsPage extends StatelessWidget {
                 } else if (state is CaseDetailsError) {
                   return ErrorView(
                     message: state.message,
+                    isForbidden: state.isForbidden,
                     onRetry: () => context.read<CaseDetailsBloc>().add(
                       FetchCaseDetailsRequested(caseId),
                     ),
@@ -114,22 +116,24 @@ class CaseDetailsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(context, legalCase),
-          const SizedBox(height: AppSpacing.m),
-          AppButton(
-            text: context.tr('edit_case'),
-            style: AppButtonStyle.outline,
-            onPressed: () async {
-              final updated = await context.push<bool>(
-                '${AppRouter.cases}/${legalCase.id}/edit',
-                extra: legalCase,
-              );
-              if (updated == true && context.mounted) {
-                context.read<CaseDetailsBloc>().add(
-                  FetchCaseDetailsRequested(caseId),
+          if (currentUserHasPerm('cases.update')) ...[
+            const SizedBox(height: AppSpacing.m),
+            AppButton(
+              text: context.tr('edit_case'),
+              style: AppButtonStyle.outline,
+              onPressed: () async {
+                final updated = await context.push<bool>(
+                  '${AppRouter.cases}/${legalCase.id}/edit',
+                  extra: legalCase,
                 );
-              }
-            },
-          ),
+                if (updated == true && context.mounted) {
+                  context.read<CaseDetailsBloc>().add(
+                    FetchCaseDetailsRequested(caseId),
+                  );
+                }
+              },
+            ),
+          ],
           const SizedBox(height: AppSpacing.l),
           Text(context.tr('overview'), style: AppTypography.h3),
           const SizedBox(height: AppSpacing.m),
@@ -139,13 +143,15 @@ class CaseDetailsPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(context.tr('team'), style: AppTypography.h3),
-              GestureDetector(
-                onTap: () => _showAssignTeamMemberSheet(context, legalCase.id),
-                child: const Icon(
-                  Icons.person_add_alt_1_outlined,
-                  color: AppColors.primary,
+              if (currentUserHasPerm('cases.assign'))
+                GestureDetector(
+                  onTap: () =>
+                      _showAssignTeamMemberSheet(context, legalCase.id),
+                  child: const Icon(
+                    Icons.person_add_alt_1_outlined,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: AppSpacing.m),
@@ -155,22 +161,23 @@ class CaseDetailsPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(context.tr('hearings'), style: AppTypography.h3),
-              GestureDetector(
-                onTap: () async {
-                  final created = await context.push<bool>(
-                    '${AppRouter.cases}/${legalCase.id}/hearings/new',
-                  );
-                  if (created == true && context.mounted) {
-                    context.read<CaseHearingsBloc>().add(
-                      FetchCaseHearingsRequested(caseId),
+              if (currentUserHasPerm('hearings.create'))
+                GestureDetector(
+                  onTap: () async {
+                    final created = await context.push<bool>(
+                      '${AppRouter.cases}/${legalCase.id}/hearings/new',
                     );
-                  }
-                },
-                child: const Icon(
-                  Icons.event_available_outlined,
-                  color: AppColors.primary,
+                    if (created == true && context.mounted) {
+                      context.read<CaseHearingsBloc>().add(
+                        FetchCaseHearingsRequested(caseId),
+                      );
+                    }
+                  },
+                  child: const Icon(
+                    Icons.event_available_outlined,
+                    color: AppColors.primary,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: AppSpacing.m),
@@ -229,6 +236,7 @@ class CaseDetailsPage extends StatelessWidget {
         } else if (state is CaseHearingsError) {
           return ErrorView(
             message: state.message,
+            isForbidden: state.isForbidden,
             onRetry: () => context.read<CaseHearingsBloc>().add(
               FetchCaseHearingsRequested(caseId),
             ),
@@ -327,6 +335,7 @@ class CaseDetailsPage extends StatelessWidget {
         } else if (state is CaseDocumentsError) {
           return ErrorView(
             message: state.message,
+            isForbidden: state.isForbidden,
             onRetry: () => context.read<CaseDocumentsBloc>().add(
               FetchCaseDocumentsRequested(caseId),
             ),

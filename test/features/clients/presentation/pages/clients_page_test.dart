@@ -5,14 +5,23 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/di/injection.dart';
+import 'package:hqooq/features/authentication/domain/entities/permission.dart';
+import 'package:hqooq/features/authentication/domain/entities/role.dart';
+import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
+import 'package:hqooq/features/authentication/domain/entities/user.dart';
+import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
 import 'package:hqooq/features/clients/domain/entities/client.dart';
 import 'package:hqooq/features/clients/domain/entities/client_status.dart';
 import 'package:hqooq/features/clients/domain/entities/client_type.dart';
 import 'package:hqooq/features/clients/presentation/bloc/clients_bloc.dart';
 import 'package:hqooq/features/clients/presentation/pages/clients_page.dart';
+import 'package:mocktail/mocktail.dart';
 
 class MockClientsBloc extends MockBloc<ClientsEvent, ClientsState>
     implements ClientsBloc {}
+
+class MockSessionCubit extends MockCubit<SessionState>
+    implements SessionCubit {}
 
 /// Preloaded synchronously — see case_details_page_test.dart / CLAUDE.md for
 /// why the real JSON delegate's async load is flaky across multiple
@@ -35,6 +44,27 @@ class _PreloadedAppLocalizationsDelegate
 void main() {
   late AppLocalizations preloadedEn;
   late MockClientsBloc bloc;
+  late MockSessionCubit sessionCubit;
+
+  final user = User(
+    id: 'u1',
+    email: 'lawyer@firm.com',
+    fullName: 'Jane Doe',
+    isSuperAdmin: false,
+    status: 'ACTIVE',
+    mfaEnabled: false,
+    createdAt: DateTime(2026, 1, 1),
+    updatedAt: DateTime(2026, 1, 1),
+    roles: const [
+      Role(
+        id: 'r1',
+        code: 'LAWYER',
+        scope: 'TENANT',
+        permissions: [Permission(id: 'p1', code: 'clients.create')],
+      ),
+    ],
+    tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
+  );
 
   final client = Client(
     id: 'cl1',
@@ -58,7 +88,12 @@ void main() {
   setUp(() async {
     await getIt.reset();
     bloc = MockClientsBloc();
+    sessionCubit = MockSessionCubit();
     getIt.registerFactory<ClientsBloc>(() => bloc);
+    getIt.registerSingleton<SessionCubit>(sessionCubit);
+    when(
+      () => sessionCubit.state,
+    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: false));
   });
 
   tearDown(() async {

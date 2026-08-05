@@ -52,6 +52,7 @@ class CalendarPage extends StatelessWidget {
                       } else if (state is CalendarError) {
                         return ErrorView(
                           message: state.message,
+                          isForbidden: state.isForbidden,
                           onRetry: () => context.read<CalendarBloc>().add(
                             FetchTimelineRequested(),
                           ),

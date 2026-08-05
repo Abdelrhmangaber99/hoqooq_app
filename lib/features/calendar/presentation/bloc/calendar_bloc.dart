@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../domain/entities/timeline_item.dart';
 import '../../domain/repository/i_calendar_repository.dart';
 
@@ -57,10 +58,20 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
       startDate: monthStart,
       endDate: monthEnd,
     );
-    result.fold((failure) => emit(CalendarError(failure.message)), (items) {
-      _items = items;
-      _emitLoaded(emit);
-    });
+    result.fold(
+      (failure) {
+        emit(
+          CalendarError(
+            failure.message,
+            isForbidden: failure is ForbiddenFailure,
+          ),
+        );
+      },
+      (items) {
+        _items = items;
+        _emitLoaded(emit);
+      },
+    );
   }
 
   void _emitLoaded(Emitter<CalendarState> emit) {

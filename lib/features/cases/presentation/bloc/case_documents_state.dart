@@ -21,8 +21,9 @@ class CaseDocumentsLoaded extends CaseDocumentsState {
 
 class CaseDocumentsError extends CaseDocumentsState {
   final String message;
-  const CaseDocumentsError(this.message);
+  final bool isForbidden;
+  const CaseDocumentsError(this.message, {this.isForbidden = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isForbidden];
 }

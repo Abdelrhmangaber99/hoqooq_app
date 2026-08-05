@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../../tasks/domain/entities/task_item.dart';
 import '../../../tasks/domain/entities/task_status.dart';
@@ -38,7 +39,12 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
     final metricsResult = await _dashboardRepository.getMetrics();
     await metricsResult.fold(
-      (failure) async => emit(DashboardError(failure.message)),
+      (failure) async => emit(
+        DashboardError(
+          failure.message,
+          isForbidden: failure is ForbiddenFailure,
+        ),
+      ),
       (metrics) async {
         final sessionState = _sessionCubit.state;
         final currentUserId = sessionState is SessionAuthenticated

@@ -28,8 +28,9 @@ class ClientDetailsLoaded extends ClientDetailsState {
 
 class ClientDetailsError extends ClientDetailsState {
   final String message;
-  const ClientDetailsError(this.message);
+  final bool isForbidden;
+  const ClientDetailsError(this.message, {this.isForbidden = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isForbidden];
 }

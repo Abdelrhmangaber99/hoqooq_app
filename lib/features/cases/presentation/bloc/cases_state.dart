@@ -27,8 +27,9 @@ class CasesLoaded extends CasesState {
 
 class CasesError extends CasesState {
   final String message;
-  const CasesError(this.message);
+  final bool isForbidden;
+  const CasesError(this.message, {this.isForbidden = false});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, isForbidden];
 }
