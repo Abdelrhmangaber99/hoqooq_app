@@ -6,6 +6,8 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_date_field.dart';
+import '../../../../core/widgets/app_dropdown_field.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
@@ -227,7 +229,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
                               : null,
                         ),
                         const SizedBox(height: AppSpacing.m),
-                        _buildDropdown<String?>(
+                        AppDropdownField<String?>(
                           label: context.tr('client'),
                           value: _clientId,
                           items: state.clients.map((c) => c.id),
@@ -239,7 +241,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
                           onChanged: (v) => setState(() => _clientId = v),
                         ),
                         const SizedBox(height: AppSpacing.m),
-                        _buildDropdown<String?>(
+                        AppDropdownField<String?>(
                           label: context.tr('case_type'),
                           value: _caseTypeId,
                           items: state.caseTypes.map((l) => l.id),
@@ -252,7 +254,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
                         ),
                         const SizedBox(height: AppSpacing.m),
                       ],
-                      _buildDropdown<CaseStatus>(
+                      AppDropdownField<CaseStatus>(
                         label: context.tr('status'),
                         value: _status,
                         items: CaseStatus.values.where(
@@ -262,7 +264,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
                         onChanged: (v) => setState(() => _status = v!),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDropdown<CasePriority>(
+                      AppDropdownField<CasePriority>(
                         label: context.tr('priority'),
                         value: _priority,
                         items: CasePriority.values.where(
@@ -272,7 +274,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
                         onChanged: (v) => setState(() => _priority = v!),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDropdown<String?>(
+                      AppDropdownField<String?>(
                         label: context.tr('court'),
                         value: _defaultCourtId,
                         items: [null, ...state.courts.map((c) => c.id)],
@@ -282,14 +284,14 @@ class _CaseFormViewState extends State<_CaseFormView> {
                         onChanged: (v) => setState(() => _defaultCourtId = v),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDateField(
+                      AppDateField(
                         label: context.tr('opening_date'),
                         value: _openingDate,
                         dateFormat: dateFormat,
                         onTap: () => _pickDate(context, isOpening: true),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDateField(
+                      AppDateField(
                         label: context.tr('closing_date'),
                         value: _closingDate,
                         dateFormat: dateFormat,
@@ -339,77 +341,5 @@ class _CaseFormViewState extends State<_CaseFormView> {
       if (lookup.id == caseTypeId) return lookup.labelFor(locale);
     }
     return context.tr('unknown');
-  }
-
-  Widget _buildDropdown<T>({
-    required String label,
-    required T value,
-    required Iterable<T> items,
-    required String Function(T) labelOf,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              isExpanded: true,
-              dropdownColor: AppColors.surface,
-              items: items
-                  .map(
-                    (i) => DropdownMenuItem(value: i, child: Text(labelOf(i))),
-                  )
-                  .toList(),
-              onChanged: onChanged,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateField({
-    required String label,
-    required DateTime? value,
-    required DateFormat dateFormat,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              value != null ? dateFormat.format(value) : '—',
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

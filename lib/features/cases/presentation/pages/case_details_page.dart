@@ -12,6 +12,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_dropdown_field.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
@@ -675,69 +676,26 @@ class _AssignTeamMemberSheetState extends State<_AssignTeamMemberSheet> {
               children: [
                 Text(context.tr('add_team_member'), style: AppTypography.h3),
                 const SizedBox(height: AppSpacing.m),
-                Text(
-                  context.tr('team_member').toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String?>(
-                      value: _userId,
-                      isExpanded: true,
-                      dropdownColor: AppColors.surfaceLight,
-                      items: state.users
-                          .map(
-                            (u) => DropdownMenuItem(
-                              value: u.id,
-                              child: Text(u.fullName),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _userId = v),
-                    ),
-                  ),
+                AppDropdownField<String?>(
+                  label: context.tr('team_member'),
+                  value: _userId,
+                  backgroundColor: AppColors.surfaceLight,
+                  items: state.users.map((u) => u.id),
+                  labelOf: (id) => id == null
+                      ? context.tr('none')
+                      : state.users.firstWhere((u) => u.id == id).fullName,
+                  onChanged: (v) => setState(() => _userId = v),
                 ),
                 const SizedBox(height: AppSpacing.m),
-                Text(
-                  context.tr('access_level').toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
+                AppDropdownField<CaseAccessLevel>(
+                  label: context.tr('access_level'),
+                  value: _accessLevel,
+                  backgroundColor: AppColors.surfaceLight,
+                  items: CaseAccessLevel.values.where(
+                    (l) => l != CaseAccessLevel.unknown,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<CaseAccessLevel>(
-                      value: _accessLevel,
-                      isExpanded: true,
-                      dropdownColor: AppColors.surfaceLight,
-                      items: CaseAccessLevel.values
-                          .where((l) => l != CaseAccessLevel.unknown)
-                          .map(
-                            (l) => DropdownMenuItem(
-                              value: l,
-                              child: Text(caseAccessLevelLabel(context, l)),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _accessLevel = v!),
-                    ),
-                  ),
+                  labelOf: (l) => caseAccessLevelLabel(context, l),
+                  onChanged: (v) => setState(() => _accessLevel = v!),
                 ),
                 const SizedBox(height: AppSpacing.l),
                 AppButton(

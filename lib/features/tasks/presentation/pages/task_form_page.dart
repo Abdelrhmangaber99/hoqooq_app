@@ -6,6 +6,8 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_date_field.dart';
+import '../../../../core/widgets/app_dropdown_field.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
@@ -189,7 +191,7 @@ class _TaskFormViewState extends State<_TaskFormView> {
                         controller: _descriptionController,
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDropdown<String?>(
+                      AppDropdownField<String?>(
                         label: context.tr('assigned_to'),
                         value: _assignedToId,
                         items: state.users.map((u) => u.id),
@@ -198,7 +200,7 @@ class _TaskFormViewState extends State<_TaskFormView> {
                         onChanged: (v) => setState(() => _assignedToId = v),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDropdown<String?>(
+                      AppDropdownField<String?>(
                         label: context.tr('case'),
                         value: _caseId,
                         items: [null, ...state.cases.map((c) => c.id)],
@@ -210,7 +212,7 @@ class _TaskFormViewState extends State<_TaskFormView> {
                         onChanged: (v) => setState(() => _caseId = v),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDropdown<TaskPriority>(
+                      AppDropdownField<TaskPriority>(
                         label: context.tr('priority'),
                         value: _priority,
                         items: TaskPriority.values.where(
@@ -220,7 +222,7 @@ class _TaskFormViewState extends State<_TaskFormView> {
                         onChanged: (v) => setState(() => _priority = v!),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDropdown<TaskStatus>(
+                      AppDropdownField<TaskStatus>(
                         label: context.tr('status'),
                         value: _status,
                         items: TaskStatus.values.where(
@@ -230,7 +232,7 @@ class _TaskFormViewState extends State<_TaskFormView> {
                         onChanged: (v) => setState(() => _status = v!),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDateField(
+                      AppDateField(
                         label: context.tr('due_date'),
                         value: _dueDate,
                         dateFormat: dateFormat,
@@ -252,78 +254,6 @@ class _TaskFormViewState extends State<_TaskFormView> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDropdown<T>({
-    required String label,
-    required T value,
-    required Iterable<T> items,
-    required String Function(T) labelOf,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              isExpanded: true,
-              dropdownColor: AppColors.surface,
-              items: items
-                  .map(
-                    (i) => DropdownMenuItem(value: i, child: Text(labelOf(i))),
-                  )
-                  .toList(),
-              onChanged: onChanged,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateField({
-    required String label,
-    required DateTime? value,
-    required DateFormat dateFormat,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              value != null ? dateFormat.format(value) : '—',
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

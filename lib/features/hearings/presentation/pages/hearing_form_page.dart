@@ -6,6 +6,8 @@ import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_date_field.dart';
+import '../../../../core/widgets/app_dropdown_field.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
 import '../../data/models/create_hearing_request.dart';
@@ -205,7 +207,7 @@ class _HearingFormViewState extends State<_HearingFormView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (!_isEditMode) ...[
-                        _buildDropdown<String?>(
+                        AppDropdownField<String?>(
                           label: context.tr('hearing_type'),
                           value: _hearingTypeId,
                           items: state.hearingTypes.map((l) => l.id),
@@ -218,7 +220,7 @@ class _HearingFormViewState extends State<_HearingFormView> {
                         ),
                         const SizedBox(height: AppSpacing.m),
                       ],
-                      _buildDropdown<HearingStatus>(
+                      AppDropdownField<HearingStatus>(
                         label: context.tr('status'),
                         value: _status,
                         items: HearingStatus.values.where(
@@ -228,7 +230,7 @@ class _HearingFormViewState extends State<_HearingFormView> {
                         onChanged: (v) => setState(() => _status = v!),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDropdown<String?>(
+                      AppDropdownField<String?>(
                         label: context.tr('court'),
                         value: _courtId,
                         items: [null, ...state.courts.map((c) => c.id)],
@@ -238,7 +240,7 @@ class _HearingFormViewState extends State<_HearingFormView> {
                         onChanged: (v) => setState(() => _courtId = v),
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDateTimeField(
+                      AppDateField(
                         label: context.tr('scheduled_at'),
                         value: _scheduledAt,
                         dateFormat: dateFormat,
@@ -255,7 +257,7 @@ class _HearingFormViewState extends State<_HearingFormView> {
                         controller: _outcomeTextController,
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      _buildDateTimeField(
+                      AppDateField(
                         label: context.tr('next_hearing_at'),
                         value: _nextHearingAt,
                         dateFormat: dateFormat,
@@ -277,78 +279,6 @@ class _HearingFormViewState extends State<_HearingFormView> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDropdown<T>({
-    required String label,
-    required T value,
-    required Iterable<T> items,
-    required String Function(T) labelOf,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              isExpanded: true,
-              dropdownColor: AppColors.surface,
-              items: items
-                  .map(
-                    (i) => DropdownMenuItem(value: i, child: Text(labelOf(i))),
-                  )
-                  .toList(),
-              onChanged: onChanged,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDateTimeField({
-    required String label,
-    required DateTime? value,
-    required DateFormat dateFormat,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: onTap,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              value != null ? dateFormat.format(value) : '—',
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
