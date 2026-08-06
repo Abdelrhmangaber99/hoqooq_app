@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$User {
 
- String get id; String get email; String get fullName; bool get isSuperAdmin; String get status; bool get mfaEnabled; DateTime get createdAt; DateTime get updatedAt; String? get avatarUrl; DateTime? get lastLoginAt; List<Role> get roles; TenantRef get tenant;
+ String get id; String get email; String get fullName; bool get isSuperAdmin; String get status; bool get mfaEnabled; DateTime get createdAt; DateTime get updatedAt; String? get avatarUrl; DateTime? get lastLoginAt; List<Role> get roles; TenantRef? get tenant;
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,11 +48,11 @@ abstract mixin class $UserCopyWith<$Res>  {
   factory $UserCopyWith(User value, $Res Function(User) _then) = _$UserCopyWithImpl;
 @useResult
 $Res call({
- String id, String email, String fullName, bool isSuperAdmin, String status, bool mfaEnabled, DateTime createdAt, DateTime updatedAt, String? avatarUrl, DateTime? lastLoginAt, List<Role> roles, TenantRef tenant
+ String id, String email, String fullName, bool isSuperAdmin, String status, bool mfaEnabled, DateTime createdAt, DateTime updatedAt, String? avatarUrl, DateTime? lastLoginAt, List<Role> roles, TenantRef? tenant
 });
 
 
-$TenantRefCopyWith<$Res> get tenant;
+$TenantRefCopyWith<$Res>? get tenant;
 
 }
 /// @nodoc
@@ -65,7 +65,7 @@ class _$UserCopyWithImpl<$Res>
 
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? fullName = null,Object? isSuperAdmin = null,Object? status = null,Object? mfaEnabled = null,Object? createdAt = null,Object? updatedAt = null,Object? avatarUrl = freezed,Object? lastLoginAt = freezed,Object? roles = null,Object? tenant = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? fullName = null,Object? isSuperAdmin = null,Object? status = null,Object? mfaEnabled = null,Object? createdAt = null,Object? updatedAt = null,Object? avatarUrl = freezed,Object? lastLoginAt = freezed,Object? roles = null,Object? tenant = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -78,17 +78,20 @@ as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore
 as DateTime,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String?,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,roles: null == roles ? _self.roles : roles // ignore: cast_nullable_to_non_nullable
-as List<Role>,tenant: null == tenant ? _self.tenant : tenant // ignore: cast_nullable_to_non_nullable
-as TenantRef,
+as List<Role>,tenant: freezed == tenant ? _self.tenant : tenant // ignore: cast_nullable_to_non_nullable
+as TenantRef?,
   ));
 }
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$TenantRefCopyWith<$Res> get tenant {
-  
-  return $TenantRefCopyWith<$Res>(_self.tenant, (value) {
+$TenantRefCopyWith<$Res>? get tenant {
+    if (_self.tenant == null) {
+    return null;
+  }
+
+  return $TenantRefCopyWith<$Res>(_self.tenant!, (value) {
     return _then(_self.copyWith(tenant: value));
   });
 }
@@ -173,7 +176,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef tenant)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef? tenant)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _User() when $default != null:
 return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.roles,_that.tenant);case _:
@@ -194,7 +197,7 @@ return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.sta
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef tenant)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef? tenant)  $default,) {final _that = this;
 switch (_that) {
 case _User():
 return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.roles,_that.tenant);case _:
@@ -214,7 +217,7 @@ return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.sta
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef tenant)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef? tenant)?  $default,) {final _that = this;
 switch (_that) {
 case _User() when $default != null:
 return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.roles,_that.tenant);case _:
@@ -229,7 +232,7 @@ return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.sta
 @JsonSerializable()
 
 class _User extends User {
-  const _User({required this.id, required this.email, required this.fullName, required this.isSuperAdmin, required this.status, required this.mfaEnabled, required this.createdAt, required this.updatedAt, this.avatarUrl, this.lastLoginAt, required final  List<Role> roles, required this.tenant}): _roles = roles,super._();
+  const _User({required this.id, required this.email, required this.fullName, required this.isSuperAdmin, required this.status, required this.mfaEnabled, required this.createdAt, required this.updatedAt, this.avatarUrl, this.lastLoginAt, required final  List<Role> roles, this.tenant}): _roles = roles,super._();
   factory _User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
 @override final  String id;
@@ -249,7 +252,7 @@ class _User extends User {
   return EqualUnmodifiableListView(_roles);
 }
 
-@override final  TenantRef tenant;
+@override final  TenantRef? tenant;
 
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
@@ -284,11 +287,11 @@ abstract mixin class _$UserCopyWith<$Res> implements $UserCopyWith<$Res> {
   factory _$UserCopyWith(_User value, $Res Function(_User) _then) = __$UserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String email, String fullName, bool isSuperAdmin, String status, bool mfaEnabled, DateTime createdAt, DateTime updatedAt, String? avatarUrl, DateTime? lastLoginAt, List<Role> roles, TenantRef tenant
+ String id, String email, String fullName, bool isSuperAdmin, String status, bool mfaEnabled, DateTime createdAt, DateTime updatedAt, String? avatarUrl, DateTime? lastLoginAt, List<Role> roles, TenantRef? tenant
 });
 
 
-@override $TenantRefCopyWith<$Res> get tenant;
+@override $TenantRefCopyWith<$Res>? get tenant;
 
 }
 /// @nodoc
@@ -301,7 +304,7 @@ class __$UserCopyWithImpl<$Res>
 
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? fullName = null,Object? isSuperAdmin = null,Object? status = null,Object? mfaEnabled = null,Object? createdAt = null,Object? updatedAt = null,Object? avatarUrl = freezed,Object? lastLoginAt = freezed,Object? roles = null,Object? tenant = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? fullName = null,Object? isSuperAdmin = null,Object? status = null,Object? mfaEnabled = null,Object? createdAt = null,Object? updatedAt = null,Object? avatarUrl = freezed,Object? lastLoginAt = freezed,Object? roles = null,Object? tenant = freezed,}) {
   return _then(_User(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -314,8 +317,8 @@ as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore
 as DateTime,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String?,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,roles: null == roles ? _self._roles : roles // ignore: cast_nullable_to_non_nullable
-as List<Role>,tenant: null == tenant ? _self.tenant : tenant // ignore: cast_nullable_to_non_nullable
-as TenantRef,
+as List<Role>,tenant: freezed == tenant ? _self.tenant : tenant // ignore: cast_nullable_to_non_nullable
+as TenantRef?,
   ));
 }
 
@@ -323,9 +326,12 @@ as TenantRef,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$TenantRefCopyWith<$Res> get tenant {
-  
-  return $TenantRefCopyWith<$Res>(_self.tenant, (value) {
+$TenantRefCopyWith<$Res>? get tenant {
+    if (_self.tenant == null) {
+    return null;
+  }
+
+  return $TenantRefCopyWith<$Res>(_self.tenant!, (value) {
     return _then(_self.copyWith(tenant: value));
   });
 }

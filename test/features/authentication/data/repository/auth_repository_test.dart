@@ -180,7 +180,7 @@ void main() {
         expect(user.fullName, 'Jane Doe');
         expect(user.hasPerm('cases.read'), isTrue);
         expect(user.hasPerm('cases.delete'), isFalse);
-        expect(user.tenant.name, 'Reynolds & Associates');
+        expect(user.tenant?.name, 'Reynolds & Associates');
       });
     });
   });

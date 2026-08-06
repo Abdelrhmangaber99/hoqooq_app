@@ -12,6 +12,16 @@ part 'user.g.dart';
 /// `phone` no longer exist (this is the second shape this entity has had in
 /// one day — first a UI-mockup shape, then this rebuild). `fullName` and
 /// `status` are now real API fields, not derived client-side.
+///
+/// **`tenant` is genuinely nullable — confirmed live 2026-08-06, not a
+/// relations-loading question.** A `SUPER_ADMIN` platform account (no
+/// `tenantId` at all, `isSuperAdmin: true`) returns `tenant: null` — this
+/// app's real intended actors are always tenant-scoped firm staff (BR-037),
+/// but a tenant-less account must still parse without crashing, e.g. for
+/// diagnostics/session-restore. See the two `sessionState.user.tenant?.id`
+/// call sites (`ClientRepository`/`CaseRepository`'s create flows) for the
+/// only places this null needs handling — both already degrade to omitting
+/// `tenantId` from the request rather than crashing.
 @freezed
 abstract class User with _$User {
   const User._();
@@ -28,7 +38,7 @@ abstract class User with _$User {
     String? avatarUrl,
     DateTime? lastLoginAt,
     required List<Role> roles,
-    required TenantRef tenant,
+    TenantRef? tenant,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

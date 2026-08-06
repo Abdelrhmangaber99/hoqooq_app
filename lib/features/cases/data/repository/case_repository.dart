@@ -57,7 +57,7 @@ class CaseRepository implements ICaseRepository {
     try {
       final sessionState = _sessionCubit.state;
       final tenantId = sessionState is SessionAuthenticated
-          ? sessionState.user.tenant.id
+          ? sessionState.user.tenant?.id
           : null;
       final body = {
         ...request.toJson(),
