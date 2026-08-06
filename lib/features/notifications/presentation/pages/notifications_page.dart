@@ -1,29 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../di/injection.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_view.dart';
+import '../../domain/entities/app_notification.dart';
+import '../bloc/notifications_bloc.dart';
+import '../notification_display_helpers.dart';
 
+/// Rebuilt against real data (`GET /notifications/me` + `PATCH .../read`,
+/// API_CONTRACT.md finding S) — previously 100%-static mock content since
+/// before M1. The mock's category filter chips (`hearings`/
+/// `deadline_alerts`) and per-item custom subtitle/icon are dropped: the
+/// real response has no server-side type filter and no field beyond
+/// `title`/`message`/`type` to build either from. "Mark all read" stays,
+/// implemented as N concurrent `PATCH` calls over the currently-loaded
+/// list — there's no bulk endpoint.
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppSpacing.m),
-              _buildHeader(context),
-              const SizedBox(height: AppSpacing.l),
-              _buildFilters(context),
-              const SizedBox(height: AppSpacing.m),
-              _buildNotificationsList(context),
-            ],
+    return BlocProvider(
+      create: (_) =>
+          getIt<NotificationsBloc>()..add(FetchNotificationsRequested()),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: BlocListener<NotificationsBloc, NotificationsState>(
+            listenWhen: (previous, current) =>
+                current is NotificationsLoaded && current.actionError != null,
+            listener: (context, state) {
+              final message = (state as NotificationsLoaded).actionError!;
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(message)));
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.m),
+                  _buildHeader(context),
+                  const SizedBox(height: AppSpacing.l),
+                  Expanded(
+                    child: BlocBuilder<NotificationsBloc, NotificationsState>(
+                      builder: (context, state) {
+                        if (state is NotificationsLoading ||
+                            state is NotificationsInitial) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          );
+                        } else if (state is NotificationsError) {
+                          return ErrorView(
+                            message: state.message,
+                            isForbidden: state.isForbidden,
+                            onRetry: () => context
+                                .read<NotificationsBloc>()
+                                .add(FetchNotificationsRequested()),
+                          );
+                        } else if (state is NotificationsLoaded) {
+                          if (state.notifications.isEmpty) {
+                            return EmptyState(
+                              message: context.tr('no_notifications_found'),
+                            );
+                          }
+                          return _buildNotificationsList(
+                            context,
+                            state.notifications,
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -35,88 +95,45 @@ class NotificationsPage extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(context.tr('alerts'), style: AppTypography.h1),
-        Text(
-          context.tr('mark_all_read'),
-          style: AppTypography.labelMedium.copyWith(color: AppColors.primary, fontSize: 12),
+        BlocBuilder<NotificationsBloc, NotificationsState>(
+          builder: (context, state) {
+            final hasNotifications =
+                state is NotificationsLoaded && state.notifications.isNotEmpty;
+            if (!hasNotifications) return const SizedBox();
+            return GestureDetector(
+              onTap: () => context.read<NotificationsBloc>().add(
+                AllNotificationsMarkedAsReadRequested(),
+              ),
+              child: Text(
+                context.tr('mark_all_read'),
+                style: AppTypography.labelMedium.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
   }
 
-  Widget _buildFilters(BuildContext context) {
-    final filters = [context.tr('view_all'), context.tr('hearings'), context.tr('deadline_alerts')];
-    return Row(
-      children: filters.map((filter) {
-        final isSelected = filter == context.tr('view_all');
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: ChoiceChip(
-            label: Text(filter),
-            selected: isSelected,
-            onSelected: (_) {},
-            backgroundColor: AppColors.surface,
-            selectedColor: AppColors.primary,
-            labelStyle: AppTypography.labelMedium.copyWith(
-              color: isSelected ? Colors.black : AppColors.textSecondary,
-              fontSize: 12,
-            ),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            side: BorderSide.none,
-            showCheckmark: false,
+  Widget _buildNotificationsList(
+    BuildContext context,
+    List<AppNotification> notifications,
+  ) {
+    final dateFormat = DateFormat.yMMMd().add_jm();
+    return ListView.separated(
+      itemCount: notifications.length,
+      separatorBuilder: (_, _) =>
+          const Divider(color: AppColors.surfaceLight, height: 1),
+      itemBuilder: (context, index) {
+        final notification = notifications[index];
+        return GestureDetector(
+          onTap: () => context.read<NotificationsBloc>().add(
+            NotificationMarkedAsReadRequested(notification.id),
           ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildNotificationsList(BuildContext context) {
-    final notifications = [
-      {
-        'title': context.tr('hearing_in_2_hours'),
-        'subtitle': 'Hernandez v. State — District Court, Room 4',
-        'time': '7:00 AM',
-        'icon': Icons.gavel,
-        'isUnread': true,
-      },
-      {
-        'title': context.tr('filing_deadline_today'),
-        'subtitle': 'TechCorp IP — Response brief due by 5:00 PM',
-        'time': '6:30 AM',
-        'icon': Icons.warning_amber_rounded,
-        'isUnread': true,
-        'iconColor': Colors.red,
-      },
-      {
-        'title': context.tr('appointment_reminders'),
-        'subtitle': 'Morrison Estate meeting at 11:30 AM',
-        'time': context.tr('yesterday'),
-        'icon': Icons.notifications_none,
-        'isUnread': false,
-      },
-      {
-        'title': context.tr('motion_deadline_tomorrow'),
-        'subtitle': 'Hernandez — Motion to suppress response',
-        'time': context.tr('yesterday'),
-        'icon': Icons.warning_amber_rounded,
-        'isUnread': false,
-        'iconColor': Colors.red,
-      },
-      {
-        'title': context.tr('new_message_from_client'),
-        'subtitle': 'Patricia Morrison sent a message',
-        'time': 'Jul 14',
-        'icon': Icons.email_outlined,
-        'isUnread': false,
-      },
-    ];
-
-    return Expanded(
-      child: ListView.separated(
-        itemCount: notifications.length,
-        separatorBuilder: (_, __) => const Divider(color: AppColors.surfaceLight, height: 1),
-        itemBuilder: (context, index) {
-          final item = notifications[index];
-          return Padding(
+          child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,21 +147,25 @@ class NotificationsPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        item['icon'] as IconData,
+                        notificationTypeIcon(notification.type),
                         size: 20,
-                        color: (item['iconColor'] as Color?) ?? AppColors.textHint,
+                        color: notificationTypeColor(notification.type),
                       ),
                     ),
-                    if (item['isUnread'] as bool)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                    // GET /notifications/me returns unread only, so every
+                    // item in this list is unread by definition.
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
                         ),
                       ),
+                    ),
                   ],
                 ),
                 const SizedBox(width: AppSpacing.m),
@@ -155,20 +176,25 @@ class NotificationsPage extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            item['title'] as String,
-                            style: AppTypography.labelLarge.copyWith(
-                              color: (item['isUnread'] as bool) ? AppColors.textPrimary : AppColors.textSecondary,
+                          Expanded(
+                            child: Text(
+                              notification.title,
+                              style: AppTypography.labelLarge,
                             ),
                           ),
-                          Text(item['time'] as String, style: AppTypography.bodySmall.copyWith(fontSize: 10)),
+                          Text(
+                            dateFormat.format(notification.createdAt),
+                            style: AppTypography.bodySmall.copyWith(
+                              fontSize: 10,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        item['subtitle'] as String,
+                        notification.message,
                         style: AppTypography.bodySmall.copyWith(
-                          color: (item['isUnread'] as bool) ? AppColors.textSecondary : AppColors.textHint,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -176,9 +202,9 @@ class NotificationsPage extends StatelessWidget {
                 ),
               ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
