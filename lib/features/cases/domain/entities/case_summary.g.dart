@@ -17,7 +17,6 @@ _CaseSummary _$CaseSummaryFromJson(Map<String, dynamic> json) => _CaseSummary(
   ),
   clientId: json['clientId'] as String,
   caseTypeId: json['caseTypeId'] as String,
-  primaryLawyerId: json['primaryLawyerId'] as String?,
   defaultCourtId: json['defaultCourtId'] as String?,
   priority: $enumDecode(
     _$CasePriorityEnumMap,
@@ -44,7 +43,6 @@ Map<String, dynamic> _$CaseSummaryToJson(_CaseSummary instance) =>
       'status': _$CaseStatusEnumMap[instance.status]!,
       'clientId': instance.clientId,
       'caseTypeId': instance.caseTypeId,
-      'primaryLawyerId': instance.primaryLawyerId,
       'defaultCourtId': instance.defaultCourtId,
       'priority': _$CasePriorityEnumMap[instance.priority]!,
       'openingDate': instance.openingDate?.toIso8601String(),

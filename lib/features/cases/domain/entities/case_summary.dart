@@ -5,15 +5,17 @@ import 'case_status.dart';
 part 'case_summary.freezed.dart';
 part 'case_summary.g.dart';
 
-/// Thin `case` shape nested inside Hearings/Tasks/Documents/`/calendar/timeline`
-/// responses (per API_CONTRACT.md §8's M3 pre-planning finding I).
+/// Thin `case` shape nested inside Hearings/Tasks/Documents/Finance
+/// invoices/`/calendar/timeline` responses (per API_CONTRACT.md §8's M3
+/// pre-planning finding I; Finance reuse added M6, finding R).
 ///
 /// Not the full `LegalCase` — `HearingsService`/`TasksService`/
-/// `DocumentsService` only request `relations: ['case', ...]`, which loads
-/// `Case`'s own columns but does NOT cascade to `Case`'s own relations
-/// (`client`, `defaultCourt`, `team`, etc.) — those stay unpopulated even
-/// though `LegalCase` marks `client`/`team` as required. Reusing `LegalCase`
-/// here would throw on real data for the same reason the M2 regression did.
+/// `DocumentsService`/`FinanceService` only request `relations: ['case', ...]`,
+/// which loads `Case`'s own columns but does NOT cascade to `Case`'s own
+/// relations (`client`, `defaultCourt`, `team`, etc.) — those stay
+/// unpopulated even though `LegalCase` marks `client`/`team` as required.
+/// Reusing `LegalCase` here would throw on real data for the same reason
+/// the M2 regression did.
 @freezed
 abstract class CaseSummary with _$CaseSummary {
   const factory CaseSummary({
@@ -23,7 +25,6 @@ abstract class CaseSummary with _$CaseSummary {
     @JsonKey(unknownEnumValue: CaseStatus.unknown) required CaseStatus status,
     required String clientId,
     required String caseTypeId,
-    String? primaryLawyerId,
     String? defaultCourtId,
     @JsonKey(unknownEnumValue: CasePriority.unknown)
     required CasePriority priority,
