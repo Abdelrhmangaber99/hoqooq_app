@@ -48,6 +48,8 @@ import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart'
     as _i995;
 import 'package:hqooq/features/cases/presentation/bloc/case_documents_bloc.dart'
     as _i194;
+import 'package:hqooq/features/cases/presentation/bloc/case_financial_summary_bloc.dart'
+    as _i1066;
 import 'package:hqooq/features/cases/presentation/bloc/case_form_bloc.dart'
     as _i728;
 import 'package:hqooq/features/cases/presentation/bloc/case_hearings_bloc.dart'
@@ -84,6 +86,22 @@ import 'package:hqooq/features/documents/domain/repository/i_document_repository
     as _i622;
 import 'package:hqooq/features/documents/presentation/bloc/document_upload_bloc.dart'
     as _i51;
+import 'package:hqooq/features/finance/data/repository/finance_repository.dart'
+    as _i810;
+import 'package:hqooq/features/finance/domain/repository/i_finance_repository.dart'
+    as _i729;
+import 'package:hqooq/features/finance/presentation/bloc/cases_financial_summary_bloc.dart'
+    as _i600;
+import 'package:hqooq/features/finance/presentation/bloc/financial_analytics_bloc.dart'
+    as _i313;
+import 'package:hqooq/features/finance/presentation/bloc/invoice_details_bloc.dart'
+    as _i484;
+import 'package:hqooq/features/finance/presentation/bloc/invoice_form_bloc.dart'
+    as _i286;
+import 'package:hqooq/features/finance/presentation/bloc/invoices_bloc.dart'
+    as _i188;
+import 'package:hqooq/features/finance/presentation/bloc/payment_form_bloc.dart'
+    as _i113;
 import 'package:hqooq/features/hearings/data/repository/hearing_repository.dart'
     as _i506;
 import 'package:hqooq/features/hearings/domain/repository/i_hearing_repository.dart'
@@ -94,6 +112,12 @@ import 'package:hqooq/features/lookups/data/repository/lookup_repository.dart'
     as _i792;
 import 'package:hqooq/features/lookups/domain/repository/i_lookup_repository.dart'
     as _i359;
+import 'package:hqooq/features/notifications/data/repository/notification_repository.dart'
+    as _i581;
+import 'package:hqooq/features/notifications/domain/repository/i_notification_repository.dart'
+    as _i170;
+import 'package:hqooq/features/notifications/presentation/bloc/notifications_bloc.dart'
+    as _i983;
 import 'package:hqooq/features/subscriptions/data/repository/subscription_repository.dart'
     as _i836;
 import 'package:hqooq/features/subscriptions/domain/repository/i_subscription_repository.dart'
@@ -146,6 +170,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i543.ICourtRepository>(
       () => _i150.CourtRepository(gh<_i361.Dio>()),
     );
+    gh.lazySingleton<_i729.IFinanceRepository>(
+      () => _i810.FinanceRepository(gh<_i361.Dio>()),
+    );
     gh.lazySingleton<_i598.IAuthRepository>(
       () => _i494.AuthRepository(gh<_i361.Dio>()),
     );
@@ -167,6 +194,13 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i730.ClientFormBloc>(
       () => _i730.ClientFormBloc(gh<_i794.IClientRepository>()),
     );
+    gh.factory<_i286.InvoiceFormBloc>(
+      () => _i286.InvoiceFormBloc(
+        gh<_i729.IFinanceRepository>(),
+        gh<_i794.IClientRepository>(),
+        gh<_i320.ICaseRepository>(),
+      ),
+    );
     gh.factory<_i995.CaseDetailsBloc>(
       () => _i995.CaseDetailsBloc(gh<_i320.ICaseRepository>()),
     );
@@ -180,6 +214,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i495.ICalendarRepository>(
       () => _i225.CalendarRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i170.INotificationRepository>(
+      () => _i581.NotificationRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i949.ITaskRepository>(
       () => _i23.TaskRepository(gh<_i361.Dio>()),
@@ -210,8 +247,29 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i943.ISubscriptionRepository>(),
       ),
     );
+    gh.factory<_i983.NotificationsBloc>(
+      () => _i983.NotificationsBloc(gh<_i170.INotificationRepository>()),
+    );
     gh.lazySingleton<_i723.GetClientsUseCase>(
       () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
+    );
+    gh.factory<_i1066.CaseFinancialSummaryBloc>(
+      () => _i1066.CaseFinancialSummaryBloc(gh<_i729.IFinanceRepository>()),
+    );
+    gh.factory<_i600.CasesFinancialSummaryBloc>(
+      () => _i600.CasesFinancialSummaryBloc(gh<_i729.IFinanceRepository>()),
+    );
+    gh.factory<_i313.FinancialAnalyticsBloc>(
+      () => _i313.FinancialAnalyticsBloc(gh<_i729.IFinanceRepository>()),
+    );
+    gh.factory<_i484.InvoiceDetailsBloc>(
+      () => _i484.InvoiceDetailsBloc(gh<_i729.IFinanceRepository>()),
+    );
+    gh.factory<_i188.InvoicesBloc>(
+      () => _i188.InvoicesBloc(gh<_i729.IFinanceRepository>()),
+    );
+    gh.factory<_i113.PaymentFormBloc>(
+      () => _i113.PaymentFormBloc(gh<_i729.IFinanceRepository>()),
     );
     gh.factory<_i283.ClientDetailsBloc>(
       () => _i283.ClientDetailsBloc(

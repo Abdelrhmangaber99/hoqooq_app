@@ -5,6 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/di/injection.dart';
+import 'package:hqooq/features/authentication/domain/entities/permission.dart';
+import 'package:hqooq/features/authentication/domain/entities/role.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
@@ -17,12 +19,15 @@ import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
 import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart';
 import 'package:hqooq/features/cases/presentation/bloc/case_documents_bloc.dart';
+import 'package:hqooq/features/cases/presentation/bloc/case_financial_summary_bloc.dart';
 import 'package:hqooq/features/cases/presentation/bloc/case_hearings_bloc.dart';
 import 'package:hqooq/features/cases/presentation/pages/case_details_page.dart';
 import 'package:hqooq/features/clients/domain/entities/client.dart';
 import 'package:hqooq/features/clients/domain/entities/client_status.dart';
 import 'package:hqooq/features/clients/domain/entities/client_type.dart';
 import 'package:hqooq/features/documents/presentation/bloc/document_upload_bloc.dart';
+import 'package:hqooq/features/finance/domain/entities/payment_status.dart';
+import 'package:hqooq/features/finance/domain/entities/single_case_financial_detail.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCaseDetailsBloc extends MockBloc<CaseDetailsEvent, CaseDetailsState>
@@ -39,6 +44,10 @@ class MockCaseDocumentsBloc
 class MockDocumentUploadBloc
     extends MockBloc<DocumentUploadEvent, DocumentUploadState>
     implements DocumentUploadBloc {}
+
+class MockCaseFinancialSummaryBloc
+    extends MockBloc<CaseFinancialSummaryEvent, CaseFinancialSummaryState>
+    implements CaseFinancialSummaryBloc {}
 
 class MockSessionCubit extends MockCubit<SessionState>
     implements SessionCubit {}
@@ -220,6 +229,62 @@ void main() {
 
     expect(find.text('5000.00'), findsOneWidget);
     expect(find.text('Agreed Fee'), findsOneWidget);
+  });
+
+  testWidgets('hides the Financials section when the user lacks finance.read '
+      '(gated on finance.read, not isFirmAdmin -- Accountant needs this too)', (
+    tester,
+  ) async {
+    when(
+      () => sessionCubit.state,
+    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: true));
+
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Financials'), findsNothing);
+  });
+
+  testWidgets('shows the Financials section for a user holding finance.read', (
+    tester,
+  ) async {
+    final accountant = user.copyWith(
+      roles: const [
+        Role(
+          id: 'r1',
+          code: 'ACCOUNTANT',
+          scope: 'TENANT',
+          permissions: [Permission(id: 'p1', code: 'finance.read')],
+        ),
+      ],
+    );
+    when(
+      () => sessionCubit.state,
+    ).thenReturn(SessionAuthenticated(accountant, isFirmAdmin: false));
+    final financialSummaryBloc = MockCaseFinancialSummaryBloc();
+    getIt.registerFactory<CaseFinancialSummaryBloc>(() => financialSummaryBloc);
+    whenListen(
+      financialSummaryBloc,
+      const Stream<CaseFinancialSummaryState>.empty(),
+      initialState: const CaseFinancialSummaryLoaded(
+        SingleCaseFinancialDetail(
+          caseId: 'c1',
+          caseNumber: 'CASE-2026-00001',
+          clientName: 'Carlos Hernandez',
+          totalInvoiced: 15000,
+          totalPaid: 10000,
+          outstandingBalance: 5000,
+          paymentStatus: PaymentStatus.partial,
+          invoices: [],
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Financials'), findsOneWidget);
+    expect(find.text('5000.00'), findsOneWidget);
   });
 
   testWidgets('renders the case overview and team', (tester) async {

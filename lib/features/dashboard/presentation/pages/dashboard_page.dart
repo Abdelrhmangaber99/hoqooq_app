@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/permission_check.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -70,6 +71,10 @@ class DashboardPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSummaryCards(context, state),
+        if (currentUserHasPerm('finance.read')) ...[
+          const SizedBox(height: AppSpacing.m),
+          _buildFinanceEntryPoint(context),
+        ],
         const SizedBox(height: AppSpacing.l),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -136,6 +141,42 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// `finance.read`-gated entry point into the `finance` feature —
+  /// Invoices/Payments/Analytics/Cases-Summary are all reachable from
+  /// there. No bottom-nav tab added for Finance per the approved M6 plan
+  /// (the nav is already at 6 items); Dashboard is this app's existing
+  /// launchpad for cross-cutting features, same role it already plays for
+  /// the pending-tasks section below.
+  Widget _buildFinanceEntryPoint(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push(AppRouter.finance),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.m),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: AppRadius.medium,
+          border: Border.all(color: AppColors.surfaceLight),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.receipt_long_outlined,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Text(context.tr('finance'), style: AppTypography.labelLarge),
+              ],
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.textHint),
+          ],
+        ),
+      ),
     );
   }
 

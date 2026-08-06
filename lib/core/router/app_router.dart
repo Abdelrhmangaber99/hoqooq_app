@@ -19,6 +19,12 @@ import '../../features/cases/domain/entities/legal_case.dart';
 import '../../features/cases/presentation/pages/case_form_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
 import '../../features/cases/presentation/pages/case_details_page.dart';
+import '../../features/finance/domain/entities/invoice.dart';
+import '../../features/finance/presentation/pages/cases_financial_summary_page.dart';
+import '../../features/finance/presentation/pages/financial_analytics_page.dart';
+import '../../features/finance/presentation/pages/invoice_details_page.dart';
+import '../../features/finance/presentation/pages/invoice_form_page.dart';
+import '../../features/finance/presentation/pages/invoices_page.dart';
 import '../../features/hearings/domain/entities/hearing.dart';
 import '../../features/hearings/presentation/pages/hearing_form_page.dart';
 import '../../features/clients/domain/entities/client.dart';
@@ -41,6 +47,7 @@ class AppRouter {
   static const String calendar = '/calendar';
   static const String cases = '/cases';
   static const String clients = '/clients';
+  static const String finance = '/finance';
   static const String alerts = '/alerts';
   static const String profile = '/profile';
   static const String subscriptionInactive = '/subscription-inactive';
@@ -152,6 +159,41 @@ class AppRouter {
                         : null,
                     builder: (context, state) => ClientFormPage(
                       existingClient: typedExtra<Client>(state),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          GoRoute(
+            path: finance,
+            builder: (context, state) => const InvoicesPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const InvoiceFormPage(),
+              ),
+              GoRoute(
+                path: 'analytics',
+                builder: (context, state) => const FinancialAnalyticsPage(),
+              ),
+              GoRoute(
+                path: 'cases-summary',
+                builder: (context, state) => const CasesFinancialSummaryPage(),
+              ),
+              GoRoute(
+                path: ':id',
+                builder: (context, state) =>
+                    InvoiceDetailsPage(invoiceId: state.pathParameters['id']!),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    redirect: (context, state) =>
+                        typedExtra<Invoice>(state) == null
+                        ? '$finance/${state.pathParameters['id']}'
+                        : null,
+                    builder: (context, state) => InvoiceFormPage(
+                      existingInvoice: typedExtra<Invoice>(state),
                     ),
                   ),
                 ],

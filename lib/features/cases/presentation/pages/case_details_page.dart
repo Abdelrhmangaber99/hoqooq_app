@@ -24,6 +24,7 @@ import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../../documents/domain/entities/document_item.dart';
 import '../../../documents/domain/upload_file_validation.dart';
 import '../../../documents/presentation/bloc/document_upload_bloc.dart';
+import '../../../finance/presentation/finance_display_helpers.dart';
 import '../../../hearings/domain/entities/hearing.dart';
 import '../../../hearings/presentation/hearing_display_helpers.dart';
 import '../../data/models/assign_case_request.dart';
@@ -31,6 +32,7 @@ import '../../domain/entities/case_access_level.dart';
 import '../../domain/entities/legal_case.dart';
 import '../bloc/case_details_bloc.dart';
 import '../bloc/case_documents_bloc.dart';
+import '../bloc/case_financial_summary_bloc.dart';
 import '../bloc/case_hearings_bloc.dart';
 import '../bloc/case_team_assignment_bloc.dart';
 import '../case_display_helpers.dart';
@@ -61,6 +63,16 @@ class CaseDetailsPage extends StatelessWidget {
                 ..add(FetchCaseDocumentsRequested(caseId)),
         ),
         BlocProvider(create: (context) => getIt<DocumentUploadBloc>()),
+        // Same `finance.read` gate as the section itself below — no point
+        // fetching (and no point the backend doing the work) for a user
+        // who won't be shown the result. Matches BR-026's hide-by-default
+        // direction for finance-adjacent data, one level further up.
+        if (currentUserHasPerm('finance.read'))
+          BlocProvider(
+            create: (context) =>
+                getIt<CaseFinancialSummaryBloc>()
+                  ..add(FetchCaseFinancialSummaryRequested(caseId)),
+          ),
       ],
       child: Scaffold(
         backgroundColor: AppColors.background,
@@ -141,6 +153,12 @@ class CaseDetailsPage extends StatelessWidget {
           Text(context.tr('overview'), style: AppTypography.h3),
           const SizedBox(height: AppSpacing.m),
           _buildOverview(context, legalCase, showAgreedFee: isFirmAdmin),
+          if (currentUserHasPerm('finance.read')) ...[
+            const SizedBox(height: AppSpacing.l),
+            Text(context.tr('financials'), style: AppTypography.h3),
+            const SizedBox(height: AppSpacing.m),
+            _buildFinancialsSection(context),
+          ],
           const SizedBox(height: AppSpacing.l),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -578,6 +596,64 @@ class CaseDetailsPage extends StatelessWidget {
           Expanded(child: Text(value, style: AppTypography.bodyMedium)),
         ],
       ),
+    );
+  }
+
+  /// `finance.read`-gated (BR-026-style hide-by-default, matching
+  /// `agreedFee`'s existing pattern) — the whole section, not just the
+  /// figures within it, since `Accountant` needs this and `Accountant`
+  /// isn't `isFirmAdmin` (API_CONTRACT.md finding Y confirms Accountant is
+  /// a distinct, real backend persona now, not a Firm-Admin subset).
+  Widget _buildFinancialsSection(BuildContext context) {
+    return BlocBuilder<CaseFinancialSummaryBloc, CaseFinancialSummaryState>(
+      builder: (context, state) {
+        if (state is CaseFinancialSummaryLoading ||
+            state is CaseFinancialSummaryInitial) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          );
+        } else if (state is CaseFinancialSummaryError) {
+          return ErrorView(
+            message: state.message,
+            isForbidden: state.isForbidden,
+            onRetry: () => context.read<CaseFinancialSummaryBloc>().add(
+              FetchCaseFinancialSummaryRequested(caseId),
+            ),
+          );
+        } else if (state is CaseFinancialSummaryLoaded) {
+          final summary = state.summary;
+          return Container(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: AppRadius.medium,
+              border: Border.all(color: AppColors.surfaceLight),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow(
+                  context.tr('payment_status'),
+                  paymentStatusLabel(context, summary.paymentStatus),
+                ),
+                _buildInfoRow(
+                  context.tr('total_invoiced'),
+                  summary.totalInvoiced.toStringAsFixed(2),
+                ),
+                _buildInfoRow(
+                  context.tr('total_paid'),
+                  summary.totalPaid.toStringAsFixed(2),
+                ),
+                _buildInfoRow(
+                  context.tr('outstanding_balance'),
+                  summary.outstandingBalance.toStringAsFixed(2),
+                ),
+              ],
+            ),
+          );
+        }
+        return const SizedBox();
+      },
     );
   }
 
