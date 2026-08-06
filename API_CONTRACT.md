@@ -198,6 +198,53 @@ Re-confirmed directly from `cases.service.ts`'s query builder: both `case.oppone
 
 ---
 
+## ⚠️ Findings from the fourth backend-source re-sync (2026-08-06) — M7 pre-planning
+
+User asked for another fresh re-inspection before drafting M7, re-confirming the deferred M6 candidates (Opponents, Courts write-side, Firm Profile, AI) from scratch and looking specifically for a "complete business module," not another isolated screen. That search led into the `users` module (`GET/POST/PATCH/DELETE /users`) — previously only ever used read-only as picker reference data (Case/Task assignee dropdowns) — and reading it in full surfaced the most severe findings of any re-sync so far, including one that affects code already shipped since M4.
+
+### Z. `GET /users` has zero tenant scoping — a live cross-tenant data leak, not just an M7 planning concern
+
+`UserRepository.findAll()` (`src/modules/users/repositories/user.repository.ts`) calls `this.repository.find({relations: [...]})` with **no `where` clause of any kind** — confirmed by reading the query directly, not inferred. `UsersService.findAll()` passes nothing through either. **This means `GET /users` returns every user account on the entire platform, across every tenant, to any authenticated caller holding `users.read`** (which `FIRM_ADMIN` has via the full-bypass rule in finding Y) — full name, email, status, role, and tenant-membership of every firm's staff, not just the caller's own firm.
+
+**This is not a new-feature blocker — it's a live issue in code already shipped.** This app has called `GET /users` read-only since M4 (`lib/features/users/data/repository/user_repository.dart`, backing the assignee pickers on Case/Task create and edit forms) and has never filtered the response by tenant, because nothing in the previously-available documentation suggested it needed to — every other list endpoint in this API (`cases`, `clients`, `hearings`, etc.) is correctly tenant-scoped server-side, so this was a reasonable assumption until actually reading `UserRepository.findAll()` line by line. **Required client-side mitigation, both for M7's new Staff Management screens and retroactively for the existing M4 pickers:** filter every `GET /users` response to `user.tenant?.id == <current session's tenantId>` before use, dropping any row that doesn't match. `tenant` is loaded via `relations: [..., 'tenant']` and is reliably present for any real firm-scoped user, so this filter is safe and complete — not a partial workaround. Flagged to the backend team as the highest-priority item from this pass; this app cannot wait for a server-side fix given it's already exposed via shipped pickers.
+
+### AA. `POST /users` doesn't override a client-supplied `tenantId` — unlike Cases, matches the known Clients gap
+
+`UsersService.create` does `tenantId: createUserDto.tenantId || null` — takes the DTO's value as-is, no override from the JWT-derived caller identity (contrast: `CasesService.create` always spreads the real tenantId last, discarding whatever the client sent). Same category of issue as the already-known, already-flagged-to-the-backend-team Clients-`create` gap (API_CONTRACT.md finding Q) — not new in kind, but newly confirmed for Users too, and higher-stakes here since a wrong/omitted `tenantId` either orphans the new account (`tenantId: null`) or plants it in the wrong firm. **Required Flutter mitigation:** explicitly inject the current session's `tenantId` into every `POST /users` body at the repository layer, same established pattern as `ClientRepository.createClient()`/`CaseRepository.createCase()` — this one isn't optional the way it half-is for Cases (which overrides regardless); here the client-supplied value is what actually persists.
+
+### BB. `PATCH /users/{id}` silently discards `roleIds` — role reassignment after creation doesn't work via any endpoint
+
+`UsersService.update` builds `updateData` by spreading `updateUserDto` and then explicitly does `delete (updateData as any).roleIds` before persisting — despite `UpdateUserDto` (`PartialType(OmitType(CreateUserDto, ['password']))`) declaring `roleIds` as a valid field and `CreateUserDto`'s own Swagger docs implying symmetry with create. **Practical effect: a staff member's role can be set at creation time but never changed afterward through `PATCH /users/{id}`.** No sibling endpoint fills the gap either — the only other place role/permission management logic exists is `UsersService.getPermissions`/`.setPermissions`, wired to `modules/employees/controllers/employees.controller.ts`'s `:id/permissions` routes, which are unreachable in practice (see finding CC). **M7 scope decision:** role assignment is create-only; editing an existing staff member's roles is out of scope until the backend fixes this, flagged rather than guessed around (e.g. by faking it with a delete-and-recreate, which would also hit the hard-delete concern in finding DD).
+
+### CC. Employees module route collision — re-confirmed unchanged, still not a path around BB
+
+Re-verified `src/app.module.ts`: `UsersModule` is still imported before `EmployeesModule`, so `modules/users/controllers/employees.controller.ts` (a second, thinner `@Controller('employees')`) still wins `GET/PATCH/DELETE /employees/{id}`, and the real Employee-profile-backed controller's `POST /employees/onboard` plus `:id/permissions` routes stay practically unreachable — same as the M6-era finding, still true, doesn't unblock BB. Confirms staying on `/users` exclusively for M7, never `/employees`.
+
+### DD. `DELETE /users/{id}` is a hard delete, deliberately — not a random inconsistency this time
+
+`UserRepository.hardDelete` calls `.delete()`, not `.softDelete()` (a `.softDelete()` method exists on the same repository but is unused) — and the code comment explains why: the `email` column has a plain `UNIQUE` constraint, so a soft-deleted row would permanently block that address from ever being reused. This is a real, considered tradeoff, not an oversight like the Hearings/Tasks inconsistency. `UsersService.remove` also cleans up dependent `Employee`/`Notification` rows first. Not covered by BR-016/024/028/029 (those name cases/documents/financial records, not user accounts) — but still a real, irreversible action. **Recommendation, not a hard blocker:** don't wire the `DELETE` endpoint for M7 — use `PATCH status: SUSPENDED|DEACTIVATED` (real `UserStatus` enum, `INVITED|ACTIVE|SUSPENDED|DEACTIVATED`) as the "remove a staff member" action instead, reversible and consistent with the "deactivate, don't delete" UX this app already uses for Courts (BR-021).
+
+### EE. `GET /roles`'s exclusion filter doesn't actually exclude the seeded platform-admin role — role-picker privilege-escalation risk
+
+`RolesController.getRoles` filters `Not(In(['SYSTEM_ADMIN', 'CLIENT']))` — but the seed data (`src/infrastructure/database/seeds/seed.ts`) creates the platform role as `'SUPER_ADMIN'`, a different string. **`SUPER_ADMIN` is not excluded and is returned by `GET /roles` to any authenticated tenant user.** `CLIENT` is excluded correctly, though no `CLIENT` role is ever actually seeded, so that half of the filter is currently a no-op either way. **Required Flutter mitigation for any role-picker in Staff Management:** filter client-side to `role.scope == 'TENANT'` (the real, correct discriminator, already present on every `Role`) rather than trusting the endpoint's own filter — this can't be assumed fixed without checking, and getting it wrong means a Firm Admin could select `SUPER_ADMIN` when creating a new staff member.
+
+### FF. `CreateUserDto.isSuperAdmin` is client-settable with no restriction — a second privilege-escalation path, independent of EE
+
+`isSuperAdmin?: boolean` is a plain optional DTO field; `UsersService.create` uses it directly (`isSuperAdmin: createUserDto.isSuperAdmin || false`) with no check that the caller is themselves a Super Admin before honoring `true`. Combined with `users.create` being reachable by any `FIRM_ADMIN` (via the full non-`system.*` bypass, finding Y), a firm-scoped admin using this app could, if the field were exposed in a form, mint a platform-level Super Admin account. **Required Flutter mitigation:** the Staff-creation form must never include an `isSuperAdmin` field or control — not default it to `false` in a way a user could later discover and toggle, simply never send the key at all. This is a permanent design constraint on `CreateUserRequest`, not a default worth revisiting.
+
+### GG. Top-level `UserResponseDto.permissions` is dead/broken code — not a Flutter concern, but avoid depending on it
+
+`UserResponseDto` computes a flat `permissions: string[]` via `` `${rp.permission?.resource}.${rp.permission?.action}` `` — but the real `Permission` entity (`src/modules/users/entities/permission.entity.ts`) only has `id`/`code`, no `resource`/`action` fields at all (confirmed the M1-era breaking change to a single opaque `code` string was never reverted). Every element of this array evaluates to the literal string `"undefined.undefined"` in practice. `roles[].permissions[].code` (a separate, correctly-implemented `@Transform` on `RoleResponseDto`) is unaffected and remains the only reliable source for a user's permission codes — this app's `User.hasPerm()` already reads `roles[].permissions[].code` exclusively and needs no change.
+
+### Re-confirmed unchanged from the third re-sync (Opponents, Courts, Tenants, AI)
+
+- **Opponents**: still no `CaseOpponent` controller/route anywhere (`grep`'d fresh) — standalone directory only, still can't be linked to a case.
+- **Courts**: `POST`/`PATCH`/`DELETE /courts` still real and untouched by this app (`GET` only).
+- **Tenants / Firm Profile**: `UpdateTenantDto`'s `publicContactEmail`/`publicContactPhone`/`website`/`specializations` still don't map to any real `Tenant` column (only `name`/`address` do) — unchanged, still a blocker for a full edit form.
+- **AI**: `AiController`'s three endpoints are still byte-for-byte the same hardcoded stub response — confirmed unchanged, not included in M7 per explicit instruction.
+
+---
+
 ## ⚠️ Breaking changes since the M1 version of this file (2026-07-30, same day)
 
 This is not a re-randomization of examples — the collection went from 97 requests to 87, gained a global `/api` prefix, and several core entities were structurally rebuilt to match the BRD's actual data dictionary far more closely. Full diff method available: old export preserved as `/tmp/postman_full.json` from the M1 session, new one at `/tmp/postman_full_v2.json` (both outside the repo).
@@ -280,24 +327,26 @@ Now matches BRD §8.3 `clients` almost exactly (client_code, national_id/commerc
 
 Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registration endpoint.
 
-## 2. Users / Roles / Permissions — shape rebuilt (see breaking change #2)
+## 2. Users / Roles / Permissions — fully source-verified 2026-08-06 (findings Z–GG), supersedes the Postman-era summary below
 
 | Method | Path | Request | Response |
 |---|---|---|---|
-| POST | `/api/users` | `{email, password, fullName, avatarUrl?, isSuperAdmin?, tenantId, roleIds[]}` | 201 User |
-| GET | `/api/users` | — | 200 User[] |
+| POST | `/api/users` | `{email, password, fullName, avatarUrl?, isSuperAdmin?, tenantId?, roleIds[]?}` | 201 User |
+| GET | `/api/users` | — | **200 User[] — every user on the platform, zero tenant filtering (finding Z, critical)** |
 | GET | `/api/users/me` | — | 200 User |
 | GET | `/api/users/{id}` | — | 200 User |
-| PATCH | `/api/users/{id}` | `{email?, fullName?, avatarUrl?, isSuperAdmin?, tenantId?, roleIds[]?}` | 200 User |
-| DELETE | `/api/users/{id}` | — | 200 (empty) |
-| GET | `/api/roles` | — | 200 (no example body — still undocumented) |
-| GET | `/api/roles/permissions` | — | 200 (no example body — still undocumented) |
+| PATCH | `/api/users/{id}` | `{email?, fullName?, avatarUrl?, isSuperAdmin?, tenantId?, status?, roleIds[]?}` | 200 User — **`roleIds` is silently discarded server-side, never persisted (finding BB)** |
+| DELETE | `/api/users/{id}` | — | 200 (empty) — **hard delete, deliberate (email UNIQUE constraint), see finding DD** |
+| GET | `/api/roles` | — | 200 `{id, code, scope}[]` — **`SUPER_ADMIN` is not excluded despite the endpoint's own filter intending to (finding EE)**; filter client-side on `scope == 'TENANT'` instead |
+| GET | `/api/roles/permissions` | — | 200 `{id, code}[]` |
 
-**User** = `{id, email, fullName, isSuperAdmin, status, mfaEnabled, createdAt, updatedAt, avatarUrl?, lastLoginAt?, roles: Role[], tenant: {id, name}}`
-**Role** = `{id, code, scope, permissions: Permission[]}`
+**User** (`UsersController` is `plainToInstance`-enforced, reliable) = `{id, email, fullName, isSuperAdmin, status: INVITED|ACTIVE|SUSPENDED|DEACTIVATED, mfaEnabled, createdAt, updatedAt, avatarUrl?, lastLoginAt?, roles?: Role[], tenant?: {id, name}, permissions?: string[]}`. `roles`/`tenant` always resolve to a real value (`[]`/computed) for this app's own users via the DTO's `@Transform` fallbacks — not genuinely optional in practice. **`permissions` is dead/broken (finding GG) — always `["undefined.undefined"]` in practice, don't use it; `roles[].permissions[].code` is correct and unaffected.**
+**Role** = `{id, code, scope: SYSTEM|TENANT, permissions: Permission[]}`
 **Permission** = `{id, code}`
 
-`tenantId` is still client-suppliable in `POST`/`PATCH /users` bodies — same BR-003 concern as M1, unresolved.
+`tenantId` is still client-suppliable in `POST`/`PATCH /users` bodies — **and unlike Cases, `POST /users` never overrides it server-side (finding AA)** — the Flutter app must inject the current session's `tenantId` itself, the same way `ClientRepository`/`CaseRepository` already do, except here it's not optional insurance, it's the only thing that makes the created account land in the right tenant.
+
+**⚠️ `isSuperAdmin` and `roleIds` (create-only) are both real, client-settable, unrestricted fields with real privilege-escalation potential — see findings EE/FF before building any create/edit form around this endpoint.**
 
 ## 3. Public / Tenants — marketplace half unchanged; `my-firm` half source-verified 2026-08-06 (finding W)
 
@@ -458,7 +507,7 @@ Generic key-value store, same as M1 version. Same limitation: no typed lookups e
 - Clients `create` still accepts a client-supplied, unvalidated `tenantId`.
 - DELETE status-code inconsistency (only Clients has real `@HttpCode(204)`).
 - `ValidationPipe`/`HttpExceptionFilter` still collapses multi-field validation errors to one message per submit.
-- `tenantId` still client-suppliable (though overridden server-side) on `POST /cases`/`POST /hearings`/`POST/PATCH /users`.
+- `tenantId` still client-suppliable on `POST /cases`/`POST /hearings`/`POST/PATCH /users` — overridden server-side for Cases/Hearings, **NOT overridden for Users (finding AA, 2026-08-06 — corrects this line)**.
 - `auth/signup` still exists, still contradicts BR-001. `public/lawyers` marketplace still exists, still a BR-scope concern.
 - **New this pass:** duplicate `EmployeesController` route collision (backend bug, not a Flutter concern — see finding Q).
 
@@ -475,3 +524,15 @@ Not gaps in the backend — these all exist, work, and are DTO-verified (or raw-
 - **AI Assistant** — all three endpoints are hardcoded stubs, zero real behavior (finding X).
 - **Case-linked Opponents / Case Timeline** — both have a joined-but-always-empty relation on `Case`, no write path exists for either (findings T, V).
 - **Public lawyers marketplace, `auth/signup`** — exist but remain explicit BR-scope violations, not something to build toward.
+
+### Critical, newly discovered this pass — affects code already shipped (fourth re-sync, 2026-08-06, finding Z)
+
+- **`GET /users` has zero tenant scoping — returns every user on the entire platform.** This app has called this endpoint read-only since M4 (Case/Task assignee pickers) without knowing this. Required client-side mitigation (filter to `user.tenant?.id == currentTenantId`) applies retroactively to the existing pickers, not just new M7 work — see finding Z for the full write-up. Highest-priority item in this document as of this pass.
+
+### Real, buildable, backend-supported features not yet in Flutter (fourth re-sync, 2026-08-06 — see findings Z–GG)
+
+- **Staff / User Management** — full `users` CRUD (`users.create/read/update/delete`), `plainToInstance`-enforced, BRD §6.2.3-aligned. Real, but ships with more caveats than any prior module: the tenant-scoping leak (finding Z, mandatory client-side filter), `tenantId` not server-overridden on create (finding AA, mandatory client-side injection), role reassignment silently broken after creation (finding BB, create-time-only scope decision), two independent privilege-escalation surfaces to close off client-side (`SUPER_ADMIN` role-picker exposure, finding EE; `isSuperAdmin` field, finding FF), and a recommendation to use `status` transitions instead of the (deliberately, not accidentally) hard-delete endpoint (finding DD).
+
+### Re-confirmed unchanged this pass (Opponents, Courts, Tenants, AI)
+
+Same status as the third re-sync — see the "Confirmed NOT buildable" and "Real, buildable" lists above, findings R–Y. No change found on re-inspection.

@@ -557,3 +557,61 @@ Same bar as every prior milestone: repository tests (dio-mocked, request-body-sh
 - [x] `flutter analyze` clean; `dart format` clean on every file touched; tests passing (285 total, was 217) — coverage improved with 68 new tests across both modules.
 - [x] `API_CONTRACT.md`/`CLAUDE.md` already updated with this session's re-sync findings (done before this plan, per explicit instruction); session-log close-out done after implementation, same pattern as every prior milestone.
 - [ ] **Not done, flagging rather than silently checking off:** dedicated AR/RTL widget tests for the Invoices list/form. On checking during implementation, this "standing rule" turned out not to actually be followed by any JSON-localized screen's tests in this codebase (`cases_page_test.dart`/`clients_page_test.dart`/etc. all test EN only) — only the ARB-based auth flow (`login_page_test.dart`) does per-screen AR/RTL. Finance/Notifications tests matched the real prevailing convention (EN-only) rather than a rule that isn't actually enforced anywhere else; worth a real decision (retrofit everywhere, or fix this file's Tests-section wording) rather than resolving it ad hoc in this milestone.
+
+# Milestone 7 — Staff Management (Users) and Courts (write side)
+
+**Status: DRAFT, awaiting approval — no code written yet.**
+
+## Framing
+
+User approved M6, asked for the same pre-milestone workflow again, and this time specifically asked M7 to prefer a complete business module over another isolated screen. Full write-up in `API_CONTRACT.md` findings Z–GG (fourth re-sync, 2026-08-06); this section restates only what's decision-relevant.
+
+Opponents, Courts' write side, Firm Profile, and AI were all re-confirmed unchanged from the M6 re-sync — no new endpoints, no fixes to the earlier blockers. Looking past those for something closer to a "complete module" led into `users` (`GET/POST/PATCH/DELETE /users`) — used read-only since M4 purely as picker reference data, never read in full. It's the strongest BRD-aligned candidate available (§6.2.3 Staff Management — previously assumed to have "zero backing" because the *Employees* module is broken/unused, missing that Users itself already **is** the real staff-management mechanism in this backend), and managing a firm's team is a genuine recurring daily/weekly workflow, unlike Opponents/Courts which are closer to settings screens. But reading it in full surfaced more real issues than any prior module — every one has a concrete, already-identified mitigation, none are open questions, but they need to be designed in from the start, not bolted on after.
+
+**The most important finding changes something already shipped, not just something new:** `GET /users` has zero tenant scoping at the query level (`UserRepository.findAll()` has no `where` clause at all — confirmed by reading the query, not inferred) — it returns every user account on the entire platform. This app has called this endpoint since M4 for Case/Task assignee pickers, unfiltered. **Fixing this — filtering every `GET /users` response to the current tenant — is M7's first action item, ahead of any new Staff Management screen**, since it's a live data-exposure issue in code already running, not a blocker on new work.
+
+## Decisions made while drafting (flagging the reasoning, not asking — each has a concrete answer)
+
+- **Tenant-scoping leak (finding Z):** mitigate client-side. `tenant` is reliably present on every real firm user in the response (loaded via `relations: [..., 'tenant']`), so filtering `IUserRepository.getUsers()`'s result to `user.tenant?.id == current session's tenantId` is a complete fix, not a partial workaround. Applied in one place (the repository), so both the existing Case/Task pickers and the new Staff list benefit automatically.
+- **`tenantId` not overridden on create (finding AA):** inject the current session's `tenantId` into `POST /users` bodies at the repository layer — same `ClientRepository`/`CaseRepository` pattern already used twice in this codebase, just load-bearing here instead of defensive.
+- **Role reassignment broken after creation (finding BB):** role selection is **create-mode only**. The edit form redisplays existing roles read-only (same pattern `CaseFormPage` already uses for `caseTypeId` in edit mode) rather than offering a control that silently no-ops. Flagged to the backend team; revisit if `PATCH` starts honoring `roleIds`.
+- **`SUPER_ADMIN` leaking through `GET /roles` (finding EE):** any role-picker filters to `role.scope == 'TENANT'` client-side — the correct, real discriminator, not trusting the endpoint's own (broken) exclusion filter.
+- **`isSuperAdmin` (finding FF):** never exposed in the Staff form, in either mode. Not defaulted to `false` and hidden — the field is simply never part of `CreateUserRequest`/`UpdateUserRequest` at all.
+- **Hard delete on `DELETE /users/{id}` (finding DD):** don't wire it. `status` (`INVITED|ACTIVE|SUSPENDED|DEACTIVATED`) becomes a real, directly-editable dropdown field on the edit form instead — lets a Firm Admin choose the right transition themselves (suspend vs. deactivate) rather than this app guessing which single "remove a staff member" action is intended and hardcoding it.
+- **`Role.permissions` needs to become nullable.** `GET /roles` (needed for the create-mode role-picker) returns `{id, code, scope}` only — no `permissions` key at all, unlike every other place `Role` is currently parsed (nested under `User.roles[]`, where `permissions` is always populated). Reusing the existing `Role` entity for both shapes means making `permissions` nullable (`List<Permission>?`) rather than adding a second thin type — checked the blast radius first: exactly one consumer in the whole app, `User.hasPerm()` (`lib/features/authentication/domain/entities/user.dart`), a one-line change (`role.permissions?.any(...) ?? false`). Small, contained, worth doing as a shared-entity fix rather than forking a new `RoleSummary` type for one endpoint.
+
+## Scope
+
+| Item | Scope |
+|---|---|
+| **Tenant-scoping fix (do first)** | `UserRepository.getUsers()` filters its result to the current tenant before returning — reads `SessionCubit` the same way `ClientRepository`/`CaseRepository` already do. One change, benefits the existing Case/Task pickers and the new Staff list identically. Its own commit before any new feature work, same precedent as the M3 `LegalCase` regression fix. |
+| **`Role.permissions` nullability** | `List<Permission> permissions` → `List<Permission>? permissions` on the shared `Role` entity; `User.hasPerm()` updated to `role.permissions?.any(...) ?? false`. Small mechanical fix, bundled with the new `roles` feature below since that's what needs it. |
+| **New `roles` feature (reference data)** | `IRoleRepository.getRoles()` → `GET /roles`, reuses the existing `Role` entity. Same "thin reference-data feature" shape as `courts`/`lookups`. Consumed only by `StaffFormBloc`'s create-mode reference-data loading, filtered to `scope == 'TENANT'` at the point of use (finding EE). |
+| **Users domain/data additions** | `CreateUserRequest{email, password, fullName, avatarUrl?, roleIds?}` and `UpdateUserRequest{email?, fullName?, avatarUrl?, status?}` — deliberately no `isSuperAdmin` on either, no `roleIds` on update (see decisions above). `IUserRepository` gains `getUserDetails(id)`, `createUser(request)` (tenantId injected at the wire boundary), `updateUser(id, request)`. No `deleteUser` — status transitions cover "remove a staff member" instead. |
+| **Staff list + detail + form** | `StaffPage` (list, same `ListView`/status-filter-chip shape as `ClientsPage`, FAB gated `users.create`) → `StaffProfilePage` (detail: name/email/status/roles, edit button gated `users.update`) → `StaffFormPage` (shared create/edit, same pattern as `ClientFormPage`/`CaseFormPage`; role picker only rendered in create mode, `status` dropdown only in edit mode since a new account is always `INVITED` server-side by default). |
+| **RBAC gating** | All Staff screens/actions gated with `currentUserHasPerm()` on `users.create/read/update`, same M5.5 pattern — no new gating mechanism. |
+| **Entry point** | `DashboardPage` gains a `users.read`-gated entry-point card linking to `/staff`, same shape and same reasoning as Finance's card in M6 (no bottom-nav restructure — still 6 items). |
+| **Courts write side** | `CreateCourtRequest{name, type, city?, address?, isActive?}`/`UpdateCourtRequest` (all fields optional, `@JsonKey(includeIfNull: false)`, same partial-PATCH reasoning as every other Update request). `ICourtRepository` gains `createCourt`/`updateCourt` — no client-side `tenantId` injection needed, confirmed `CourtsController` already sources it from the JWT server-side, unlike Users. **No presentation layer exists for Courts at all yet** (only ever consumed as inline reference data in Case/Hearing pickers) — this milestone adds the first one: `CourtsPage` (list, FAB gated `courts.create`) and `CourtFormPage` (shared create/edit, gated `courts.update`). No delete — matches this app's standing "delete stays deferred everywhere" stance, even though Courts' delete is confirmed soft. |
+| **Courts entry point** | Reachable from the same `DashboardPage` entry-point area, or a simple icon-button on `StaffPage`'s AppBar (both administrative, Firm-Admin-facing screens) — final call during implementation, not a decision that changes scope either way. |
+
+## Explicitly out of scope for M7 (not forgotten)
+
+- **Role reassignment after account creation** — backend gap (finding BB), no client-side workaround attempted.
+- **Per-user direct permission grants** (`UsersService.getPermissions`/`.setPermissions`) — wired to the collision-shadowed Employees controller, unreachable in practice (finding CC).
+- **`DELETE /users/{id}` / `DELETE /courts/{id}`** — both confirmed real, but delete stays deferred everywhere in this app as a standing scope cut; Users' case is stronger (hard delete, finding DD) but the decision is the same either way.
+- **Opponents, Firm Profile, AI** — re-confirmed unchanged, still excluded per explicit instruction.
+- **Employees module** — confirmed still practically unusable (route collision, finding CC) and out of BRD scope per the standing M1-era note; this milestone uses `/users` exclusively, never `/employees`.
+
+## Tests
+
+Same bar as every prior milestone: a dedicated repository test for the tenant-scoping filter fix (constructing a mixed-tenant `GET /users` response and asserting only the current tenant's rows survive — this is the one test in this milestone that's arguably more important than the feature tests around it, given what it's guarding against); repository tests for `roles`/Users-CRUD/Courts-CRUD (request-body-shape asserted field-for-field, confirming `isSuperAdmin`/`roleIds` never appear in an update body); bloc tests for Staff list/detail/create/edit and Courts list/create/edit; at least one widget test per new/changed screen (`StaffPage`, `StaffProfilePage`, `StaffFormPage` in both modes, `CourtsPage`, `CourtFormPage`); RBAC-gating tests following the established `cases_page_test.dart` FAB-gating pattern for `users.create`/`courts.create`.
+
+## Definition of done
+
+- [ ] `UserRepository.getUsers()` filters to the current tenant — own commit, before any new feature work.
+- [ ] `Role.permissions` nullable; `User.hasPerm()` updated; new `roles` feature built.
+- [ ] Staff list/detail/create/edit real and RBAC-gated; role picker create-mode-only and `scope == TENANT`-filtered; `isSuperAdmin` never sent; `status` editable in edit mode instead of wiring delete.
+- [ ] Courts gains its first-ever presentation layer: list + create/edit form, RBAC-gated, no delete.
+- [ ] Dashboard gains entry points for both.
+- [ ] `flutter analyze` clean; `dart format` clean on every file touched; tests passing; coverage maintained or improved.
+- [ ] `API_CONTRACT.md`/`CLAUDE.md` already updated with this session's re-sync findings (done before this plan, per explicit instruction) — session-log close-out after implementation, same pattern as every prior milestone.
