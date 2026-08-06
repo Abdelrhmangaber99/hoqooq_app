@@ -515,7 +515,7 @@ Generic key-value store, same as M1 version. Same limitation: no typed lookups e
 - **Firm Admin mechanism** — real `FIRM_ADMIN` role now exists; `ownerUserId`-based detection is obsolete, superseded by finding L.
 - **Case-team-assignment endpoint** (`POST /cases/:id/assignments`) — restored, previously flagged as a lost-since-M1 regression.
 - **Case note-adding endpoint** (`POST /cases/:id/notes`) — restored, though `GET /cases/:id` still doesn't return notes back (write-only until that's also fixed).
-- **Clients tenant-scoping** — `findOne`/`update`/`remove` fixed (still open on `create` only, see finding Q).
+- **Clients tenant-scoping** — ~~`findOne`/`update`/`remove` fixed~~ **wrong, corrected 2026-08-06: the scoping query is present in source but crashes 500 on every call (raw SQL references non-existent camelCase columns) — see finding KK.** `create` remains separately open (client-supplied `tenantId`, see finding Q).
 
 ### Still open (re-confirmed 2026-08-05, see finding Q for detail)
 - No MFA endpoint, no invite-activation endpoint, no device/FCM registration, no `/me/notification_prefs`.
@@ -558,3 +558,29 @@ Not gaps in the backend — these all exist, work, and are DTO-verified (or raw-
 ### Re-confirmed unchanged this pass (Opponents, Courts, Tenants, AI)
 
 Same status as the third re-sync — see the "Confirmed NOT buildable" and "Real, buildable" lists above, findings R–Y. No change found on re-inspection.
+
+---
+
+## ⚠️ RBAC live-verification + Firm Admin provisioning pass (2026-08-06)
+
+Triggered by the user reporting `SUPER_ADMIN` still sees "Insufficient Permission" everywhere after the login-crash fix. Unlike every prior re-sync pass, this one included **live testing against the running backend** (`curl`, not just source reading) — both to root-cause the RBAC report and to verify the fix, since a permission-scoping question can't be fully settled from source alone (seed data state matters, not just guard logic).
+
+### II. `SUPER_ADMIN`'s real granted-permission set, live-confirmed — corrects nothing, but is now empirically verified rather than only source-derived
+
+Decoded a live JWT for `admin@hoqooq.local`: `permissions: ["system.tenants.create","system.tenants.read","system.tenants.delete","system.subscriptions.manage","employees.read","lookups.read","settings.read"]` — 7 codes, matching `seed.ts`'s `superAdminPermCodes` list minus `roles.read` (the 8th item in that list — the live DB doesn't have it granted, most likely stale from before `roles.read` was added to the seed script; harmless in practice since `PermissionsGuard`'s own whitelist bypass already grants `SUPER_ADMIN` unconditional access to anything requiring `roles.read`, independent of an explicit grant). Cross-referencing `seed.ts`'s own comment (`// Only platform management & read-only cross-tenant`) against a full `@RequirePermissions` sweep of every business controller (Cases/Clients/Hearings/Tasks/Documents/Calendar/Dashboard/Reports/Finance/Courts/Opponents — none require a code in `SUPER_ADMIN`'s grant or bypass set) confirms: **`SUPER_ADMIN` is deliberately unable to access any tenant-scoped business module.** Live-confirmed via direct calls with a real token: `GET /cases` → 403, `GET /reports/dashboard` → 403 (`"Insufficient permissions"`), `POST /tenants/provision` → 400 (validation error, not 403 — proves the platform-management grant does work as intended). This is correct, intentional backend design, not a bug — see `CLAUDE.md`'s new top-of-file callout for the full Flutter-side verification (every RBAC code path checked and confirmed correct).
+
+### JJ. `POST /tenants/provision` creates the tenant's `Subscription` row as `PENDING`, not `ACTIVE` — a required, previously-undocumented follow-up step
+
+`TenantsService.provisionTenant()` (`tenants.service.ts:34-96`) creates the `Subscription` with `status: SubscriptionStatus.PENDING`. Since `SubscriptionGuard` is a global `APP_GUARD` blocking every authenticated request with 402 unless `status === 'ACTIVE'` (finding M), **a freshly provisioned Firm Admin cannot successfully call any tenant-scoped endpoint until `POST /subscriptions/activate` is called** — live-confirmed (`GET /cases` → 402 immediately after provisioning, `200` after activation). The activate endpoint only needs `JwtAuthGuard` (no `PermissionsGuard`/permission check) and defaults to the caller's own `tenantId`, so the newly created Firm Admin can self-activate immediately after their first login — this is the intended flow, not a workaround, but wasn't previously documented anywhere in this file.
+
+### KK. Critical, newly discovered, 100%-reproducible: `GET /clients`, `GET /clients/:id` (and transitively `PATCH`/`DELETE`) always 500 — corrects finding Q's "Clients tenant-scoping... fixed" claim
+
+`ClientRepository.findScopedForTenant`/`findOneScopedForTenant` (`client.repository.ts:23-44`, used by `GET /clients` and `GET`/`PATCH`/`DELETE /clients/:id` respectively) build raw-SQL `EXISTS` subqueries referencing **camelCase, double-quoted column names** — `client."createdBy"`, `u."tenantId"`, `ca."clientId"`, `ca."tenantId"`, `co."clientId"`, `co."tenantId"`. This schema's actual Postgres columns are snake_case throughout (`created_by`, `tenant_id`, `client_id` — confirmed from every other query TypeORM generates in this same request, visible in the backend's own query logs). TypeORM's naming strategy only translates object-based `.where({...})` conditions; it does **not** rewrite raw SQL string fragments passed to `createQueryBuilder().where(rawString, params)` — so this query has almost certainly never worked, for any tenant, since it was written.
+
+Live-reproduced against a freshly provisioned tenant with a real Firm Admin token (full `clients.*` permission grant, ruling out any RBAC involvement): `GET /clients` → `{"success":false,"statusCode":500,"error":"QueryFailedError",...}`; backend log shows `error: error: column client.createdBy does not exist`. `GET /clients/:id` on a real, just-created client ID reproduces identically. **`POST /clients` (create) is unaffected** — `ClientsService.create()` (`clients.service.ts:19-26`) doesn't call either scoped method, confirmed working end-to-end (`201`, and the response does include a populated `tenantId` field, reconfirming finding D's "`Client.tenantId` column exists and is populated, just never consulted for scoping" — except here it can't even be consulted, since the query that would use it never runs successfully).
+
+**This corrects the "Resolved in the second backend re-sync... Clients tenant-scoping — `findOne`/`update`/`remove` fixed" line elsewhere in this document — that claim was written from a source read that didn't catch the camelCase/snake_case mismatch, and does not reflect a working code path.** No Flutter-side mitigation is possible — this is a server-side crash on 100% of calls, not a scoping/visibility question. Flag to the backend team as a straightforward fix (correct the 6 raw-SQL column references to snake_case) before any Clients-module testing is attempted, and before trusting the superseded claim anywhere else it might be cited.
+
+### Test account provisioned this pass (dev/local only)
+
+Real tenant + Firm Admin created via the actual `POST /tenants/provision` + `POST /subscriptions/activate` endpoints (not fixture data) — see `CLAUDE.md`'s RBAC callout for the full credential/verification detail. Not a contract change, noted here only so a future re-sync pass doesn't need to re-derive that a working tenant-scoped test path exists and how to reach it.
