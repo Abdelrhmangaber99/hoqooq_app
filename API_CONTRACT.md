@@ -234,7 +234,29 @@ Re-verified `src/app.module.ts`: `UsersModule` is still imported before `Employe
 
 ### GG. Top-level `UserResponseDto.permissions` is dead/broken code — not a Flutter concern, but avoid depending on it
 
-`UserResponseDto` computes a flat `permissions: string[]` via `` `${rp.permission?.resource}.${rp.permission?.action}` `` — but the real `Permission` entity (`src/modules/users/entities/permission.entity.ts`) only has `id`/`code`, no `resource`/`action` fields at all (confirmed the M1-era breaking change to a single opaque `code` string was never reverted). Every element of this array evaluates to the literal string `"undefined.undefined"` in practice. `roles[].permissions[].code` (a separate, correctly-implemented `@Transform` on `RoleResponseDto`) is unaffected and remains the only reliable source for a user's permission codes — this app's `User.hasPerm()` already reads `roles[].permissions[].code` exclusively and needs no change.
+`UserResponseDto` computes a flat `permissions: string[]` via `` `${rp.permission?.resource}.${rp.permission?.action}` `` — but the real `Permission` entity (`src/modules/users/entities/permission.entity.ts`) only has `id`/`code`, no `resource`/`action` fields at all (confirmed the M1-era breaking change to a single opaque `code` string was never reverted). Every element of this array evaluates to the literal string `"undefined.undefined"` in practice. **Correction, see finding HH below (2026-08-06, confirmed live) — the claim below that `roles[].permissions[].code` is unaffected was wrong; it's a separate, more severe instance of the same category of bug.**
+
+### HH. `roles[]` nested under `User` doesn't get `RoleResponseDto`'s own transform applied at all — confirmed live 2026-08-06 while debugging a real Flutter crash
+
+Discovered diagnosing a production-blocking Flutter crash (`type 'Null' is not a subtype of type 'List<dynamic>'` in `Role.fromJson`), not from reading source alone — then root-caused in the backend source directly. `UsersController` builds `roles` via:
+```ts
+@Transform(({ obj }) => obj.userRoles?.map((ur: any) => ur.role) || [])
+@Type(() => RoleResponseDto)
+roles?: RoleResponseDto[];
+```
+This is a known `class-transformer` interaction, not a Flutter-side assumption: when a property has both `@Transform` and `@Type`, the `@Transform` callback's return value is used as-is — `class-transformer` does **not** re-run `RoleResponseDto`'s own `@Expose`/`@Transform` rules (including its `permissions` computed field) on each element the outer transform already produced. The **real, live-captured** `GET /users/me` response (`curl` against a fresh login token, not inferred) nests the **raw** `Role` TypeORM entity per role instead of `RoleResponseDto`:
+```json
+{
+  "id": "...", "code": "SUPER_ADMIN", "scope": "SYSTEM", "tenantId": null,
+  "createdAt": "...", "updatedAt": "...", "archivedAt": null, "isArchived": false,
+  "rolePermissions": [
+    { "roleId": "...", "permissionId": "...", "permission": { "id": "...", "code": "system.tenants.create", "createdAt": "...", ... } }
+  ]
+}
+```
+**No `permissions` key at all** — only the raw `rolePermissions[]` join array, each entry nesting the real `Permission` under `.permission`. This is a **third, distinct `Role` shape**, on top of the two already known: `RoleResponseDto`'s documented-but-never-actually-produced `{id,code,scope,permissions}`, and `GET /roles`'s deliberately trimmed `{id,code,scope}` (finding EE, via an explicit TypeORM `select`, not this bug). **Fixed client-side** (`lib/features/authentication/domain/entities/role.dart`): `Role.fromJson` now normalizes the raw JSON before delegating to the generated parser — prefers a clean `permissions` list if the backend ever sends one, falls back to deriving codes from `rolePermissions[].permission` when `permissions` is absent, and only defaults to `[]` when neither key exists (i.e. `GET /roles`). Defaulting to `[]` unconditionally (the naive fix) would have silently returned `false` from every `User.hasPerm()` check instead of just fixing the crash — every RBAC-gated button in the app (M5.5) would have quietly disappeared for every user.
+
+**Related, also confirmed live in the same response:** `User.tenant` is genuinely nullable — this specific account (`SUPER_ADMIN`, `isSuperAdmin: true`, no `tenantId`) returns `tenant: null`, not a computed fallback (unlike `roles`, `tenant` has no `@Transform` on `UserResponseDto`, just a bare `@Type`). `lib/features/authentication/domain/entities/user.dart`'s `tenant` field was `required TenantRef` — would have been the *next* crash immediately after fixing `Role.fromJson`, on the exact same account. Fixed alongside — `tenant` is now `TenantRef?`; the two call sites that read it (`ClientRepository`/`CaseRepository`'s `createClient`/`createCase`, injecting `tenantId` into the wire body) already degrade to omitting the field via `?.id`, no crash risk there.
 
 ### Re-confirmed unchanged from the third re-sync (Opponents, Courts, Tenants, AI)
 
@@ -340,8 +362,8 @@ Still missing: `/auth/mfa/verify`, `/auth/activate`. Still no device/FCM registr
 | GET | `/api/roles` | — | 200 `{id, code, scope}[]` — **`SUPER_ADMIN` is not excluded despite the endpoint's own filter intending to (finding EE)**; filter client-side on `scope == 'TENANT'` instead |
 | GET | `/api/roles/permissions` | — | 200 `{id, code}[]` |
 
-**User** (`UsersController` is `plainToInstance`-enforced, reliable) = `{id, email, fullName, isSuperAdmin, status: INVITED|ACTIVE|SUSPENDED|DEACTIVATED, mfaEnabled, createdAt, updatedAt, avatarUrl?, lastLoginAt?, roles?: Role[], tenant?: {id, name}, permissions?: string[]}`. `roles`/`tenant` always resolve to a real value (`[]`/computed) for this app's own users via the DTO's `@Transform` fallbacks — not genuinely optional in practice. **`permissions` is dead/broken (finding GG) — always `["undefined.undefined"]` in practice, don't use it; `roles[].permissions[].code` is correct and unaffected.**
-**Role** = `{id, code, scope: SYSTEM|TENANT, permissions: Permission[]}`
+**User** (`UsersController` is `plainToInstance`-enforced for its own top-level fields, but see finding HH for a real gap in how deep that enforcement actually goes) = `{id, email, fullName, isSuperAdmin, status: INVITED|ACTIVE|SUSPENDED|DEACTIVATED, mfaEnabled, createdAt, updatedAt, avatarUrl?, lastLoginAt?, roles: Role[], tenant?: {id, name}, permissions?: string[]}`. **`tenant` is genuinely nullable, confirmed live 2026-08-06 — a `SUPER_ADMIN` platform account (`tenantId: null`) returns `tenant: null`, not a computed fallback; `roles` always resolves to `[]` at minimum via the DTO's `@Transform`, but each element's own shape is not what it appears — see finding HH.** `permissions` is dead/broken (finding GG) — always `["undefined.undefined"]` in practice, don't use it.
+**Role** = `{id, code, scope: SYSTEM|TENANT, permissions: Permission[]}` **— as documented by `RoleResponseDto`, not what a real nested nested response returns. See finding HH: the real shape nested under `User.roles[]` has no `permissions` key at all.**
 **Permission** = `{id, code}`
 
 `tenantId` is still client-suppliable in `POST`/`PATCH /users` bodies — **and unlike Cases, `POST /users` never overrides it server-side (finding AA)** — the Flutter app must inject the current session's `tenantId` itself, the same way `ClientRepository`/`CaseRepository` already do, except here it's not optional insurance, it's the only thing that makes the created account land in the right tenant.
