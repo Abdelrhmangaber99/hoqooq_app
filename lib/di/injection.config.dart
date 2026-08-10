@@ -284,7 +284,7 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i506.HearingRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i141.IUserRepository>(
-      () => _i867.UserRepository(gh<_i361.Dio>()),
+      () => _i867.UserRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
     );
     gh.factory<_i165.ClientsBloc>(
       () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
