@@ -457,7 +457,7 @@ class CaseDetailsPage extends StatelessWidget {
       final photo = await ImagePicker().pickImage(source: ImageSource.camera);
       filePath = photo?.path;
     } else {
-      final result = await FilePicker.platform.pickFiles();
+      final result = await FilePicker.pickFiles();
       filePath = result?.files.single.path;
     }
 

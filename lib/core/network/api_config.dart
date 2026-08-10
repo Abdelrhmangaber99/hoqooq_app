@@ -24,7 +24,7 @@ class ApiConfig {
 
   static const String _host = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.7:3006',
+    defaultValue: 'http://192.168.1.5:3006',
   );
 
   /// Confirmed via `app.setGlobalPrefix('api', ...)` in the backend's
