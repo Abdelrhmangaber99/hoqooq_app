@@ -167,9 +167,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Finance'), findsOneWidget);
-      expect(find.text('SAR 10,000.00'), findsOneWidget);
-      expect(find.text('SAR 6,000.00'), findsOneWidget);
-      expect(find.text('SAR 4,000.00'), findsOneWidget);
+      expect(find.text('EGP 10,000.00'), findsOneWidget);
+      expect(find.text('EGP 6,000.00'), findsOneWidget);
+      expect(find.text('EGP 4,000.00'), findsOneWidget);
       expect(find.text('2'), findsOneWidget); // paid cases
       expect(find.text('1'), findsOneWidget); // partial cases
       expect(find.text('3'), findsOneWidget); // unpaid cases
@@ -199,7 +199,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Finance'), findsNothing);
-      expect(find.text('SAR 10,000.00'), findsNothing);
+      expect(find.text('EGP 10,000.00'), findsNothing);
       expect(find.text('Paid Cases'), findsNothing);
       // Unrelated sections still render — no second dashboard system.
       expect(find.text('Recent activity'), findsOneWidget);
@@ -227,7 +227,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Finance'), findsNothing);
-      expect(find.text('SAR 10,000.00'), findsNothing);
+      expect(find.text('EGP 10,000.00'), findsNothing);
     });
 
     testWidgets(
@@ -254,7 +254,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Finance'), findsNothing);
-      expect(find.text('SAR 10,000.00'), findsNothing);
+      expect(find.text('EGP 10,000.00'), findsNothing);
     });
 
     testWidgets(
@@ -283,7 +283,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Finance'), findsNothing);
-      expect(find.text('SAR 10,000.00'), findsNothing);
+      expect(find.text('EGP 10,000.00'), findsNothing);
     });
   });
 
@@ -304,9 +304,9 @@ void main() {
       // Exactly the authorized aggregates the backend returned — collected
       // (6,000) is less than agreed (10,000) because reversed payments were
       // excluded in the backend computation before reaching the client.
-      expect(find.text('SAR 10,000.00'), findsOneWidget);
-      expect(find.text('SAR 6,000.00'), findsOneWidget);
-      expect(find.text('SAR 4,000.00'), findsOneWidget);
+      expect(find.text('EGP 10,000.00'), findsOneWidget);
+      expect(find.text('EGP 6,000.00'), findsOneWidget);
+      expect(find.text('EGP 4,000.00'), findsOneWidget);
     });
 
     testWidgets(
@@ -330,7 +330,7 @@ void main() {
       await tester.pumpWidget(buildTestable());
       await tester.pumpAndSettle();
 
-      expect(find.text('SAR 0.00'), findsNWidgets(3));
+      expect(find.text('EGP 0.00'), findsNWidgets(3));
       expect(find.text('0'), findsNWidgets(3));
       expect(find.text('No financial data yet'), findsNothing);
     });
@@ -348,7 +348,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('No financial data yet'), findsOneWidget);
-      expect(find.text('SAR 0.00'), findsNothing);
+      expect(find.text('EGP 0.00'), findsNothing);
     });
   });
 
@@ -415,7 +415,7 @@ void main() {
       // Dashboard content persists while only the finance panel refreshes.
       expect(find.text('Recent activity'), findsOneWidget);
       expect(find.text('Finance'), findsOneWidget);
-      expect(find.text('SAR 10,000.00'), findsOneWidget);
+      expect(find.text('EGP 10,000.00'), findsOneWidget);
     });
   });
 

@@ -30,6 +30,34 @@ abstract class CaseTeamMember with _$CaseTeamMember {
     User? user,
   }) = _CaseTeamMember;
 
-  factory CaseTeamMember.fromJson(Map<String, dynamic> json) =>
-      _$CaseTeamMemberFromJson(json);
+  factory CaseTeamMember.fromJson(Map<String, dynamic> json) {
+    final normalized = Map<String, dynamic>.from(json);
+    final rawUser = json['user'];
+    final user = rawUser is Map
+        ? Map<String, dynamic>.from(rawUser)
+        : null;
+
+    // The v2 backend builds `team` from active CaseAccessGrant rows. Those
+    // rows use the Employee id as the entry id, omit `userId`, and return a
+    // compact `{id, fullName}` user. Normalize that wire shape here so the
+    // rest of the feature can keep using the established domain entity.
+    normalized['userId'] =
+        json['userId'] ?? user?['id'] ?? json['id']?.toString() ?? '';
+    normalized['accessLevel'] ??= 'unknown';
+
+    if (user != null) {
+      const epoch = '1970-01-01T00:00:00.000Z';
+      user
+        ..putIfAbsent('email', () => '')
+        ..putIfAbsent('isSuperAdmin', () => false)
+        ..putIfAbsent('status', () => 'ACTIVE')
+        ..putIfAbsent('mfaEnabled', () => false)
+        ..putIfAbsent('createdAt', () => epoch)
+        ..putIfAbsent('updatedAt', () => epoch)
+        ..putIfAbsent('accountType', () => 'EMPLOYEE');
+      normalized['user'] = user;
+    }
+
+    return _$CaseTeamMemberFromJson(normalized);
+  }
 }

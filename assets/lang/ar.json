@@ -1,6 +1,6 @@
 {
   "remaining": "المتبقي",
-  "currency_sar": "ر.س ",
+  "currency_sar": "ج.م ",
   "reverse_payment": "إلغاء الدفعة",
   "reversal_reason": "سبب إلغاء الدفعة",
   "all": "الكل",
@@ -94,7 +94,7 @@
   "home": "الرئيسية",
   "calendar": "التقويم",
   "calendar_manage_permission_title": "صلاحية التقويم مطلوبة",
-  "calendar_manage_permission_message": "إنشاء أحداث التقويم يتطلب صلاحية calendar.manage. اطلب من مسؤول النظام منح هذه الصلاحية لحسابك.",
+  "calendar_manage_permission_message": "إنشاء أحداث التقويم يتطلب صلاحية إدارة التقويم. اطلب من مسؤول النظام منح هذه الصلاحية لحسابك.",
   "clients": "العملاء",
   "alerts": "التنبيهات",
   "profile": "الملف الشخصي",
@@ -113,7 +113,7 @@
   "security": "الأمان",
   "dark_mode": "الوضع الداكن",
   "sign_out": "تسجيل الخروج",
-  "switch_to_english": "English",
+  "switch_to_english": "التبديل إلى الإنجليزية",
   "switch_to_arabic": "العربية",
   "month": "شهر",
   "week": "أسبوع",
@@ -216,10 +216,10 @@
   "primary_lawyer": "المحامي الرئيسي",
   "primary_lawyer_optional": "المحامي الرئيسي (مطلوب لتفعيل القضية)",
   "current_primary_lawyer": "المحامي الرئيسي الحالي",
-  "could_not_load_primary_lawyers": "تعذر تحميل المحامين. يحتاج حسابك إلى صلاحية employee.read لاختيار محامٍ.",
+  "could_not_load_primary_lawyers": "تعذر تحميل المحامين. يحتاج حسابك إلى صلاحية عرض الموظفين لاختيار محامٍ.",
   "select_case_type_before_lawyer": "اختر نوع القضية قبل اختيار المحامي الرئيسي.",
   "no_matching_primary_lawyers": "لا يوجد محامٍ مؤهل لهذا النوع من القضايا. يجب إنشاء الموظف بتصنيف محامٍ ومنحه هذا التخصص وتفعيل حسابه قبل تفعيل القضية.",
-  "primary_lawyer_ineligible": "الموظف المحدد لديه هذا التخصص لكنه غير مؤهل حاليًا كمحامٍ رئيسي. تأكد من إنشائه بتصنيف محامٍ وإكمال تفعيل الدعوة حتى تصبح حالته ACTIVE.",
+  "primary_lawyer_ineligible": "الموظف المحدد لديه هذا التخصص لكنه غير مؤهل حاليًا كمحامٍ رئيسي. تأكد من إنشائه بتصنيف محامٍ وإكمال تفعيل الدعوة حتى تصبح حالته نشطة.",
   "employee_invitation_pending": "تم إنشاء الموظف. يجب عليه إكمال تفعيل الدعوة قبل تعيينه محاميًا رئيسيًا.",
   "client_code": "رمز العميل",
   "national_id": "الهوية الوطنية",
@@ -295,6 +295,9 @@
   "start_new_case": "ابدأ قضية جديدة",
   "update_case_details": "تحديث تفاصيل القضية",
   "add_team_member": "إضافة عضو فريق",
+  "add_team_member_hint": "اختر موظفًا من حسابك لإضافته إلى فريق هذه القضية.",
+  "no_team_members": "لم تتم إضافة أعضاء إلى فريق هذه القضية بعد",
+  "no_employees_to_add": "جميع الموظفين المتاحين مضافون بالفعل إلى فريق هذه القضية",
   "team_member": "عضو الفريق",
   "access_level": "مستوى الوصول",
   "new_hearing": "جلسة جديدة",
@@ -393,8 +396,8 @@
   "base_permissions": "الصلاحيات الأساسية",
   "employee_permissions_explanation": "حدد ما يمكن للموظف الوصول إليه. التصنيف الوظيفي وحده لا يمنح أي صلاحيات.",
   "employee_position": "المسمى الوظيفي",
-  "employee_read_permission_required": "إدارة الموظفين متاحة، لكن حسابك لا يمكنه تحميل قائمة الموظفين حتى يتم منحه صلاحية employee.read.",
-  "employee_create_permissions_required": "إنشاء الموظفين يتطلب أيضًا صلاحيتي employee.create وemployee.permission.manage.",
+  "employee_read_permission_required": "إدارة الموظفين متاحة، لكن حسابك لا يمكنه تحميل قائمة الموظفين حتى يتم منحه صلاحية عرض الموظفين.",
+  "employee_create_permissions_required": "إنشاء الموظفين يتطلب أيضًا صلاحيتي إنشاء الموظفين وإدارة صلاحيات الموظفين.",
   "lawyer_position_not_classification": "هذا الموظف لديه مسمى وظيفي قانوني لكنه لم يُنشأ بتصنيف محامٍ. تغيير المسمى الوظيفي لا يتيح تخصصات أنواع القضايا.",
   "employee_create_permission_title": "صلاحية الإنشاء مطلوبة",
   "employee_create_permission_message": "اطلب من مسؤول النظام منح الصلاحيات التالية لحساب مسؤول المكتب:",
@@ -591,5 +594,94 @@
   ,"settings": "الإعدادات"
   ,"governorate": "المحافظة"
   ,"refresh_after_action_failed": "تم حفظ التغيير، تعذّر تحديث بيانات المكتب. حدّث الصفحة أو أعد فتح هذه الشاشة."
+  ,"unknown_permission": "صلاحية غير معروفة"
+  ,"permission_employee_create": "إنشاء الموظفين"
+  ,"permission_employee_read": "عرض الموظفين"
+  ,"permission_employee_edit": "تعديل الموظفين"
+  ,"permission_employee_permission_manage": "إدارة صلاحيات الموظفين"
+  ,"permission_employee_status_manage": "إدارة حالة الموظفين"
+  ,"permission_client_view": "عرض الموكلين"
+  ,"permission_client_edit": "إدارة الموكلين"
+  ,"permission_opponent_view": "عرض الخصوم"
+  ,"permission_opponent_edit": "إدارة الخصوم"
+  ,"permission_platform_reference_manage": "إدارة البيانات المرجعية"
+  ,"permission_reference_read": "عرض البيانات المرجعية"
+  ,"permission_case_create": "إنشاء القضايا"
+  ,"permission_case_view": "عرض القضايا"
+  ,"permission_case_edit": "تعديل القضايا"
+  ,"permission_case_status_manage": "إدارة حالة القضايا"
+  ,"permission_case_access_manage": "إدارة أعضاء فريق القضية"
+  ,"permission_hearing_create": "إنشاء الجلسات"
+  ,"permission_hearing_view": "عرض الجلسات"
+  ,"permission_hearing_edit": "تعديل الجلسات"
+  ,"permission_hearing_assign": "إسناد الجلسات"
+  ,"permission_hearing_complete": "إكمال الجلسات"
+  ,"permission_service_create": "إنشاء الإعلانات القضائية"
+  ,"permission_service_view": "عرض الإعلانات القضائية"
+  ,"permission_service_edit": "تعديل الإعلانات القضائية"
+  ,"permission_service_assign": "إسناد الإعلانات القضائية"
+  ,"permission_service_complete": "إكمال الإعلانات القضائية"
+  ,"permission_meeting_create": "إنشاء اجتماعات الموكلين"
+  ,"permission_meeting_view": "عرض اجتماعات الموكلين"
+  ,"permission_meeting_edit": "تعديل اجتماعات الموكلين"
+  ,"permission_meeting_assign": "إسناد اجتماعات الموكلين"
+  ,"permission_meeting_complete": "إكمال اجتماعات الموكلين"
+  ,"permission_document_upload": "رفع المستندات"
+  ,"permission_document_view": "عرض المستندات"
+  ,"permission_document_download": "تنزيل المستندات"
+  ,"permission_document_edit": "تعديل المستندات"
+  ,"permission_document_manage": "إدارة المستندات"
+  ,"permission_task_create": "إنشاء المهام"
+  ,"permission_task_view": "عرض المهام"
+  ,"permission_task_update": "تحديث المهام"
+  ,"permission_task_complete": "إكمال المهام"
+  ,"permission_task_assign": "إسناد المهام"
+  ,"permission_calendar_manage": "إدارة التقويم"
+  ,"permission_calendar_read": "عرض التقويم"
+  ,"permission_finance_payment_record": "تسجيل الدفعات"
+  ,"permission_finance_firm_read": "عرض مالية المكتب"
+  ,"permission_finance_manage": "إدارة الشؤون المالية"
+  ,"permission_finance_case_view": "عرض مالية القضايا"
+  ,"permission_notification_read": "عرض الإشعارات"
+  ,"permission_report_operational_read": "عرض التقارير التشغيلية"
+  ,"permission_dashboard_read": "عرض لوحة المعلومات"
+  ,"permission_firm_profile_manage": "إدارة ملف المكتب"
+  ,"permission_firm_profile_read": "عرض ملف المكتب"
+  ,"permission_audit_read": "عرض سجل التدقيق"
+  ,"permission_platform_firm_create": "إنشاء المكاتب"
+  ,"permission_platform_firm_read": "عرض المكاتب"
+  ,"permission_platform_firm_status_manage": "إدارة حالة المكاتب"
+  ,"permission_platform_subscription_manage": "إدارة الاشتراكات"
+  ,"permission_platform_firm_admin_permission_manage": "إدارة صلاحيات مسؤول المكتب"
+  ,"permission_platform_user_metadata_read": "عرض بيانات المستخدمين"
+  ,"permission_platform_user_status_manage": "إدارة حالة المستخدمين"
+  ,"permission_platform_plan_manage": "إدارة خطط الاشتراك"
+  ,"permission_platform_audit_read": "عرض سجل تدقيق المنصة"
+  ,"select_at_least_one_firm_admin_permission": "اختر صلاحية واحدة على الأقل لمسؤول المكتب."
+  ,"employee_option_lawyer": "محامٍ"
+  ,"employee_option_secretary": "سكرتير"
+  ,"employee_option_accountant": "محاسب"
+  ,"employee_option_assistant": "مساعد"
+  ,"employee_option_other": "أخرى"
+  ,"employee_option_managing_partner": "شريك إداري"
+  ,"employee_option_partner": "شريك"
+  ,"employee_option_senior_associate": "محامٍ مشارك أول"
+  ,"employee_option_associate": "محامٍ مشارك"
+  ,"employee_option_junior_lawyer": "محامٍ مبتدئ"
+  ,"employee_option_paralegal": "مساعد قانوني"
+  ,"employee_option_legal_assistant": "مساعد قانوني"
+  ,"employee_option_legal_researcher": "باحث قانوني"
+  ,"employee_option_hr_manager": "مدير الموارد البشرية"
+  ,"employee_option_it_support": "دعم تقنية المعلومات"
+  ,"employee_option_litigation": "التقاضي"
+  ,"employee_option_corporate": "الشركات"
+  ,"employee_option_real_estate": "العقارات"
+  ,"employee_option_intellectual_property": "الملكية الفكرية"
+  ,"employee_option_family_law": "الأحوال الشخصية"
+  ,"employee_option_criminal_law": "القانون الجنائي"
+  ,"employee_option_finance": "المالية"
+  ,"employee_option_hr": "الموارد البشرية"
+  ,"employee_option_administration": "الإدارة"
+  ,"employee_option_general": "عام"
 }
 

@@ -36,7 +36,7 @@ class CaseTeamAssignmentBloc
     Emitter<CaseTeamAssignmentState> emit,
   ) async {
     emit(CaseTeamAssignmentLoading());
-    final usersResult = await _userRepository.getUsers();
+    final usersResult = await _userRepository.getAssignableUsers();
     final users = usersResult.fold(
       (_) => const <User>[],
       (items) => items

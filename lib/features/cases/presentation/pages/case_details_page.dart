@@ -23,8 +23,6 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
-import '../../../authentication/domain/entities/user.dart';
-import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../../documents/domain/entities/document_item.dart';
 import '../../../documents/domain/upload_file_validation.dart';
 import '../../../documents/presentation/bloc/document_upload_bloc.dart';
@@ -48,7 +46,6 @@ import '../../../tasks/domain/entities/task_status.dart' as task_status;
 import '../../../tasks/presentation/bloc/case_tasks_bloc.dart';
 import '../../../tasks/presentation/task_display_helpers.dart';
 import '../../data/models/assign_case_request.dart';
-import '../../domain/entities/case_capability.dart';
 import '../../domain/entities/case_party_snapshot.dart';
 import '../../domain/entities/case_status.dart';
 import '../../domain/entities/case_timeline_event.dart';
@@ -253,7 +250,7 @@ class CaseDetailsPage extends StatelessWidget {
               if (currentUserHasPerm(PermissionCodes.caseAccessManage))
                 GestureDetector(
                   onTap: () =>
-                      _showAssignTeamMemberSheet(context, legalCase.id),
+                      _showAssignTeamMemberSheet(context, legalCase),
                   child: const Icon(
                     Icons.person_add_alt_1_outlined,
                     color: AppColors.primary,
@@ -1774,45 +1771,42 @@ class CaseDetailsPage extends StatelessWidget {
   }
 
   Widget _buildTeam(BuildContext context, LegalCase legalCase) {
-    final members = legalCase.team
-        .map(
-          (m) => _TeamEntry(
-            user: m.user,
-            userId: m.userId,
-            roleLabel: caseAccessLevelLabel(context, m.accessLevel),
+    if (legalCase.team.isEmpty) {
+      return EmptyState(message: context.tr('no_team_members'));
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.medium,
+        border: Border.all(color: AppColors.paperLine),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A0B192F),
+            blurRadius: 12,
+            offset: Offset(0, 3),
           ),
-        )
-        .toList();
-    return Column(
-      children: members
-          .map(
-            (entry) => Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.s),
-              padding: const EdgeInsets.all(AppSpacing.m),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: AppRadius.medium,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      entry.user?.fullName ?? entry.userId,
-                      style: AppTypography.labelLarge,
-                    ),
-                  ),
-                  Text(entry.roleLabel, style: AppTypography.bodySmall),
-                ],
-              ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var index = 0; index < legalCase.team.length; index++) ...[
+            if (index > 0) const Divider(height: 1, color: AppColors.paperLine),
+            _TeamMemberRow(
+              name:
+                  _present(legalCase.team[index].user?.fullName) ??
+                  legalCase.team[index].userId,
             ),
-          )
-          .toList(),
+          ],
+        ],
+      ),
     );
   }
 
   Future<void> _showAssignTeamMemberSheet(
     BuildContext context,
-    String caseId,
+    LegalCase legalCase,
   ) async {
     final caseDetailsBloc = context.read<CaseDetailsBloc>();
     final assigned = await showModalBottomSheet<bool>(
@@ -1823,11 +1817,14 @@ class CaseDetailsPage extends StatelessWidget {
         create: (_) =>
             getIt<CaseTeamAssignmentBloc>()
               ..add(LoadCaseTeamAssignmentReferenceDataRequested()),
-        child: _AssignTeamMemberSheet(caseId: caseId),
+        child: _AssignTeamMemberSheet(
+          caseId: legalCase.id,
+          assignedUserIds: legalCase.team.map((member) => member.userId).toSet(),
+        ),
       ),
     );
     if (assigned == true && context.mounted) {
-      caseDetailsBloc.add(FetchCaseDetailsRequested(caseId));
+      caseDetailsBloc.add(FetchCaseDetailsRequested(legalCase.id));
     }
   }
 }
@@ -2057,11 +2054,12 @@ class _CaseDetailsTabs extends StatelessWidget {
         context,
         context.tr('team'),
         currentUserHasPerm(PermissionCodes.caseAccessManage)
-            ? IconButton(
-                tooltip: context.tr('manage_case_access'),
+            ? AppButton(
+                text: context.tr('add_team_member'),
+                fullWidth: false,
                 onPressed: () =>
-                    owner._showAssignTeamMemberSheet(context, legalCase.id),
-                icon: const Icon(Icons.person_add_alt_1_outlined),
+                    owner._showAssignTeamMemberSheet(context, legalCase),
+                icon: Icons.person_add_alt_1_outlined,
               )
             : null,
       ),
@@ -2249,20 +2247,13 @@ class _CaseTab {
   final Widget child;
 }
 
-class _TeamEntry {
-  final User? user;
-  final String userId;
-  final String roleLabel;
-  _TeamEntry({
-    required this.user,
-    required this.userId,
-    required this.roleLabel,
-  });
-}
-
 class _AssignTeamMemberSheet extends StatefulWidget {
   final String caseId;
-  const _AssignTeamMemberSheet({required this.caseId});
+  final Set<String> assignedUserIds;
+  const _AssignTeamMemberSheet({
+    required this.caseId,
+    required this.assignedUserIds,
+  });
 
   @override
   State<_AssignTeamMemberSheet> createState() => _AssignTeamMemberSheetState();
@@ -2270,7 +2261,6 @@ class _AssignTeamMemberSheet extends StatefulWidget {
 
 class _AssignTeamMemberSheetState extends State<_AssignTeamMemberSheet> {
   String? _userId;
-  final Set<String> _capabilities = {};
 
   @override
   Widget build(BuildContext context) {
@@ -2298,16 +2288,9 @@ class _AssignTeamMemberSheetState extends State<_AssignTeamMemberSheet> {
           }
           if (state is! CaseTeamAssignmentReady) return const SizedBox();
 
-          final session = getIt<SessionCubit>().state;
-          final currentUser = session is SessionAuthenticated
-              ? session.user
-              : null;
           final employees = state.users
-              .where((user) => user.id != currentUser?.id)
+              .where((user) => !widget.assignedUserIds.contains(user.id))
               .toList(growable: false);
-          final definitions = currentUser == null
-              ? const <CaseCapabilityDefinition>[]
-              : CaseCapabilities.delegableBy(currentUser);
 
           return Padding(
             padding: EdgeInsets.only(
@@ -2322,12 +2305,12 @@ class _AssignTeamMemberSheetState extends State<_AssignTeamMemberSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.tr('manage_case_access'),
+                    context.tr('add_team_member'),
                     style: AppTypography.h3,
                   ),
                   const SizedBox(height: AppSpacing.s),
                   Text(
-                    context.tr('case_access_replace_warning'),
+                    context.tr('add_team_member_hint'),
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -2345,90 +2328,30 @@ class _AssignTeamMemberSheetState extends State<_AssignTeamMemberSheet> {
                               .fullName,
                     onChanged: (value) => setState(() {
                       _userId = value;
-                      _capabilities.clear();
                     }),
                   ),
                   const SizedBox(height: AppSpacing.m),
-                  Expanded(
-                    child: definitions.isEmpty
-                        ? Center(
-                            child: Text(
-                              context.tr('no_delegable_capabilities'),
-                            ),
-                          )
-                        : ListView(
-                            children: [
-                              for (final group in CaseCapabilityGroup.values)
-                                if (definitions.any(
-                                  (definition) => definition.group == group,
-                                )) ...[
-                                  Text(
-                                    context.tr(_groupTranslationKey(group)),
-                                    style: AppTypography.labelLarge,
-                                  ),
-                                  ...definitions
-                                      .where(
-                                        (definition) =>
-                                            definition.group == group,
-                                      )
-                                      .map(
-                                        (definition) => CheckboxListTile(
-                                          dense: true,
-                                          contentPadding: EdgeInsets.zero,
-                                          value: _capabilities.contains(
-                                            definition.code,
-                                          ),
-                                          title: Text(definition.code),
-                                          activeColor: AppColors.primary,
-                                          onChanged: _userId == null
-                                              ? null
-                                              : (selected) => setState(() {
-                                                  if (selected == true) {
-                                                    _capabilities.add(
-                                                      definition.code,
-                                                    );
-                                                  } else {
-                                                    _capabilities.remove(
-                                                      definition.code,
-                                                    );
-                                                  }
-                                                }),
-                                        ),
-                                      ),
-                                  const SizedBox(height: AppSpacing.s),
-                                ],
-                            ],
-                          ),
-                  ),
-                  const SizedBox(height: AppSpacing.m),
+                  if (employees.isEmpty)
+                    Expanded(
+                      child: Center(
+                        child: Text(context.tr('no_employees_to_add')),
+                      ),
+                    )
+                  else
+                    const Spacer(),
                   AppButton(
-                    text: context.tr('save_access'),
+                    text: context.tr('add_team_member'),
+                    icon: Icons.person_add_alt_1_outlined,
                     isLoading: state.isSubmitting,
-                    onPressed: _userId == null || _capabilities.isEmpty
+                    onPressed: _userId == null
                         ? null
                         : () => context.read<CaseTeamAssignmentBloc>().add(
                             CaseTeamAssignmentSubmitted(
                               widget.caseId,
                               AssignCaseRequest(
                                 userId: _userId!,
-                                capabilities: _capabilities.toList(
-                                  growable: false,
-                                ),
+                                capabilities: const ['case.view'],
                               ),
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: AppSpacing.s),
-                  AppButton(
-                    text: context.tr('revoke_all_case_access'),
-                    style: AppButtonStyle.outline,
-                    isLoading: state.isSubmitting,
-                    onPressed: _userId == null
-                        ? null
-                        : () => context.read<CaseTeamAssignmentBloc>().add(
-                            CaseAccessRevocationSubmitted(
-                              widget.caseId,
-                              _userId!,
                             ),
                           ),
                   ),
@@ -2442,14 +2365,45 @@ class _AssignTeamMemberSheetState extends State<_AssignTeamMemberSheet> {
   }
 }
 
-String _groupTranslationKey(CaseCapabilityGroup group) => switch (group) {
-  CaseCapabilityGroup.caseData => 'case_data',
-  CaseCapabilityGroup.parties => 'case_parties',
-  CaseCapabilityGroup.documents => 'documents',
-  CaseCapabilityGroup.hearings => 'hearings',
-  CaseCapabilityGroup.services => 'service_of_process',
-  CaseCapabilityGroup.meetings => 'client_meetings',
-  CaseCapabilityGroup.tasks => 'tasks',
-  CaseCapabilityGroup.access => 'access_management',
-  CaseCapabilityGroup.finance => 'case_finance',
-};
+class _TeamMemberRow extends StatelessWidget {
+  const _TeamMemberRow({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = name.trim();
+    final initial = trimmed.isEmpty ? '?' : trimmed.characters.first;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.l,
+        vertical: 12,
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 17,
+            backgroundColor: AppColors.brass100,
+            child: Text(
+              initial.toUpperCase(),
+              style: AppTypography.labelMedium.copyWith(
+                color: AppColors.brass700,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.s),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.labelLarge.copyWith(
+                color: AppColors.ink800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

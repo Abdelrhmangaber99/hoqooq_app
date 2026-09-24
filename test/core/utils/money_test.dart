@@ -22,7 +22,7 @@ class _PreloadedAppLocalizationsDelegate
 
 void main() {
   testWidgets('formatMoney output check', (tester) async {
-    final enMap = {'currency_sar': 'SAR '};
+    final enMap = {'currency_sar': 'EGP '};
     final appLoc = AppLocalizations.withMap(const Locale('en'), enMap);
 
     await tester.pumpWidget(
@@ -37,7 +37,7 @@ void main() {
         home: Builder(
           builder: (context) {
             final result = formatMoney(context, 10000.0);
-            expect(result, 'SAR 10,000.00');
+            expect(result, 'EGP 10,000.00');
             return Text(result);
           },
         ),
