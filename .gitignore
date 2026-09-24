@@ -44,6 +44,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android/Gradle build output
+/android/build/
+
+# JVM crash logs and heap dumps (can be hundreds of MB, never commit these)
+*.hprof
+hs_err_pid*.log
+replay_pid*.log
+
 # Backend reference source (read-only ground truth, not part of this Flutter app)
 # Note the trailing space in the directory name itself (as provided) --
 # both variants ignored in case it's ever re-provided without the space.
