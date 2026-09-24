@@ -8,8 +8,7 @@ part of 'create_task_request.dart';
 
 _CreateTaskRequest _$CreateTaskRequestFromJson(Map<String, dynamic> json) =>
     _CreateTaskRequest(
-      caseId: json['caseId'] as String?,
-      assignedById: json['assignedById'] as String,
+      caseId: json['caseId'] as String,
       assignedToId: json['assignedToId'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
@@ -18,18 +17,21 @@ _CreateTaskRequest _$CreateTaskRequestFromJson(Map<String, dynamic> json) =>
       dueDate: json['dueDate'] == null
           ? null
           : DateTime.parse(json['dueDate'] as String),
+      linkedEntityType: json['linkedEntityType'] as String?,
+      linkedEntityId: json['linkedEntityId'] as String?,
     );
 
 Map<String, dynamic> _$CreateTaskRequestToJson(_CreateTaskRequest instance) =>
     <String, dynamic>{
       'caseId': instance.caseId,
-      'assignedById': instance.assignedById,
       'assignedToId': instance.assignedToId,
       'title': instance.title,
       'description': instance.description,
       'priority': _$TaskPriorityEnumMap[instance.priority],
       'status': _$TaskStatusEnumMap[instance.status],
       'dueDate': instance.dueDate?.toIso8601String(),
+      'linkedEntityType': instance.linkedEntityType,
+      'linkedEntityId': instance.linkedEntityId,
     };
 
 const _$TaskPriorityEnumMap = {
@@ -41,8 +43,9 @@ const _$TaskPriorityEnumMap = {
 };
 
 const _$TaskStatusEnumMap = {
-  TaskStatus.pending: 'PENDING',
+  TaskStatus.newTask: 'NEW',
   TaskStatus.inProgress: 'IN_PROGRESS',
+  TaskStatus.waiting: 'WAITING',
   TaskStatus.completed: 'COMPLETED',
   TaskStatus.cancelled: 'CANCELLED',
   TaskStatus.unknown: 'unknown',

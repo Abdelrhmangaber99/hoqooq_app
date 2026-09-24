@@ -18,4 +18,19 @@ class GeneratedAppLocalizationsAr extends GeneratedAppLocalizations {
   @override
   String get networkErrorMessage =>
       'لا يوجد اتصال بالإنترنت. الرجاء التحقق من الشبكة والمحاولة مرة أخرى.';
+
+  @override
+  String get finance => 'المالية';
+
+  @override
+  String get settings => 'الإعدادات';
+
+  @override
+  String get subscription => 'الاشتراك والفوترة';
+
+  @override
+  String get firmInfo => 'معلومات المكتب';
+
+  @override
+  String get changePassword => 'تغيير كلمة المرور';
 }

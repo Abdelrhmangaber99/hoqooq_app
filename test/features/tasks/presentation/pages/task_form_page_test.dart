@@ -54,7 +54,6 @@ void main() {
     mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    roles: const [],
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
   );
 
@@ -64,7 +63,7 @@ void main() {
     assignedToId: 'u1',
     title: 'File motion',
     priority: TaskPriority.high,
-    status: TaskStatus.pending,
+    status: TaskStatus.newTask,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
   );

@@ -8,7 +8,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
-import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../data/models/create_event_request.dart';
 import '../bloc/calendar_event_form_bloc.dart';
 
@@ -76,19 +75,12 @@ class _CalendarEventFormViewState extends State<_CalendarEventFormView> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
-  String? _currentUserId() {
-    final sessionState = getIt<SessionCubit>().state;
-    return sessionState is SessionAuthenticated ? sessionState.user.id : null;
-  }
-
   void _submit(BuildContext context) {
     if (!_formKey.currentState!.validate()) return;
     final startsAt = _startsAt;
-    final userId = _currentUserId();
-    if (startsAt == null || userId == null) return;
+    if (startsAt == null) return;
 
     final request = CreateEventRequest(
-      userId: userId,
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim().isEmpty
           ? null

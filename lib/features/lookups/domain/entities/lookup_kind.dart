@@ -11,6 +11,8 @@ enum LookupKind {
   hearingType,
   @JsonValue('DOCUMENT_CATEGORY')
   documentCategory,
+  @JsonValue('SERVICE_METHOD')
+  serviceMethod,
   @JsonValue('EXPENSE_CATEGORY')
   expenseCategory,
   @JsonValue('unknown')
@@ -28,6 +30,8 @@ String lookupKindWireValue(LookupKind kind) {
       return 'HEARING_TYPE';
     case LookupKind.documentCategory:
       return 'DOCUMENT_CATEGORY';
+    case LookupKind.serviceMethod:
+      return 'SERVICE_METHOD';
     case LookupKind.expenseCategory:
       return 'EXPENSE_CATEGORY';
     case LookupKind.unknown:

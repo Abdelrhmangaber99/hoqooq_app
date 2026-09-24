@@ -148,6 +148,23 @@ void main() {
     expect(find.text('scheduledAt is invalid'), findsOneWidget);
   });
 
+  testWidgets('requires a 50-character outcome before completing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildTestable(existingHearing: hearing));
+    await tester.pumpAndSettle();
+
+    final completeButton = find.text('Complete Hearing');
+    await tester.ensureVisible(completeButton);
+    await tester.tap(completeButton);
+    await tester.pump();
+
+    expect(
+      find.text('The hearing outcome must be at least 50 characters.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('renders the create-mode form with a hearing-type picker '
       'and empty fields', (tester) async {
     await tester.pumpWidget(buildTestable());

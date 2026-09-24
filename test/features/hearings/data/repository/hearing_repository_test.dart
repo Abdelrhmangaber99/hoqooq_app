@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
 import 'package:hqooq/features/hearings/data/models/update_hearing_request.dart';
+import 'package:hqooq/features/hearings/data/models/complete_hearing_request.dart';
 import 'package:hqooq/features/hearings/data/repository/hearing_repository.dart';
 import 'package:hqooq/features/hearings/domain/entities/hearing_status.dart';
 import 'package:mocktail/mocktail.dart';
@@ -146,6 +147,37 @@ void main() {
       result.fold(
         (failure) => expect(failure, isA<ValidationFailure>()),
         (_) => fail('expected Left'),
+      );
+    });
+  });
+
+  group('completeHearing', () {
+    test('PATCHes the dedicated completion route with outcome data', () async {
+      when(
+        () => dio.patch('/hearings/h1/complete', data: any(named: 'data')),
+      ).thenAnswer(
+        (_) async => okResponse(
+          '/hearings/h1/complete',
+          hearingJson(status: 'COMPLETED'),
+        ),
+      );
+
+      const request = CompleteHearingRequest(
+        outcomeText:
+            'The hearing concluded after submissions and judgment was reserved.',
+      );
+      final result = await repository.completeHearing('h1', request);
+
+      final body = verify(
+        () => dio.patch(
+          '/hearings/h1/complete',
+          data: captureAny(named: 'data'),
+        ),
+      ).captured.single as Map<String, dynamic>;
+      expect(body['outcomeText'], request.outcomeText);
+      result.fold(
+        (_) => fail('expected Right'),
+        (value) => expect(value.status, HearingStatus.completed),
       );
     });
   });

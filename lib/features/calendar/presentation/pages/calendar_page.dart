@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/auth/permission_check.dart';
+import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -19,6 +21,18 @@ class CalendarPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!currentUserHasPerm(PermissionCodes.calendarRead)) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: ErrorView(
+            message: context.tr('no_permission_message'),
+            isForbidden: true,
+            onRetry: () {},
+          ),
+        ),
+      );
+    }
     return BlocProvider(
       create: (context) => getIt<CalendarBloc>()..add(FetchTimelineRequested()),
       child: Builder(
@@ -26,14 +40,7 @@ class CalendarPage extends StatelessWidget {
           backgroundColor: AppColors.background,
           floatingActionButton: FloatingActionButton(
             backgroundColor: AppColors.primary,
-            onPressed: () async {
-              final created = await context.push<bool>(
-                '${AppRouter.calendar}/new',
-              );
-              if (created == true && context.mounted) {
-                context.read<CalendarBloc>().add(FetchTimelineRequested());
-              }
-            },
+            onPressed: () => _openCreateEvent(context),
             child: const Icon(Icons.add, color: Colors.black),
           ),
           body: SafeArea(
@@ -58,6 +65,9 @@ class CalendarPage extends StatelessWidget {
                           ),
                         );
                       } else if (state is CalendarLoaded) {
+                        final visibleItems = state.items
+                            .where(_canDisplayTimelineItem)
+                            .toList();
                         return Column(
                           children: [
                             const SizedBox(height: AppSpacing.m),
@@ -70,7 +80,7 @@ class CalendarPage extends StatelessWidget {
                             if (state.viewMode == CalendarViewMode.month)
                               _buildCalendarGrid(
                                 context,
-                                state.items,
+                                visibleItems,
                                 state.selectedDate,
                               ),
                             if (state.viewMode == CalendarViewMode.week)
@@ -81,7 +91,7 @@ class CalendarPage extends StatelessWidget {
                             Expanded(
                               child: _buildEventsSection(
                                 context,
-                                state.items,
+                                visibleItems,
                                 state.selectedDate,
                               ),
                             ),
@@ -98,6 +108,29 @@ class CalendarPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openCreateEvent(BuildContext context) async {
+    if (!currentUserHasPerm(PermissionCodes.calendarManage)) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(context.tr('calendar_manage_permission_title')),
+          content: Text(context.tr('calendar_manage_permission_message')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(context.tr('confirm')),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    final created = await context.push<bool>(AppRouter.calendarNew);
+    if (created == true && context.mounted) {
+      context.read<CalendarBloc>().add(FetchTimelineRequested());
+    }
   }
 
   Widget _buildHeader(
@@ -468,4 +501,13 @@ class CalendarPage extends StatelessWidget {
       ),
     );
   }
+
+  bool _canDisplayTimelineItem(TimelineItem item) => switch (item) {
+    TimelineEventItem() => true,
+    TimelineHearingItem() => currentUserHasPerm(PermissionCodes.hearingView),
+    TimelineServiceItem() => currentUserHasPerm(PermissionCodes.serviceView),
+    TimelineMeetingItem() => currentUserHasPerm(PermissionCodes.meetingView),
+    TimelineTaskItem() => currentUserHasPerm(PermissionCodes.taskView),
+    TimelineUnknownItem() => false,
+  };
 }

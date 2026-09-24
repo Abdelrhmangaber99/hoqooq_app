@@ -8,41 +8,16 @@ part of 'update_task_request.dart';
 
 _UpdateTaskRequest _$UpdateTaskRequestFromJson(Map<String, dynamic> json) =>
     _UpdateTaskRequest(
-      caseId: json['caseId'] as String?,
-      assignedById: json['assignedById'] as String?,
-      assignedToId: json['assignedToId'] as String?,
-      title: json['title'] as String?,
-      description: json['description'] as String?,
-      priority: $enumDecodeNullable(_$TaskPriorityEnumMap, json['priority']),
       status: $enumDecodeNullable(_$TaskStatusEnumMap, json['status']),
-      dueDate: json['dueDate'] == null
-          ? null
-          : DateTime.parse(json['dueDate'] as String),
     );
 
 Map<String, dynamic> _$UpdateTaskRequestToJson(_UpdateTaskRequest instance) =>
-    <String, dynamic>{
-      'caseId': ?instance.caseId,
-      'assignedById': ?instance.assignedById,
-      'assignedToId': ?instance.assignedToId,
-      'title': ?instance.title,
-      'description': ?instance.description,
-      'priority': ?_$TaskPriorityEnumMap[instance.priority],
-      'status': ?_$TaskStatusEnumMap[instance.status],
-      'dueDate': ?instance.dueDate?.toIso8601String(),
-    };
-
-const _$TaskPriorityEnumMap = {
-  TaskPriority.low: 'LOW',
-  TaskPriority.normal: 'NORMAL',
-  TaskPriority.high: 'HIGH',
-  TaskPriority.urgent: 'URGENT',
-  TaskPriority.unknown: 'unknown',
-};
+    <String, dynamic>{'status': ?_$TaskStatusEnumMap[instance.status]};
 
 const _$TaskStatusEnumMap = {
-  TaskStatus.pending: 'PENDING',
+  TaskStatus.newTask: 'NEW',
   TaskStatus.inProgress: 'IN_PROGRESS',
+  TaskStatus.waiting: 'WAITING',
   TaskStatus.completed: 'COMPLETED',
   TaskStatus.cancelled: 'CANCELLED',
   TaskStatus.unknown: 'unknown',

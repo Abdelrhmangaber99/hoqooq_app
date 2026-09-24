@@ -19,8 +19,11 @@ _DocumentItem _$DocumentItemFromJson(Map<String, dynamic> json) =>
           : CaseSummary.fromJson(json['case'] as Map<String, dynamic>),
       folderId: json['folderId'] as String?,
       categoryId: json['categoryId'] as String?,
+      linkedEntityType: json['linkedEntityType'] as String?,
+      linkedEntityId: json['linkedEntityId'] as String?,
       uploadedById: json['uploadedById'] as String,
       versionNumber: (json['versionNumber'] as num).toInt(),
+      sha256: json['sha256'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -36,8 +39,11 @@ Map<String, dynamic> _$DocumentItemToJson(_DocumentItem instance) =>
       'case': instance.caseSummary,
       'folderId': instance.folderId,
       'categoryId': instance.categoryId,
+      'linkedEntityType': instance.linkedEntityType,
+      'linkedEntityId': instance.linkedEntityId,
       'uploadedById': instance.uploadedById,
       'versionNumber': instance.versionNumber,
+      'sha256': instance.sha256,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
     };

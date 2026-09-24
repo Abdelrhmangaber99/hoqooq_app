@@ -13,7 +13,8 @@ import '../errors/failures.dart';
 Failure mapDioError(DioException e) {
   if (e.type == DioExceptionType.connectionError ||
       e.type == DioExceptionType.connectionTimeout ||
-      e.type == DioExceptionType.receiveTimeout) {
+      e.type == DioExceptionType.receiveTimeout ||
+      e.type == DioExceptionType.sendTimeout) {
     return const NetworkFailure();
   }
   final statusCode = e.response?.statusCode;
@@ -33,7 +34,7 @@ Failure mapDioError(DioException e) {
         ? ForbiddenFailure(backendMessage)
         : const ForbiddenFailure();
   }
-  if (statusCode == 400) {
+  if (statusCode == 400 || statusCode == 422) {
     return backendMessage != null
         ? ValidationFailure(backendMessage)
         : const ValidationFailure('Invalid request');
@@ -47,6 +48,11 @@ String? _extractBackendMessage(dynamic data) {
   if (data is Map<String, dynamic>) {
     final message = data['message'];
     if (message is String && message.isNotEmpty) return message;
+    if (message is List && message.isNotEmpty) {
+      final first = message.first;
+      if (first is String && first.isNotEmpty) return first;
+      return message.map((e) => e.toString()).join(', ');
+    }
   }
   return null;
 }

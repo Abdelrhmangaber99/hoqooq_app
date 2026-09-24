@@ -58,7 +58,11 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
                     label: 'DATE',
                     hint: '07/17/2026',
                     prefixIcon: Icons.calendar_today_outlined,
-                    suffixIcon: const Icon(Icons.calendar_month_outlined, size: 18, color: AppColors.textHint),
+                    suffixIcon: const Icon(
+                      Icons.calendar_month_outlined,
+                      size: 18,
+                      color: AppColors.textHint,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -67,7 +71,11 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
                     label: 'TIME',
                     hint: '09:00 AM',
                     prefixIcon: Icons.access_time,
-                    suffixIcon: const Icon(Icons.history_toggle_off, size: 18, color: AppColors.textHint),
+                    suffixIcon: const Icon(
+                      Icons.history_toggle_off,
+                      size: 18,
+                      color: AppColors.textHint,
+                    ),
                   ),
                 ),
               ],
@@ -75,7 +83,11 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
             const SizedBox(height: 24),
             Text(
               'TYPE',
-              style: AppTypography.labelMedium.copyWith(fontSize: 10, color: AppColors.textHint, letterSpacing: 1.2),
+              style: AppTypography.labelMedium.copyWith(
+                fontSize: 10,
+                color: AppColors.textHint,
+                letterSpacing: 1.2,
+              ),
             ),
             const SizedBox(height: 12),
             _buildTypeChips(),
@@ -91,22 +103,27 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
             const SizedBox(height: 24),
             Text(
               'REMINDERS',
-              style: AppTypography.labelMedium.copyWith(fontSize: 10, color: AppColors.textHint, letterSpacing: 1.2),
+              style: AppTypography.labelMedium.copyWith(
+                fontSize: 10,
+                color: AppColors.textHint,
+                letterSpacing: 1.2,
+              ),
             ),
             const SizedBox(height: 12),
             _buildRemindersSection(),
             const SizedBox(height: 24),
             Text(
               'ATTACH DOCUMENTS',
-              style: AppTypography.labelMedium.copyWith(fontSize: 10, color: AppColors.textHint, letterSpacing: 1.2),
+              style: AppTypography.labelMedium.copyWith(
+                fontSize: 10,
+                color: AppColors.textHint,
+                letterSpacing: 1.2,
+              ),
             ),
             const SizedBox(height: 12),
             _buildAttachArea(),
             const SizedBox(height: 40),
-            AppButton(
-              text: 'Save Appointment',
-              onPressed: () => context.pop(),
-            ),
+            AppButton(text: 'Save Appointment', onPressed: () => context.pop()),
             const SizedBox(height: 40),
           ],
         ),
@@ -115,7 +132,14 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
   }
 
   Widget _buildTypeChips() {
-    final types = ['Hearing', 'Client Meeting', 'Deposition', 'Filing Deadline', 'Consultation', 'Mediation'];
+    final types = [
+      'Hearing',
+      'Client Meeting',
+      'Deposition',
+      'Filing Deadline',
+      'Consultation',
+      'Mediation',
+    ];
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -148,7 +172,11 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
       children: [
         Text(
           'NOTES',
-          style: AppTypography.labelMedium.copyWith(fontSize: 10, color: AppColors.textHint, letterSpacing: 1.2),
+          style: AppTypography.labelMedium.copyWith(
+            fontSize: 10,
+            color: AppColors.textHint,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(height: 12),
         Container(
@@ -198,7 +226,11 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          const Icon(Icons.notifications_none, size: 20, color: AppColors.primary),
+          const Icon(
+            Icons.notifications_none,
+            size: 20,
+            color: AppColors.primary,
+          ),
           const SizedBox(width: 12),
           Text(title, style: AppTypography.bodyMedium),
           const Spacer(),
@@ -220,7 +252,10 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: AppRadius.medium,
-        border: Border.all(color: AppColors.surfaceLight, style: BorderStyle.solid), // Simplified dotted border
+        border: Border.all(
+          color: AppColors.surfaceLight,
+          style: BorderStyle.solid,
+        ), // Simplified dotted border
       ),
       child: Column(
         children: [
@@ -228,7 +263,10 @@ class _NewAppointmentPageState extends State<NewAppointmentPage> {
           const SizedBox(height: 12),
           Text('Tap to attach documents', style: AppTypography.labelMedium),
           const SizedBox(height: 4),
-          Text('PDF, DOCX · up to 50 MB', style: AppTypography.bodySmall.copyWith(fontSize: 10)),
+          Text(
+            'PDF, DOCX · up to 50 MB',
+            style: AppTypography.bodySmall.copyWith(fontSize: 10),
+          ),
         ],
       ),
     );

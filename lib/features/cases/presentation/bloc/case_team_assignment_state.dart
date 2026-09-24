@@ -35,9 +35,5 @@ class CaseTeamAssignmentReady extends CaseTeamAssignmentState {
 }
 
 class CaseTeamAssignmentSuccess extends CaseTeamAssignmentState {
-  final CaseTeamMember member;
-  const CaseTeamAssignmentSuccess(this.member);
-
-  @override
-  List<Object?> get props => [member];
+  const CaseTeamAssignmentSuccess();
 }

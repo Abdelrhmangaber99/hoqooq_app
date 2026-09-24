@@ -1,21 +1,15 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../../core/network/dio_error_mapper.dart';
-import '../../domain/entities/case_financial_summary.dart';
-import '../../domain/entities/financial_analytics.dart';
-import '../../domain/entities/invoice.dart';
-import '../../domain/entities/payment.dart';
-import '../../domain/entities/single_case_financial_detail.dart';
+import '../../domain/entities/case_finance_detail.dart';
+import '../../domain/entities/finance_summary.dart';
+import '../../domain/entities/payment_record.dart';
 import '../../domain/repository/i_finance_repository.dart';
-import '../models/create_invoice_request.dart';
 import '../models/create_payment_request.dart';
-import '../models/update_invoice_request.dart';
 
-/// Real implementation of [IFinanceRepository] against `/finance/*` per
-/// API_CONTRACT.md finding R. No mock ever existed for this feature — it's
-/// new in M6, unlike most other repositories in this app.
 @LazySingleton(as: IFinanceRepository)
 class FinanceRepository implements IFinanceRepository {
   FinanceRepository(this._dio);
@@ -23,130 +17,81 @@ class FinanceRepository implements IFinanceRepository {
   final Dio _dio;
 
   @override
-  ApiResult<List<Invoice>> getInvoices() async {
+  ApiResult<FinanceSummary> getSummary({Map<String, dynamic>? queryParameters}) async {
     try {
-      final response = await _dio.get('/finance/invoices');
-      final data = response.data as List<dynamic>;
-      return Right(
-        data
-            .map((json) => Invoice.fromJson(json as Map<String, dynamic>))
-            .toList(),
+      final response = await _dio.get(
+        '/finance/summary',
+        queryParameters: queryParameters,
       );
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
+      final data = response.data as Map<String, dynamic>;
+      return Right(FinanceSummary.fromJson(data));
+    } catch (e) {
+      if (e is DioException) {
+        return Left(mapDioError(e));
+      }
+      return Left(ServerFailure(e.toString()));
     }
   }
 
   @override
-  ApiResult<Invoice> getInvoiceDetails(String id) async {
+  ApiResult<CaseFinanceDetail> getCaseFinance(String caseId) async {
     try {
-      final response = await _dio.get('/finance/invoices/$id');
-      return Right(Invoice.fromJson(response.data as Map<String, dynamic>));
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
+      final response = await _dio.get('/finance/cases/$caseId');
+      final data = response.data as Map<String, dynamic>;
+      return Right(CaseFinanceDetail.fromJson(data));
+    } catch (e) {
+      if (e is DioException) {
+        return Left(mapDioError(e));
+      }
+      return Left(ServerFailure(e.toString()));
     }
   }
 
+  // NO agreed-fee writer here: the Case Finance controller exposes only
+  // summary / caseFinance / record / reverse. The agreed fee is a Case
+  // column and is written through the Cases module (`PATCH /cases/:id`,
+  // `agreedFee` on Create/UpdateCaseDto) — which is where the app's own
+  // case form already sends it. An earlier `PATCH /finance/cases/:id/
+  // agreed-fee` call here targeted a route that does not exist and 404'd
+  // on every attempt.
+
   @override
-  ApiResult<Invoice> createInvoice(CreateInvoiceRequest request) async {
+  ApiResult<PaymentRecord> recordPayment(
+    String caseId,
+    CreatePaymentRequest request,
+  ) async {
     try {
       final response = await _dio.post(
-        '/finance/invoices',
+        '/finance/cases/$caseId/payments',
         data: request.toJson(),
       );
-      return Right(Invoice.fromJson(response.data as Map<String, dynamic>));
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
+      final data = response.data as Map<String, dynamic>;
+      return Right(PaymentRecord.fromJson(data));
+    } catch (e) {
+      if (e is DioException) {
+        return Left(mapDioError(e));
+      }
+      return Left(ServerFailure(e.toString()));
     }
   }
 
   @override
-  ApiResult<Invoice> updateInvoice(
-    String id,
-    UpdateInvoiceRequest request,
+  ApiResult<PaymentRecord> reversePayment(
+    String paymentId,
+    String reason,
   ) async {
     try {
       final response = await _dio.patch(
-        '/finance/invoices/$id',
-        data: request.toJson(),
+        '/finance/payments/$paymentId/reverse',
+        data: {'reason': reason},
       );
-      return Right(Invoice.fromJson(response.data as Map<String, dynamic>));
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
-    }
-  }
-
-  @override
-  ApiResult<List<Payment>> getPayments() async {
-    try {
-      final response = await _dio.get('/finance/payments');
-      final data = response.data as List<dynamic>;
-      return Right(
-        data
-            .map((json) => Payment.fromJson(json as Map<String, dynamic>))
-            .toList(),
-      );
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
-    }
-  }
-
-  @override
-  ApiResult<Payment> createPayment(CreatePaymentRequest request) async {
-    try {
-      final response = await _dio.post(
-        '/finance/payments',
-        data: request.toJson(),
-      );
-      return Right(Payment.fromJson(response.data as Map<String, dynamic>));
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
-    }
-  }
-
-  @override
-  ApiResult<FinancialAnalytics> getFinancialAnalytics() async {
-    try {
-      final response = await _dio.get('/finance/analytics');
-      return Right(
-        FinancialAnalytics.fromJson(response.data as Map<String, dynamic>),
-      );
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
-    }
-  }
-
-  @override
-  ApiResult<List<CaseFinancialSummary>> getCasesFinancialSummary() async {
-    try {
-      final response = await _dio.get('/finance/cases-summary');
-      final data = response.data as List<dynamic>;
-      return Right(
-        data
-            .map(
-              (json) =>
-                  CaseFinancialSummary.fromJson(json as Map<String, dynamic>),
-            )
-            .toList(),
-      );
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
-    }
-  }
-
-  @override
-  ApiResult<SingleCaseFinancialDetail> getCaseFinancialSummary(
-    String caseId,
-  ) async {
-    try {
-      final response = await _dio.get('/finance/cases/$caseId/summary');
-      return Right(
-        SingleCaseFinancialDetail.fromJson(
-          response.data as Map<String, dynamic>,
-        ),
-      );
-    } on DioException catch (e) {
-      return Left(mapDioError(e));
+      final data = response.data as Map<String, dynamic>;
+      return Right(PaymentRecord.fromJson(data));
+    } catch (e) {
+      if (e is DioException) {
+        return Left(mapDioError(e));
+      }
+      return Left(ServerFailure(e.toString()));
     }
   }
 }

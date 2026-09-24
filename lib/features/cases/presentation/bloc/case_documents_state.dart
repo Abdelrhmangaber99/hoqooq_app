@@ -13,10 +13,23 @@ class CaseDocumentsLoading extends CaseDocumentsState {}
 
 class CaseDocumentsLoaded extends CaseDocumentsState {
   final List<DocumentItem> documents;
-  const CaseDocumentsLoaded(this.documents);
+  final String? actionId;
+  final String? actionError;
+  final DownloadedDocument? downloadedDocument;
+  const CaseDocumentsLoaded(
+    this.documents, {
+    this.actionId,
+    this.actionError,
+    this.downloadedDocument,
+  });
 
   @override
-  List<Object?> get props => [documents];
+  List<Object?> get props => [
+    documents,
+    actionId,
+    actionError,
+    downloadedDocument,
+  ];
 }
 
 class CaseDocumentsError extends CaseDocumentsState {

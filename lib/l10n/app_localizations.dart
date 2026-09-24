@@ -118,6 +118,36 @@ abstract class GeneratedAppLocalizations {
   /// In en, this message translates to:
   /// **'No internet connection. Please check your network and try again.'**
   String get networkErrorMessage;
+
+  /// No description provided for @finance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get finance;
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription & Billing'**
+  String get subscription;
+
+  /// No description provided for @firmInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Firm Information'**
+  String get firmInfo;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassword;
 }
 
 class _GeneratedAppLocalizationsDelegate

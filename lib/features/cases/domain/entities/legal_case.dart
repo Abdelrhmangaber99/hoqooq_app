@@ -1,10 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../../clients/domain/entities/client.dart';
 import 'case_priority.dart';
+import 'case_party_snapshot.dart';
 import 'case_status.dart';
 import 'case_team_member.dart';
+import 'case_timeline_event.dart';
 import 'case_type_lookup.dart';
-import 'court.dart';
 
 part 'legal_case.freezed.dart';
 part 'legal_case.g.dart';
@@ -14,14 +14,9 @@ part 'legal_case.g.dart';
 /// **Corrected 2026-07-30 (backend-source re-verification, pre-M3):**
 /// `CasesController` never applies `plainToInstance`/`ClassSerializerInterceptor`
 /// — it returns the raw TypeORM entity, so the actual wire shape is governed
-/// by `CasesService.findAll`/`.findOne`'s TypeORM relations/joins
-/// (`client`, `defaultCourt`, `team`, `team.user`, `opponents`,
-/// `timelineEvents`), not by the (also never-enforced) `CaseResponseDto`.
-/// `caseType` is NOT among them — never returned at all, despite
-/// `caseTypeId` always being present (resolve the label client-side via
-/// the `lookups` feature instead). `defaultCourt`/`defaultCourtId` are
-/// genuinely nullable on the entity itself (a case may have no default
-/// court), not just because of relation loading.
+/// by `CasesService.findAll`/`.findOne`'s TypeORM relations/joins, not by the
+/// response DTO alone. Case Court selection uses the restored backend
+/// `defaultCourtId`; `courtName` remains as a compatibility display snapshot.
 ///
 /// **Corrected 2026-08-05 (API_CONTRACT.md finding N) — not a relation-
 /// loading question this time:** `primaryLawyer`/`primaryLawyerId` are
@@ -42,23 +37,43 @@ abstract class LegalCase with _$LegalCase {
     required String tenantId,
     required String caseNumber,
     @JsonKey(unknownEnumValue: CaseStatus.unknown) required CaseStatus status,
-    required String clientId,
     required String caseTypeId,
     @JsonKey(unknownEnumValue: CasePriority.unknown)
     required CasePriority priority,
     required DateTime createdAt,
     required DateTime updatedAt,
-    required Client client,
+    CaseClientSnapshot? clientSnapshot,
+    List<CaseOpponentSnapshot>? opponentSnapshots,
     CaseTypeLookup? caseType,
-    String? defaultCourtId,
-    Court? defaultCourt,
+    String? title,
+    String? courtCaseNumber,
+    int? courtCaseYear,
+    String? governorateId,
+    String? circuitId,
+    String? ownerFirmAdminId,
+    String? primaryLawyerId,
+    String? description,
+    String? courtName,
     DateTime? openingDate,
     DateTime? closingDate,
     String? outcomeSummary,
-    double? agreedFee,
     required List<CaseTeamMember> team,
+    @JsonKey(fromJson: _timelineFromJson, includeToJson: false)
+    List<CaseTimelineEvent>? timelineEvents,
   }) = _LegalCase;
 
   factory LegalCase.fromJson(Map<String, dynamic> json) =>
-      _$LegalCaseFromJson(json);
+      _$LegalCaseFromJson(_normalizeCaseJson(json));
+}
+
+List<CaseTimelineEvent>? _timelineFromJson(List<dynamic>? value) => value
+    ?.map((item) => CaseTimelineEvent.fromJson(item as Map<String, dynamic>))
+    .toList();
+
+Map<String, dynamic> _normalizeCaseJson(Map<String, dynamic> json) {
+  return {
+    ...json,
+    'caseTypeId': json['caseTypeId'] ?? '',
+    'team': json['team'] ?? const <dynamic>[],
+  };
 }

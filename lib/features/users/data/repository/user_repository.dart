@@ -44,4 +44,49 @@ class UserRepository implements IUserRepository {
       return Left(mapDioError(e));
     }
   }
+
+  @override
+  ApiResult<List<User>> getAssignableUsers() async {
+    final sessionState = _sessionCubit.state;
+    if (sessionState is! SessionAuthenticated) return const Right([]);
+
+    final currentUser = sessionState.user;
+    if (currentUser.isSuperAdmin) return getUsers();
+
+    try {
+      final response = await _dio.get('/employees');
+      final data = response.data as List<dynamic>;
+      final fallbackDate = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+      final users = data.map((row) {
+        final json = row as Map<String, dynamic>;
+        final nested = json['user'] is Map
+            ? Map<String, dynamic>.from(json['user'] as Map)
+            : const <String, dynamic>{};
+        return User(
+          id: (json['userId'] ?? nested['id'])?.toString() ?? '',
+          email: nested['email']?.toString() ?? '',
+          fullName: nested['fullName']?.toString() ?? '',
+          isSuperAdmin: false,
+          status: 'ACTIVE',
+          mfaEnabled: false,
+          createdAt:
+              DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+              fallbackDate,
+          updatedAt:
+              DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+              fallbackDate,
+          accountType: 'EMPLOYEE',
+          tenant: currentUser.tenant,
+        );
+      }).where((user) => user.id.isNotEmpty).toList();
+
+      if (!users.any((user) => user.id == currentUser.id)) {
+        users.insert(0, currentUser);
+      }
+      return Right(users);
+    } on DioException catch (e) {
+      if (currentUser.isActive) return Right([currentUser]);
+      return Left(mapDioError(e));
+    }
+  }
 }

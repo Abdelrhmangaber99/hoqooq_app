@@ -29,4 +29,10 @@ abstract class IAuthRepository {
     required String oldPassword,
     required String newPassword,
   });
+
+  ApiResult<User> updateProfile({
+    String? fullName,
+    String? phone,
+    String? avatarUrl,
+  });
 }

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Lookup {
 
- String get id; String get tenantId;@JsonKey(unknownEnumValue: LookupKind.unknown) LookupKind get kind; String get labelEn; String get labelAr; bool get isActive; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String? get tenantId;@JsonKey(unknownEnumValue: LookupKind.unknown) LookupKind get kind; String get labelEn; String get labelAr; bool get isActive; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of Lookup
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $LookupCopyWith<$Res>  {
   factory $LookupCopyWith(Lookup value, $Res Function(Lookup) _then) = _$LookupCopyWithImpl;
 @useResult
 $Res call({
- String id, String tenantId,@JsonKey(unknownEnumValue: LookupKind.unknown) LookupKind kind, String labelEn, String labelAr, bool isActive, DateTime createdAt, DateTime updatedAt
+ String id, String? tenantId,@JsonKey(unknownEnumValue: LookupKind.unknown) LookupKind kind, String labelEn, String labelAr, bool isActive, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -65,11 +65,11 @@ class _$LookupCopyWithImpl<$Res>
 
 /// Create a copy of Lookup
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tenantId = null,Object? kind = null,Object? labelEn = null,Object? labelAr = null,Object? isActive = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tenantId = freezed,Object? kind = null,Object? labelEn = null,Object? labelAr = null,Object? isActive = null,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,tenantId: null == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
-as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as String,tenantId: freezed == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
+as String?,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as LookupKind,labelEn: null == labelEn ? _self.labelEn : labelEn // ignore: cast_nullable_to_non_nullable
 as String,labelAr: null == labelAr ? _self.labelAr : labelAr // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
@@ -160,7 +160,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tenantId, @JsonKey(unknownEnumValue: LookupKind.unknown)  LookupKind kind,  String labelEn,  String labelAr,  bool isActive,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? tenantId, @JsonKey(unknownEnumValue: LookupKind.unknown)  LookupKind kind,  String labelEn,  String labelAr,  bool isActive,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Lookup() when $default != null:
 return $default(_that.id,_that.tenantId,_that.kind,_that.labelEn,_that.labelAr,_that.isActive,_that.createdAt,_that.updatedAt);case _:
@@ -181,7 +181,7 @@ return $default(_that.id,_that.tenantId,_that.kind,_that.labelEn,_that.labelAr,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tenantId, @JsonKey(unknownEnumValue: LookupKind.unknown)  LookupKind kind,  String labelEn,  String labelAr,  bool isActive,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? tenantId, @JsonKey(unknownEnumValue: LookupKind.unknown)  LookupKind kind,  String labelEn,  String labelAr,  bool isActive,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Lookup():
 return $default(_that.id,_that.tenantId,_that.kind,_that.labelEn,_that.labelAr,_that.isActive,_that.createdAt,_that.updatedAt);case _:
@@ -201,7 +201,7 @@ return $default(_that.id,_that.tenantId,_that.kind,_that.labelEn,_that.labelAr,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tenantId, @JsonKey(unknownEnumValue: LookupKind.unknown)  LookupKind kind,  String labelEn,  String labelAr,  bool isActive,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? tenantId, @JsonKey(unknownEnumValue: LookupKind.unknown)  LookupKind kind,  String labelEn,  String labelAr,  bool isActive,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Lookup() when $default != null:
 return $default(_that.id,_that.tenantId,_that.kind,_that.labelEn,_that.labelAr,_that.isActive,_that.createdAt,_that.updatedAt);case _:
@@ -216,11 +216,11 @@ return $default(_that.id,_that.tenantId,_that.kind,_that.labelEn,_that.labelAr,_
 @JsonSerializable()
 
 class _Lookup extends Lookup {
-  const _Lookup({required this.id, required this.tenantId, @JsonKey(unknownEnumValue: LookupKind.unknown) required this.kind, required this.labelEn, required this.labelAr, required this.isActive, required this.createdAt, required this.updatedAt}): super._();
+  const _Lookup({required this.id, this.tenantId, @JsonKey(unknownEnumValue: LookupKind.unknown) required this.kind, required this.labelEn, required this.labelAr, required this.isActive, required this.createdAt, required this.updatedAt}): super._();
   factory _Lookup.fromJson(Map<String, dynamic> json) => _$LookupFromJson(json);
 
 @override final  String id;
-@override final  String tenantId;
+@override final  String? tenantId;
 @override@JsonKey(unknownEnumValue: LookupKind.unknown) final  LookupKind kind;
 @override final  String labelEn;
 @override final  String labelAr;
@@ -261,7 +261,7 @@ abstract mixin class _$LookupCopyWith<$Res> implements $LookupCopyWith<$Res> {
   factory _$LookupCopyWith(_Lookup value, $Res Function(_Lookup) _then) = __$LookupCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String tenantId,@JsonKey(unknownEnumValue: LookupKind.unknown) LookupKind kind, String labelEn, String labelAr, bool isActive, DateTime createdAt, DateTime updatedAt
+ String id, String? tenantId,@JsonKey(unknownEnumValue: LookupKind.unknown) LookupKind kind, String labelEn, String labelAr, bool isActive, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -278,11 +278,11 @@ class __$LookupCopyWithImpl<$Res>
 
 /// Create a copy of Lookup
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tenantId = null,Object? kind = null,Object? labelEn = null,Object? labelAr = null,Object? isActive = null,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tenantId = freezed,Object? kind = null,Object? labelEn = null,Object? labelAr = null,Object? isActive = null,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_Lookup(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,tenantId: null == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
-as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as String,tenantId: freezed == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
+as String?,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as LookupKind,labelEn: null == labelEn ? _self.labelEn : labelEn // ignore: cast_nullable_to_non_nullable
 as String,labelAr: null == labelAr ? _self.labelAr : labelAr // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable

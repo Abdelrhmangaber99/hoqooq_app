@@ -4,13 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
+import 'package:hqooq/features/cases/domain/entities/case_party_snapshot.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
 import 'package:hqooq/features/cases/domain/repository/i_case_repository.dart';
-import 'package:hqooq/features/clients/domain/entities/client.dart';
-import 'package:hqooq/features/clients/domain/entities/client_status.dart';
-import 'package:hqooq/features/clients/domain/entities/client_type.dart';
 import 'package:hqooq/features/tasks/data/models/create_task_request.dart';
 import 'package:hqooq/features/tasks/data/models/update_task_request.dart';
 import 'package:hqooq/features/tasks/domain/entities/task_item.dart';
@@ -41,7 +39,6 @@ void main() {
     mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    roles: const [],
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
   );
 
@@ -50,23 +47,14 @@ void main() {
     tenantId: 't1',
     caseNumber: 'CASE-2026-00001',
     status: CaseStatus.active,
-    clientId: 'cl1',
     caseTypeId: 'ct1',
     priority: CasePriority.high,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    client: Client(
+    clientSnapshot: const CaseClientSnapshot(
       id: 'cl1',
-      tenantId: 't1',
-      clientCode: 'CLI-001',
-      type: ClientType.individual,
-      fullName: 'Carlos Hernandez',
-      status: ClientStatus.active,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-      emails: const [],
-      phones: const [],
-      addresses: const [],
+      clientType: 'INDIVIDUAL',
+      name: 'Carlos Hernandez',
     ),
     team: const [],
   );
@@ -77,14 +65,14 @@ void main() {
     assignedToId: 'u1',
     title: 'File motion',
     priority: TaskPriority.normal,
-    status: TaskStatus.pending,
+    status: TaskStatus.newTask,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
   );
 
   setUpAll(() {
     registerFallbackValue(
-      const CreateTaskRequest(assignedById: '', assignedToId: '', title: ''),
+      const CreateTaskRequest(caseId: '', assignedToId: '', title: ''),
     );
     registerFallbackValue(const UpdateTaskRequest());
   });
@@ -102,7 +90,7 @@ void main() {
     'emits [Loading, Ready] with users/cases on LoadTaskFormReferenceDataRequested',
     build: () {
       when(
-        () => userRepository.getUsers(),
+        () => userRepository.getAssignableUsers(),
       ).thenAnswer((_) async => Right([user]));
       when(
         () => caseRepository.getCases(),
@@ -120,7 +108,7 @@ void main() {
     'degrades to empty lists (not a screen failure) when users/cases fail',
     build: () {
       when(
-        () => userRepository.getUsers(),
+        () => userRepository.getAssignableUsers(),
       ).thenAnswer((_) async => const Left(ServerFailure()));
       when(
         () => caseRepository.getCases(),
@@ -138,7 +126,7 @@ void main() {
     'emits [Ready(submitting), Success] on a successful create',
     build: () {
       when(
-        () => userRepository.getUsers(),
+        () => userRepository.getAssignableUsers(),
       ).thenAnswer((_) async => Right([user]));
       when(
         () => caseRepository.getCases(),
@@ -154,7 +142,7 @@ void main() {
       bloc.add(
         const CreateTaskSubmitted(
           CreateTaskRequest(
-            assignedById: 'u1',
+            caseId: 'c1',
             assignedToId: 'u1',
             title: 'File motion',
           ),
@@ -173,7 +161,7 @@ void main() {
     'emits [Ready(submitting), Success] on a successful update',
     build: () {
       when(
-        () => userRepository.getUsers(),
+        () => userRepository.getAssignableUsers(),
       ).thenAnswer((_) async => Right([user]));
       when(
         () => caseRepository.getCases(),
@@ -189,7 +177,7 @@ void main() {
       bloc.add(
         const UpdateTaskSubmitted(
           't1',
-          UpdateTaskRequest(status: TaskStatus.completed),
+          UpdateTaskRequest(status: TaskStatus.inProgress),
         ),
       );
     },

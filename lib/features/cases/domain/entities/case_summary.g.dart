@@ -17,7 +17,7 @@ _CaseSummary _$CaseSummaryFromJson(Map<String, dynamic> json) => _CaseSummary(
   ),
   clientId: json['clientId'] as String,
   caseTypeId: json['caseTypeId'] as String,
-  defaultCourtId: json['defaultCourtId'] as String?,
+  courtName: json['courtName'] as String?,
   priority: $enumDecode(
     _$CasePriorityEnumMap,
     json['priority'],
@@ -30,7 +30,6 @@ _CaseSummary _$CaseSummaryFromJson(Map<String, dynamic> json) => _CaseSummary(
       ? null
       : DateTime.parse(json['closingDate'] as String),
   outcomeSummary: json['outcomeSummary'] as String?,
-  agreedFee: (json['agreedFee'] as num?)?.toDouble(),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
 );
@@ -43,12 +42,11 @@ Map<String, dynamic> _$CaseSummaryToJson(_CaseSummary instance) =>
       'status': _$CaseStatusEnumMap[instance.status]!,
       'clientId': instance.clientId,
       'caseTypeId': instance.caseTypeId,
-      'defaultCourtId': instance.defaultCourtId,
+      'courtName': instance.courtName,
       'priority': _$CasePriorityEnumMap[instance.priority]!,
       'openingDate': instance.openingDate?.toIso8601String(),
       'closingDate': instance.closingDate?.toIso8601String(),
       'outcomeSummary': instance.outcomeSummary,
-      'agreedFee': instance.agreedFee,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
     };

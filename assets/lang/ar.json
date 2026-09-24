@@ -1,4 +1,82 @@
 {
+  "remaining": "المتبقي",
+  "currency_sar": "ر.س ",
+  "reverse_payment": "إلغاء الدفعة",
+  "reversal_reason": "سبب إلغاء الدفعة",
+  "all": "الكل",
+  "export": "تصدير",
+  "exporting": "جاري التصدير...",
+  "case_export_failed": "تعذر تصدير القضايا حالياً",
+  "case_export_open_failed": "تعذر فتح ملف القضايا المُصدّر",
+  "dashboard": "لوحة التحكم",
+  "total_cases": "إجمالي القضايا",
+  "financial_position": "الوضع المالي",
+  "collected": "مُحصّلة",
+  "outstanding": "مستحقة",
+  "total_case_fees": "إجمالي أتعاب القضايا",
+  "no_financial_data": "لا توجد بيانات مالية بعد",
+  "no_finance_permission": "لا تملك صلاحية عرض البيانات المالية",
+  "total_case_value": "إجمالي قيمة القضايا",
+  "total_collected": "المحصّل",
+  "paid_in_full": "مدفوع بالكامل",
+  "partially_paid": "مدفوع جزئياً",
+  "account_details_and_ledger": "تفاصيل الحساب والسجل المالي",
+  "record_new_payment": "تسجيل دفع جديد",
+  "cancel_payment_recording": "إلغاء تسجيل الدفع",
+  "payment_records_history": "سجل الدفعات",
+  "no_payments_recorded_for_case": "لا توجد دفعات مسجلة لهذه القضية بعد",
+  "add_payment": "إضافة دفعة",
+  "reference_optional": "المرجع (اختياري)",
+  "note_optional": "ملاحظة (اختياري)",
+  "save_payment": "حفظ الدفعة",
+  "payment_recorded_successfully": "تم تسجيل العملية بنجاح",
+  "enter_valid_amount": "الرجاء إدخال مبلغ صحيح",
+  "reverse_financial_operation": "إلغاء العملية المالية",
+  "reverse_payment_confirm_message": "إلغاء هذه الدفعة؟ يُحتفظ بالسجل للتدقيق.",
+  "confirm_cancellation": "تأكيد الإلغاء",
+  "cancelled_payment": "ملغاة",
+  "default_reversal_reason": "تم إلغاء عملية الدفع",
+  "no_cases_matching_filter": "لا توجد قضايا تطابق التصفية المختارة",
+  "case_number_prefix": "قضية #",
+  "recent_activity": "النشاط الأخير",
+  "no_recent_activity": "لا يوجد نشاط حديث",
+  "remember_me": "\u062a\u0630\u0643\u0631\u0646\u064a",
+  "no_hearings_found": "\u0644\u0627 \u062a\u0648\u062c\u062f \u062c\u0644\u0633\u0627\u062a \u0645\u062c\u062f\u0648\u0644\u0629 \u062d\u062a\u0649 \u0627\u0644\u0622\u0646",
+  "todays_hearings": "\u062c\u0644\u0633\u0627\u062a \u0627\u0644\u064a\u0648\u0645",
+  "court_not_selected": "\u0644\u0645 \u062a\u062d\u062f\u062f \u0627\u0644\u0645\u062d\u0643\u0645\u0629",
+  "platform_admin": "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0646\u0635\u0629",
+  "invite_only_access": "\u0627\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0627\u0644\u0645\u0646\u0635\u0629 \u0628\u0627\u0644\u062f\u0639\u0648\u0629 \u0641\u0642\u0637. \u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0646\u0635\u0629 \u0644\u0625\u0646\u0634\u0627\u0621 \u0645\u0633\u0627\u062d\u0629 \u0639\u0645\u0644.",
+  "hoqooq_brand": "\u062d\u0642\u0648\u0642",
+  "brand_quote": "\u0646\u064f\u064a\u0633\u0651\u0631 \u0627\u0644\u0639\u0645\u0644 \u0627\u0644\u0642\u0627\u0646\u0648\u0646\u064a \u062d\u062a\u0649 \u062a\u0631\u0643\u0632\u0648\u0627 \u0639\u0644\u0649 \u0627\u0644\u0639\u062f\u0627\u0644\u0629.",
+  "case_timeline": "\u0627\u0644\u062a\u0633\u0644\u0633\u0644 \u0627\u0644\u0632\u0645\u0646\u064a \u0644\u0644\u0642\u0636\u064a\u0629",
+  "download_document": "\u062a\u0646\u0632\u064a\u0644 \u0627\u0644\u0645\u0633\u062a\u0646\u062f",
+  "document_saved_to": "\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u0645\u0633\u062a\u0646\u062f \u0641\u064a",
+  "document_open_failed": "\u062a\u0645 \u062a\u0646\u0632\u064a\u0644 \u0627\u0644\u0645\u0633\u062a\u0646\u062f \u0648\u0644\u0643\u0646 \u062a\u0639\u0630\u0631 \u0641\u062a\u062d\u0647:",
+  "task_assignee_required": "\u0627\u062e\u062a\u0631 \u0645\u0648\u0638\u0641\u064b\u0627 \u0644\u0625\u0633\u0646\u0627\u062f \u0627\u0644\u0645\u0647\u0645\u0629 \u0625\u0644\u064a\u0647 \u0642\u0628\u0644 \u0625\u0646\u0634\u0627\u0626\u0647\u0627.",
+  "no_task_assignees": "\u0644\u0627 \u064a\u0648\u062c\u062f \u0645\u0633\u062a\u062e\u062f\u0645 \u0646\u0634\u0637 \u0645\u062a\u0627\u062d \u0644\u0625\u0633\u0646\u0627\u062f \u0627\u0644\u0645\u0647\u0645\u0629 \u0625\u0644\u064a\u0647. \u0642\u062f \u062a\u0643\u0648\u0646 \u0635\u0644\u0627\u062d\u064a\u0629 \u0627\u0644\u0645\u0648\u0638\u0641\u064a\u0646 \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629.",
+  "upload_new_version": "\u0631\u0641\u0639 \u0625\u0635\u062f\u0627\u0631 \u062c\u062f\u064a\u062f",
+  "change_summary_optional": "\u0645\u0644\u062e\u0635 \u0627\u0644\u062a\u063a\u064a\u064a\u0631 (\u0627\u062e\u062a\u064a\u0627\u0631\u064a)",
+  "archive_document": "\u0623\u0631\u0634\u0641\u0629 \u0627\u0644\u0645\u0633\u062a\u0646\u062f",
+  "archive_document_confirmation": "\u0623\u0631\u0634\u0641\u0629 \u0647\u0630\u0627 \u0627\u0644\u0645\u0633\u062a\u0646\u062f \u0645\u0639 \u0627\u0644\u0627\u062d\u062a\u0641\u0627\u0638 \u0628\u0625\u0635\u062f\u0627\u0631\u0627\u062a\u0647 \u0648\u0633\u062c\u0644 \u0627\u0644\u062a\u062f\u0642\u064a\u0642\u061f",
+  "timeline_case_created": "\u062a\u0645 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0642\u0636\u064a\u0629",
+  "timeline_lawyer_changed": "\u062a\u0645 \u062a\u063a\u064a\u064a\u0631 \u0627\u0644\u0645\u062d\u0627\u0645\u064a",
+  "timeline_status_changed": "\u062a\u0645 \u062a\u063a\u064a\u064a\u0631 \u062d\u0627\u0644\u0629 \u0627\u0644\u0642\u0636\u064a\u0629",
+  "timeline_hearing_scheduled": "\u062a\u0645 \u062c\u062f\u0648\u0644\u0629 \u062c\u0644\u0633\u0629",
+  "timeline_hearing_completed": "\u062a\u0645 \u0625\u0643\u0645\u0627\u0644 \u0627\u0644\u062c\u0644\u0633\u0629",
+  "timeline_document_uploaded": "\u062a\u0645 \u0631\u0641\u0639 \u0645\u0633\u062a\u0646\u062f",
+  "timeline_note_added": "\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 \u0645\u0644\u0627\u062d\u0638\u0629",
+  "timeline_payment_received": "\u062a\u0645 \u0627\u0633\u062a\u0644\u0627\u0645 \u062f\u0641\u0639\u0629",
+  "timeline_task_assigned": "\u062a\u0645 \u0625\u0633\u0646\u0627\u062f \u0645\u0647\u0645\u0629",
+  "timeline_service_added": "\u062a\u0645\u062a \u0625\u0636\u0627\u0641\u0629 \u0625\u0639\u0644\u0627\u0646 \u0642\u0636\u0627\u0626\u064a",
+  "timeline_service_updated": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0627\u0644\u0625\u0639\u0644\u0627\u0646 \u0627\u0644\u0642\u0636\u0627\u0626\u064a",
+  "timeline_grant_added": "\u062a\u0645 \u062a\u062d\u062f\u064a\u062b \u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0627\u0644\u0642\u0636\u064a\u0629",
+  "timeline_grant_revoked": "\u062a\u0645 \u0625\u0644\u063a\u0627\u0621 \u0635\u0644\u0627\u062d\u064a\u0627\u062a \u0627\u0644\u0642\u0636\u064a\u0629",
+  "waiting": "\u0641\u064a \u0627\u0644\u0627\u0646\u062a\u0638\u0627\u0631",
+  "no_tasks_for_case": "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0647\u0627\u0645 \u0644\u0647\u0630\u0647 \u0627\u0644\u0642\u0636\u064a\u0629.",
+  "complete_task": "\u0625\u0643\u0645\u0627\u0644 \u0627\u0644\u0645\u0647\u0645\u0629",
+  "completion_note": "\u0645\u0644\u0627\u062d\u0638\u0629 \u0627\u0644\u0625\u0643\u0645\u0627\u0644",
+  "cancel_task": "\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0645\u0647\u0645\u0629",
+  "cancel_task_confirmation": "\u0647\u0644 \u062a\u0631\u064a\u062f \u0625\u0644\u063a\u0627\u0621 \u0647\u0630\u0647 \u0627\u0644\u0645\u0647\u0645\u0629 \u0645\u0639 \u0627\u0644\u0627\u062d\u062a\u0641\u0627\u0638 \u0628\u0633\u062c\u0644\u0647\u0627\u061f",
   "lexora": "ليكسورا",
   "legal_case_management": "إدارة القضايا القانونية",
   "securing_your_session": "جاري تأمين جلستك",
@@ -15,6 +93,8 @@
   "create_account": "إنشاء حساب",
   "home": "الرئيسية",
   "calendar": "التقويم",
+  "calendar_manage_permission_title": "صلاحية التقويم مطلوبة",
+  "calendar_manage_permission_message": "إنشاء أحداث التقويم يتطلب صلاحية calendar.manage. اطلب من مسؤول النظام منح هذه الصلاحية لحسابك.",
   "clients": "العملاء",
   "alerts": "التنبيهات",
   "profile": "الملف الشخصي",
@@ -134,6 +214,13 @@
   "outcome_summary": "ملخص النتيجة",
   "agreed_fee": "الأتعاب المتفق عليها",
   "primary_lawyer": "المحامي الرئيسي",
+  "primary_lawyer_optional": "المحامي الرئيسي (مطلوب لتفعيل القضية)",
+  "current_primary_lawyer": "المحامي الرئيسي الحالي",
+  "could_not_load_primary_lawyers": "تعذر تحميل المحامين. يحتاج حسابك إلى صلاحية employee.read لاختيار محامٍ.",
+  "select_case_type_before_lawyer": "اختر نوع القضية قبل اختيار المحامي الرئيسي.",
+  "no_matching_primary_lawyers": "لا يوجد محامٍ مؤهل لهذا النوع من القضايا. يجب إنشاء الموظف بتصنيف محامٍ ومنحه هذا التخصص وتفعيل حسابه قبل تفعيل القضية.",
+  "primary_lawyer_ineligible": "الموظف المحدد لديه هذا التخصص لكنه غير مؤهل حاليًا كمحامٍ رئيسي. تأكد من إنشائه بتصنيف محامٍ وإكمال تفعيل الدعوة حتى تصبح حالته ACTIVE.",
+  "employee_invitation_pending": "تم إنشاء الموظف. يجب عليه إكمال تفعيل الدعوة قبل تعيينه محاميًا رئيسيًا.",
   "client_code": "رمز العميل",
   "national_id": "الهوية الوطنية",
   "commercial_reg": "السجل التجاري",
@@ -205,11 +292,18 @@
   "assign_hearing": "تحديد الجلسات",
   "new_case": "قضية جديدة",
   "create_case": "إنشاء قضية",
+  "start_new_case": "ابدأ قضية جديدة",
+  "update_case_details": "تحديث تفاصيل القضية",
   "add_team_member": "إضافة عضو فريق",
   "team_member": "عضو الفريق",
   "access_level": "مستوى الوصول",
   "new_hearing": "جلسة جديدة",
   "create_hearing": "إنشاء جلسة",
+  "no_backend_courts_for_hearing": "لا توجد محكمة رسمية مهيأة في الخادم لمحافظة هذه القضية. تتطلب الجلسة معرّف محكمة من الخادم، ولا يمكن استخدام مواقع OpenStreetMap لهذا الحقل.",
+  "no_circuits_optional": "لا توجد دوائر مهيأة لهذه المحكمة. الدائرة اختيارية، لذلك لا يزال بإمكانك إنشاء الجلسة.",
+  "court_load_failed": "تعذر تحميل المحاكم:",
+  "hearing_type_load_failed": "تعذر تحميل أنواع الجلسات:",
+  "hearing_required_fields": "اختر نوع الجلسة والمحكمة وتاريخ ووقت الجلسة.",
   "hearing_type": "نوع الجلسة",
   "assign": "تعيين",
   "reactivate_subscription": "إعادة تفعيل الاشتراك",
@@ -260,4 +354,242 @@
   "cheque": "شيك",
   "online": "دفع إلكتروني",
   "no_notifications_found": "لا توجد إشعارات"
+  ,"firms": "المكاتب",
+  "provision_firm": "إضافة مكتب",
+  "no_firms_found": "لا توجد مكاتب مضافة بعد.",
+  "unnamed_firm": "مكتب بدون اسم",
+  "no_plan": "لا توجد خطة",
+  "firm_details": "تفاصيل المكتب",
+  "plan": "الخطة",
+  "subscription": "الاشتراك",
+  "firm_employees": "موظفو المكتب",
+  "employees": "الموظفون",
+  "no_employees_found": "لا يوجد موظفون لهذا المكتب.",
+  "could_not_load_employees": "تعذر تحميل الموظفين.",
+  "unnamed_employee": "موظف بدون اسم",
+  "create_employee": "إضافة موظف",
+  "edit_employee": "تعديل الموظف",
+  "archive_firm": "أرشفة المكتب",
+  "firm_name": "اسم المكتب",
+  "firm_contact_email": "بريد التواصل للمكتب",
+  "initial_firm_admin": "مسؤول المكتب الأول",
+  "firm_admin_permissions": "صلاحيات مسؤول المكتب",
+  "subscription_plan": "خطة الاشتراك",
+  "billing_cycle": "دورة الفوترة",
+  "create_firm_and_admin": "إنشاء المكتب ومسؤول المكتب",
+  "no_subscription_plans": "لا توجد خطط اشتراك متاحة.",
+  "full_name": "الاسم الكامل",
+  "temporary_password": "كلمة مرور مؤقتة",
+  "employee_role": "دور الموظف",
+  "save_employee": "حفظ الموظف",
+  "employee_created": "تم إنشاء الموظف بنجاح.",
+  "employee_updated": "تم تحديث الموظف بنجاح.",
+  "could_not_create_employee": "تعذر إنشاء الموظف.",
+  "could_not_load_employee_setup": "تعذر تحميل إعدادات الموظف.",
+  "job_classification": "التصنيف الوظيفي",
+  "department_optional": "القسم (اختياري)",
+  "hire_date": "تاريخ التعيين",
+  "lawyer_specializations": "تخصصات المحامي",
+  "base_permissions": "الصلاحيات الأساسية",
+  "employee_permissions_explanation": "حدد ما يمكن للموظف الوصول إليه. التصنيف الوظيفي وحده لا يمنح أي صلاحيات.",
+  "employee_position": "المسمى الوظيفي",
+  "employee_read_permission_required": "إدارة الموظفين متاحة، لكن حسابك لا يمكنه تحميل قائمة الموظفين حتى يتم منحه صلاحية employee.read.",
+  "employee_create_permissions_required": "إنشاء الموظفين يتطلب أيضًا صلاحيتي employee.create وemployee.permission.manage.",
+  "lawyer_position_not_classification": "هذا الموظف لديه مسمى وظيفي قانوني لكنه لم يُنشأ بتصنيف محامٍ. تغيير المسمى الوظيفي لا يتيح تخصصات أنواع القضايا.",
+  "employee_create_permission_title": "صلاحية الإنشاء مطلوبة",
+  "employee_create_permission_message": "اطلب من مسؤول النظام منح الصلاحيات التالية لحساب مسؤول المكتب:",
+  "could_not_load_employee": "تعذر تحميل بيانات الموظف.",
+  "complete_all_employee_fields": "يرجى إكمال جميع الحقول المطلوبة لإنشاء الموظف.",
+  "firm_context_unavailable": "سياق المكتب غير متاح. يرجى تسجيل الدخول مرة أخرى.",
+  "status": "الحالة",
+  "owner": "المالك",
+  "renews": "تاريخ التجديد",
+  "edit_firm_admin": "تعديل مسؤول المكتب",
+  "archive_this_firm": "أرشفة هذا المكتب؟",
+  "archive_firm_confirmation": "سيؤدي ذلك إلى تعطيل المكتب وأرشفة قضاياه وعملائه.",
+  "cancel": "إلغاء",
+  "archive": "أرشفة",
+  "could_not_archive_firm": "تعذرت أرشفة المكتب.",
+  "try_again": "حاول مرة أخرى"
+  ,"delete_employee": "حذف الموظف",
+  "delete_employee_confirmation": "حذف هذا الموظف؟ لا يمكن التراجع عن هذا الإجراء.",
+  "could_not_delete_employee": "تعذر حذف الموظف.",
+  "delete": "حذف"
+  ,"permissions_selected": "صلاحية محددة",
+  "case_title": "عنوان القضية",
+  "client_type": "نوع الموكل",
+  "client_name": "اسم الموكل",
+  "individual": "فرد",
+  "company": "شركة",
+  "description": "الوصف"
+  ,"manage_firm_admin_permissions": "إدارة صلاحيات مسؤول المكتب",
+  "firm_admin_permissions_explanation": "حدد مجموعة الصلاحيات الكاملة لمسؤول المكتب. يؤدي الحفظ إلى استبدال المجموعة الحالية وتسجيل خروج الحساب.",
+  "firm_admin_permissions_updated": "تم تحديث صلاحيات مسؤول المكتب.",
+  "firm_admin_not_found": "لم يتم العثور على حساب مسؤول لهذا المكتب.",
+  "could_not_update_permissions": "تعذر تحديث الصلاحيات.",
+  "could_not_load_firm": "تعذر تحميل بيانات المكتب."
+  ,"registration_number": "رقم التسجيل",
+  "invalid_email": "أدخل عنوان بريد إلكتروني صحيحًا",
+  "opponents": "الخصوم",
+  "opponent": "الخصم",
+  "opponent_type": "نوع الخصم",
+  "opponent_name": "اسم الخصم",
+  "contact_details": "بيانات التواصل",
+  "representative": "الممثل",
+  "add_opponent": "إضافة خصم",
+  "remove_opponent": "إزالة الخصم",
+  "no_opponents_added": "لم تتم إضافة خصوم.",
+  "change_case_status": "تغيير حالة القضية",
+  "confirm": "تأكيد"
+  ,"court_case_number": "رقم القضية بالمحكمة",
+  "court_case_year": "سنة القضية بالمحكمة"
+  ,"invalid_court_case_year": "أدخل سنة 1900 أو أحدث"
+  ,"courts_unavailable": "المحاكم غير متاحة. اتصل بالإنترنت وحاول مرة أخرى."
+  ,"open_in_maps": "فتح في الخرائط"
+  ,"osm_attribution": "© مساهمو OpenStreetMap"
+  ,"manage_case_access": "إدارة صلاحيات القضية"
+  ,"case_access_replace_warning": "يستبدل الحفظ مجموعة صلاحيات هذا الموظف بالكامل لهذه القضية. لا يمكن تحميل الصلاحيات الحالية حتى تتوفر واجهة العرض من الخادم."
+  ,"save_access": "حفظ الصلاحيات"
+  ,"revoke_all_case_access": "إلغاء جميع صلاحيات القضية"
+  ,"no_delegable_capabilities": "لا تملك صلاحيات قابلة للتفويض."
+  ,"case_data": "القضية"
+  ,"case_parties": "الموكل والخصوم"
+  ,"service_of_process": "الإعلانات القضائية"
+  ,"client_meetings": "اجتماعات الموكل"
+  ,"access_management": "إدارة الصلاحيات"
+  ,"employee": "الموظف"
+  ,"circuit": "الدائرة"
+  ,"complete_hearing": "إكمال الجلسة"
+  ,"hearing_outcome_min_length": "يجب ألا تقل نتيجة الجلسة عن 50 حرفًا."
+  ,"failed": "فشلت"
+  ,"rescheduled": "أعيدت جدولتها"
+  ,"new_service_process": "إعلان قضائي جديد"
+  ,"edit_service_process": "تعديل الإعلان القضائي"
+  ,"create_service_process": "إنشاء إعلان قضائي"
+  ,"service_target_name": "اسم المستلم أو المعلن إليه"
+  ,"service_method": "طريقة الإعلان"
+  ,"service_deadline": "الموعد النهائي للإعلان"
+  ,"process_server_name": "اسم المحضر"
+  ,"recipient_details": "تفاصيل المستلم"
+  ,"complete_service_fields": "أدخل المعلن إليه وطريقة الإعلان والموعد المحدد."
+  ,"no_service_processes": "لا توجد إعلانات قضائية لهذه القضية."
+  ,"document_category": "تصنيف المستند"
+  ,"document_categories_unavailable": "لا توجد تصنيفات مستندات نشطة."
+  ,"complete_service_process": "إكمال الإعلان القضائي"
+  ,"completion_result": "نتيجة الإكمال"
+  ,"result_notes": "ملاحظات النتيجة"
+  ,"choose_evidence_file": "اختر ملف الإثبات"
+  ,"submit_completion": "رفع الإثبات وإكمال الإعلان"
+  ,"complete_service_evidence_fields": "أدخل ملاحظات النتيجة واختر التصنيف وأرفق ملف الإثبات."
+  ,"cancel_service_process": "إلغاء الإعلان القضائي"
+  ,"cancel_service_process_confirmation": "هل تريد إلغاء هذا النشاط مع الاحتفاظ بسجله القانوني؟"
+  ,"new_client_meeting": "اجتماع موكل جديد"
+  ,"edit_client_meeting": "تعديل اجتماع الموكل"
+  ,"create_client_meeting": "إنشاء اجتماع موكل"
+  ,"meeting_subject": "موضوع الاجتماع"
+  ,"meeting_location_method": "المكان أو طريقة الاجتماع"
+  ,"complete_meeting_fields": "أدخل الموضوع والمكان أو الطريقة والموعد المحدد."
+  ,"no_client_meetings": "لا توجد اجتماعات موكل لهذه القضية."
+  ,"complete_client_meeting": "إكمال اجتماع الموكل"
+  ,"outcome_notes": "ملاحظات النتيجة"
+  ,"cancel_client_meeting": "إلغاء اجتماع الموكل"
+  ,"cancel_client_meeting_confirmation": "هل تريد إلغاء هذا الاجتماع مع الاحتفاظ بسجله؟"
+  ,"case_information": "بيانات القضية"
+  ,"case_number_optional": "رقم القضية (اختياري — يُولَّد تلقائياً)"
+  ,"description_optional": "وصف القضية (اختياري)"
+  ,"court_optional": "المحكمة (اختياري)"
+  ,"responsible_lawyer_optional": "المحامي المسؤول (اختياري)"
+  ,"national_id_or_registration": "رقم الهوية / السجل التجاري"
+  ,"company_registration_number": "رقم السجل (للشركات)"
+  ,"add_another_opponent": "إضافة خصم آخر"
+  ,"invalid_amount": "أدخل مبلغاً صحيحاً غير سالب"
+  ,"agreed_fee": "الأتعاب المتفق عليها"
+  ,"select": "اختر..."
+  ,"unknown_case": "قضية"
+  ,"card": "بطاقة ائتمان"
+  ,"other": "أخرى"
+  ,"recorded_by": "سجّلها"
+  ,"payment_history": "سجل الدفعات"
+  ,"set_agreed_fee": "تحديد الأتعاب المتفق عليها"
+  ,"update_agreed_fee": "تعديل الأتعاب المتفق عليها"
+  ,"agreed_fee_not_set": "لم يتم تحديد أتعاب بعد"
+  ,"agreed_fee_not_set_hint": "لم يتم تسجيل أتعاب متفق عليها لهذه القضية بعد، ولا يمكن قبول المدفوعات قبل ذلك. حدّدها من شاشة تعديل القضية (حقل الأتعاب المتفق عليها)؛ وستظهر المدفوعات والمتبقي هنا بعد تحديدها."
+  ,"record_first_payment": "تسجيل أول دفعة"
+  ,"payment_exceeds_remaining": "المبلغ يتجاوز الرصيد المتبقي"
+  ,"agreed_fee_updated": "تم حفظ الأتعاب المتفق عليها"
+  ,"paid_cases": "قضايا مدفوعة"
+  ,"partial_cases": "قضايا مدفوعة جزئياً"
+  ,"unpaid_cases": "قضايا غير مدفوعة"
+  ,"retry_finance_summary": "إعادة المحاولة"
+  ,"case_finance": "المحاسبة المالية للقضية"
+  ,"case_finance_permissions": "صلاحيات المحاسبة للقضية"
+  ,"firm_finance_permission": "صلاحية المحاسبة على مستوى الشركة"
+  ,"finance_permission_classification_note": "منح صلاحيات المال يتم بشكل صريح. التصنيف الوظيفي مثل المحاسب لا يمنح أي صلاحية مالية من تلقاء نفسه."
+  ,"firm_information": "معلومات المكتب"
+  ,"firm_name": "اسم المكتب"
+  ,"firm_address": "العنوان"
+  ,"contact_email": "البريد الإلكتروني للمكتب"
+  ,"firm_logo": "شعار المكتب"
+  ,"firm_logo_hint": "اختياري — يظهر في لوحة المكتب وفي قائمة المكاتب لدى المشرف العام."
+  ,"upload_logo": "رفع شعار"
+  ,"uploading": "جاري الرفع..."
+  ,"save_changes": "حفظ التغييرات"
+  ,"changes_saved": "تم حفظ التغييرات بنجاح"
+  ,"firm_name_required": "اسم المكتب مطلوب"
+  ,"firm_members_section": "الأعضاء"
+  ,"roles_and_permissions": "الأدوار والصلاحيات"
+  ,"subscription_plan_and_billing": "خطة الاشتراك والفوترة"
+  ,"subscribed_firm_details": "بيانات المكتب المشترك"
+  ,"yearly": "سنوي"
+  ,"monthly": "شهري"
+  ,"no_active_plan": "لا توجد خطة اشتراك مفعّلة"
+  ,"subscription_ends_on": "ينتهي في"
+  ,"subscription_status_pending": "قيد التفعيل"
+  ,"subscription_status_active": "نشط"
+  ,"subscription_status_expired": "منتهي"
+  ,"subscription_status_cancelled": "ملغى"
+  ,"current_password": "كلمة المرور الحالية"
+  ,"new_password": "كلمة المرور الجديدة"
+  ,"confirm_new_password": "تأكيد كلمة المرور الجديدة"
+  ,"password_mismatch": "كلمتا المرور الجديدتان غير متطابقتين"
+  ,"password_required": "كلمة المرور الحالية مطلوبة"
+  ,"new_password_required": "كلمة المرور الجديدة مطلوبة"
+  ,"password_min_length": "يجب ألا تقل كلمة المرور عن 8 أحرف"
+  ,"password_changed_success": "تم تغيير كلمة المرور بنجاح"
+  ,"password_change_wrong_current": "كلمة المرور الحالية غير صحيحة"
+  ,"password_change_forbidden": "ليست لديك صلاحية تغيير كلمة المرور هذه"
+  ,"password_change_generic_error": "تعذر تغيير كلمة المرور. حاول مرة أخرى."
+  ,"theme_light": "فاتح"
+  ,"theme_dark": "داكن"
+  ,"theme_system": "النظام"
+  ,"personal_information": "الملف الشخصي"
+  ,"full_name": "الاسم الكامل"
+  ,"phone_number": "رقم الهاتف"
+  ,"profile_updated_success": "تم حفظ الملف الشخصي بنجاح"
+  ,"full_name_required": "الاسم الكامل مطلوب"
+  ,"avatar_url": "رابط الصورة الشخصية"
+  ,"profile_image": "الصورة الشخصية"
+  ,"preferences": "التفضيلات"
+  ,"appearance_and_language": "المظهر واللغة"
+  ,"theme_mode": "المظهر"
+  ,"arabic_language": "العربية"
+  ,"english_language": "الإنجليزية"
+  ,"current_language": "اللغة الحالية"
+  ,"forgot_password_help": "أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور"
+  ,"send_reset_link": "إرسال رابط إعادة التعيين"
+  ,"reset_link_sent": "إذا كان هذا البريد مسجلاً لدينا فستصلك رسالة تحتوي على رابط إعادة تعيين كلمة المرور."
+  ,"back_to_login": "العودة لتسجيل الدخول"
+  ,"email_required": "البريد الإلكتروني مطلوب"
+  ,"set_new_password": "تعيين كلمة مرور جديدة"
+  ,"reset_password_help": "أدخل كلمة المرور الجديدة لحسابك"
+  ,"invalid_reset_link": "رابط إعادة التعيين غير صالح أو منتهي الصلاحية."
+  ,"update_password": "تحديث كلمة المرور"
+  ,"password_reset_success": "تم تحديث كلمة المرور بنجاح. يمكنك تسجيل الدخول بكلمة المرور الجديدة."
+  ,"network_error_message": "تعذر الوصول إلى الخادم. تحقق من اتصالك وحاول مرة أخرى."
+  ,"recovery_failed": "تعذر إكمال الطلب. حاول مرة أخرى."
+  ,"back": "رجوع"
+  ,"settings": "الإعدادات"
+  ,"governorate": "المحافظة"
+  ,"refresh_after_action_failed": "تم حفظ التغيير، تعذّر تحديث بيانات المكتب. حدّث الصفحة أو أعد فتح هذه الشاشة."
 }
+

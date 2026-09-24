@@ -32,8 +32,11 @@ abstract class DocumentItem with _$DocumentItem {
     @JsonKey(name: 'case') CaseSummary? caseSummary,
     String? folderId,
     String? categoryId,
+    String? linkedEntityType,
+    String? linkedEntityId,
     required String uploadedById,
     required int versionNumber,
+    String? sha256,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _DocumentItem;

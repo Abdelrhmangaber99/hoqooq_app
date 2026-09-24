@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Court {
 
- String get id; String get name; String get type; bool get isActive; DateTime get createdAt; DateTime get updatedAt; String? get city; String? get address;
+ String get id; String get name; String? get nameEn; String? get nameAr; String get type; bool get isActive; DateTime get createdAt; DateTime get updatedAt; String? get city; String? get address;
 /// Create a copy of Court
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $CourtCopyWith<Court> get copyWith => _$CourtCopyWithImpl<Court>(this as Court, 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Court&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.city, city) || other.city == city)&&(identical(other.address, address) || other.address == address));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Court&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.nameEn, nameEn) || other.nameEn == nameEn)&&(identical(other.nameAr, nameAr) || other.nameAr == nameAr)&&(identical(other.type, type) || other.type == type)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.city, city) || other.city == city)&&(identical(other.address, address) || other.address == address));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,isActive,createdAt,updatedAt,city,address);
+int get hashCode => Object.hash(runtimeType,id,name,nameEn,nameAr,type,isActive,createdAt,updatedAt,city,address);
 
 @override
 String toString() {
-  return 'Court(id: $id, name: $name, type: $type, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, city: $city, address: $address)';
+  return 'Court(id: $id, name: $name, nameEn: $nameEn, nameAr: $nameAr, type: $type, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, city: $city, address: $address)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $CourtCopyWith<$Res>  {
   factory $CourtCopyWith(Court value, $Res Function(Court) _then) = _$CourtCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String type, bool isActive, DateTime createdAt, DateTime updatedAt, String? city, String? address
+ String id, String name, String? nameEn, String? nameAr, String type, bool isActive, DateTime createdAt, DateTime updatedAt, String? city, String? address
 });
 
 
@@ -65,11 +65,13 @@ class _$CourtCopyWithImpl<$Res>
 
 /// Create a copy of Court
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? type = null,Object? isActive = null,Object? createdAt = null,Object? updatedAt = null,Object? city = freezed,Object? address = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? nameEn = freezed,Object? nameAr = freezed,Object? type = null,Object? isActive = null,Object? createdAt = null,Object? updatedAt = null,Object? city = freezed,Object? address = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,nameEn: freezed == nameEn ? _self.nameEn : nameEn // ignore: cast_nullable_to_non_nullable
+as String?,nameAr: freezed == nameAr ? _self.nameAr : nameAr // ignore: cast_nullable_to_non_nullable
+as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -160,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String type,  bool isActive,  DateTime createdAt,  DateTime updatedAt,  String? city,  String? address)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? nameEn,  String? nameAr,  String type,  bool isActive,  DateTime createdAt,  DateTime updatedAt,  String? city,  String? address)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Court() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.isActive,_that.createdAt,_that.updatedAt,_that.city,_that.address);case _:
+return $default(_that.id,_that.name,_that.nameEn,_that.nameAr,_that.type,_that.isActive,_that.createdAt,_that.updatedAt,_that.city,_that.address);case _:
   return orElse();
 
 }
@@ -181,10 +183,10 @@ return $default(_that.id,_that.name,_that.type,_that.isActive,_that.createdAt,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String type,  bool isActive,  DateTime createdAt,  DateTime updatedAt,  String? city,  String? address)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? nameEn,  String? nameAr,  String type,  bool isActive,  DateTime createdAt,  DateTime updatedAt,  String? city,  String? address)  $default,) {final _that = this;
 switch (_that) {
 case _Court():
-return $default(_that.id,_that.name,_that.type,_that.isActive,_that.createdAt,_that.updatedAt,_that.city,_that.address);case _:
+return $default(_that.id,_that.name,_that.nameEn,_that.nameAr,_that.type,_that.isActive,_that.createdAt,_that.updatedAt,_that.city,_that.address);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +203,10 @@ return $default(_that.id,_that.name,_that.type,_that.isActive,_that.createdAt,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String type,  bool isActive,  DateTime createdAt,  DateTime updatedAt,  String? city,  String? address)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? nameEn,  String? nameAr,  String type,  bool isActive,  DateTime createdAt,  DateTime updatedAt,  String? city,  String? address)?  $default,) {final _that = this;
 switch (_that) {
 case _Court() when $default != null:
-return $default(_that.id,_that.name,_that.type,_that.isActive,_that.createdAt,_that.updatedAt,_that.city,_that.address);case _:
+return $default(_that.id,_that.name,_that.nameEn,_that.nameAr,_that.type,_that.isActive,_that.createdAt,_that.updatedAt,_that.city,_that.address);case _:
   return null;
 
 }
@@ -216,11 +218,13 @@ return $default(_that.id,_that.name,_that.type,_that.isActive,_that.createdAt,_t
 @JsonSerializable()
 
 class _Court implements Court {
-  const _Court({required this.id, required this.name, required this.type, required this.isActive, required this.createdAt, required this.updatedAt, this.city, this.address});
+  const _Court({required this.id, required this.name, this.nameEn, this.nameAr, required this.type, required this.isActive, required this.createdAt, required this.updatedAt, this.city, this.address});
   factory _Court.fromJson(Map<String, dynamic> json) => _$CourtFromJson(json);
 
 @override final  String id;
 @override final  String name;
+@override final  String? nameEn;
+@override final  String? nameAr;
 @override final  String type;
 @override final  bool isActive;
 @override final  DateTime createdAt;
@@ -241,16 +245,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Court&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.city, city) || other.city == city)&&(identical(other.address, address) || other.address == address));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Court&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.nameEn, nameEn) || other.nameEn == nameEn)&&(identical(other.nameAr, nameAr) || other.nameAr == nameAr)&&(identical(other.type, type) || other.type == type)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.city, city) || other.city == city)&&(identical(other.address, address) || other.address == address));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,type,isActive,createdAt,updatedAt,city,address);
+int get hashCode => Object.hash(runtimeType,id,name,nameEn,nameAr,type,isActive,createdAt,updatedAt,city,address);
 
 @override
 String toString() {
-  return 'Court(id: $id, name: $name, type: $type, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, city: $city, address: $address)';
+  return 'Court(id: $id, name: $name, nameEn: $nameEn, nameAr: $nameAr, type: $type, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, city: $city, address: $address)';
 }
 
 
@@ -261,7 +265,7 @@ abstract mixin class _$CourtCopyWith<$Res> implements $CourtCopyWith<$Res> {
   factory _$CourtCopyWith(_Court value, $Res Function(_Court) _then) = __$CourtCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String type, bool isActive, DateTime createdAt, DateTime updatedAt, String? city, String? address
+ String id, String name, String? nameEn, String? nameAr, String type, bool isActive, DateTime createdAt, DateTime updatedAt, String? city, String? address
 });
 
 
@@ -278,11 +282,13 @@ class __$CourtCopyWithImpl<$Res>
 
 /// Create a copy of Court
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? type = null,Object? isActive = null,Object? createdAt = null,Object? updatedAt = null,Object? city = freezed,Object? address = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? nameEn = freezed,Object? nameAr = freezed,Object? type = null,Object? isActive = null,Object? createdAt = null,Object? updatedAt = null,Object? city = freezed,Object? address = freezed,}) {
   return _then(_Court(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,nameEn: freezed == nameEn ? _self.nameEn : nameEn // ignore: cast_nullable_to_non_nullable
+as String?,nameAr: freezed == nameAr ? _self.nameAr : nameAr // ignore: cast_nullable_to_non_nullable
+as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable

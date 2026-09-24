@@ -17,11 +17,6 @@ class SessionCubit extends Cubit<SessionState> {
 
   String? _accessToken;
 
-  /// Retained across a `SessionSubscriptionInactive` detour so
-  /// `subscriptionReactivated()` can return to `SessionAuthenticated`
-  /// without a fresh `GET /users/me` call. Cleared on logout.
-  User? _lastUser;
-
   /// In-memory only, per BR-033 — never persisted.
   String? get accessToken => _accessToken;
 
@@ -35,7 +30,6 @@ class SessionCubit extends Cubit<SessionState> {
     required bool isFirmAdmin,
   }) {
     _accessToken = accessToken;
-    _lastUser = user;
     emit(SessionAuthenticated(user, isFirmAdmin: isFirmAdmin));
   }
 
@@ -45,29 +39,14 @@ class SessionCubit extends Cubit<SessionState> {
     _accessToken = accessToken;
   }
 
+  /// Updates the in-memory user and emits a new [SessionAuthenticated] state
+  /// so UI consumers (app bar, profile, header) rebuild immediately.
+  void updateUser(User user) {
+    emit(SessionAuthenticated(user, isFirmAdmin: user.isFirmAdmin));
+  }
+
   void unauthenticated() {
     _accessToken = null;
-    _lastUser = null;
     emit(const SessionUnauthenticated());
-  }
-
-  /// Called by `SubscriptionInterceptor` on any 402. No-ops if there's no
-  /// known user (shouldn't happen — `SubscriptionGuard` only fires for
-  /// authenticated requests — but a stale/racing 401-logout could
-  /// theoretically land first).
-  void subscriptionInactive(String message) {
-    final user = _lastUser;
-    if (user == null) return;
-    emit(SessionSubscriptionInactive(user, message: message));
-  }
-
-  /// Called after a successful `POST /subscriptions/activate` — returns
-  /// straight to `SessionAuthenticated` using the still-valid access
-  /// token (never cleared entering the blocked state, since it wasn't a
-  /// logout).
-  void subscriptionReactivated() {
-    final user = _lastUser;
-    if (user == null) return;
-    emit(SessionAuthenticated(user, isFirmAdmin: user.isFirmAdmin));
   }
 }

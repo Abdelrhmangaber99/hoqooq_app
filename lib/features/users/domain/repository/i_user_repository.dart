@@ -8,4 +8,8 @@ import '../../../authentication/domain/entities/user.dart';
 /// entity with a real list endpoint, not an unbrowsable `Lookup` row.
 abstract class IUserRepository {
   ApiResult<List<User>> getUsers();
+
+  /// Tenant-scoped active accounts that can receive Tasks and Case access.
+  /// Firm accounts must use `/employees`; `/users` is platform-admin-only.
+  ApiResult<List<User>> getAssignableUsers();
 }

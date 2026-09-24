@@ -14,3 +14,13 @@ class FetchCaseDetailsRequested extends CaseDetailsEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class ChangeCaseStatusRequested extends CaseDetailsEvent {
+  const ChangeCaseStatusRequested(this.id, this.status);
+
+  final String id;
+  final CaseStatus status;
+
+  @override
+  List<Object?> get props => [id, status];
+}

@@ -130,4 +130,30 @@ void main() {
       },
     );
   });
+
+  test('GETs the authorization-scoped daily activity feed', () async {
+    when(
+      () => dio.get(
+        '/notifications/daily',
+        queryParameters: {'date': '2026-08-17'},
+      ),
+    ).thenAnswer(
+      (_) async => okResponse('/notifications/daily', [
+        {
+          'id': 'h1',
+          'type': 'HEARING',
+          'caseId': 'c1',
+          'dueAt': '2026-08-17T09:00:00.000Z',
+          'status': 'SCHEDULED',
+        },
+      ]),
+    );
+
+    final result = await repository.getDailyFeed(DateTime(2026, 8, 17));
+
+    result.fold((_) => fail('expected Right'), (items) {
+      expect(items.single.caseId, 'c1');
+      expect(items.single.dueAt, DateTime.utc(2026, 8, 17, 9));
+    });
+  });
 }

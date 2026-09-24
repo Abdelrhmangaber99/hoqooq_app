@@ -10,7 +10,6 @@ import '../../../../core/widgets/app_date_field.dart';
 import '../../../../core/widgets/app_dropdown_field.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
-import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../data/models/create_task_request.dart';
 import '../../data/models/update_task_request.dart';
 import '../../domain/entities/task_item.dart';
@@ -25,22 +24,27 @@ import '../task_display_helpers.dart';
 /// person filling out this form) is the only sensible value here.
 class TaskFormPage extends StatelessWidget {
   final TaskItem? existingTask;
+  final String? fixedCaseId;
 
-  const TaskFormPage({super.key, this.existingTask});
+  const TaskFormPage({super.key, this.existingTask, this.fixedCaseId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
           getIt<TaskFormBloc>()..add(LoadTaskFormReferenceDataRequested()),
-      child: _TaskFormView(existingTask: existingTask),
+      child: _TaskFormView(
+        existingTask: existingTask,
+        fixedCaseId: fixedCaseId,
+      ),
     );
   }
 }
 
 class _TaskFormView extends StatefulWidget {
   final TaskItem? existingTask;
-  const _TaskFormView({this.existingTask});
+  final String? fixedCaseId;
+  const _TaskFormView({this.existingTask, this.fixedCaseId});
 
   @override
   State<_TaskFormView> createState() => _TaskFormViewState();
@@ -65,9 +69,9 @@ class _TaskFormViewState extends State<_TaskFormView> {
     _titleController = TextEditingController(text: t?.title ?? '');
     _descriptionController = TextEditingController(text: t?.description ?? '');
     _priority = t?.priority ?? TaskPriority.normal;
-    _status = t?.status ?? TaskStatus.pending;
+    _status = t?.status ?? TaskStatus.newTask;
     _assignedToId = t?.assignedToId;
-    _caseId = t?.caseId;
+    _caseId = widget.fixedCaseId ?? t?.caseId;
     _dueDate = t?.dueDate;
   }
 
@@ -88,44 +92,26 @@ class _TaskFormViewState extends State<_TaskFormView> {
     if (picked != null) setState(() => _dueDate = picked);
   }
 
-  String? _currentUserId() {
-    final sessionState = getIt<SessionCubit>().state;
-    return sessionState is SessionAuthenticated ? sessionState.user.id : null;
-  }
-
   void _submit(BuildContext context) {
     if (!_formKey.currentState!.validate()) return;
     final assignedToId = _assignedToId;
-    if (assignedToId == null) return;
+    if (assignedToId == null || _caseId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('task_assignee_required'))),
+      );
+      return;
+    }
 
     final bloc = context.read<TaskFormBloc>();
     if (_isEditMode) {
       final original = widget.existingTask!;
       final request = UpdateTaskRequest(
-        caseId: _caseId != original.caseId ? _caseId : null,
-        assignedToId: assignedToId != original.assignedToId
-            ? assignedToId
-            : null,
-        title: _titleController.text.trim() != original.title
-            ? _titleController.text.trim()
-            : null,
-        description:
-            _descriptionController.text.trim() != (original.description ?? '')
-            ? (_descriptionController.text.trim().isEmpty
-                  ? null
-                  : _descriptionController.text.trim())
-            : null,
-        priority: _priority != original.priority ? _priority : null,
         status: _status != original.status ? _status : null,
-        dueDate: _dueDate != original.dueDate ? _dueDate : null,
       );
       bloc.add(UpdateTaskSubmitted(original.id, request));
     } else {
-      final currentUserId = _currentUserId();
-      if (currentUserId == null) return;
       final request = CreateTaskRequest(
-        caseId: _caseId,
-        assignedById: currentUserId,
+        caseId: _caseId!,
         assignedToId: assignedToId,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim().isEmpty
@@ -169,7 +155,9 @@ class _TaskFormViewState extends State<_TaskFormView> {
               }
               if (state is! TaskFormReady) return const SizedBox();
 
-              _assignedToId ??= _currentUserId();
+              _assignedToId ??= state.users.isNotEmpty
+                  ? state.users.first.id
+                  : null;
 
               return Form(
                 key: _formKey,
@@ -199,19 +187,26 @@ class _TaskFormViewState extends State<_TaskFormView> {
                             state.users.firstWhere((u) => u.id == id).fullName,
                         onChanged: (v) => setState(() => _assignedToId = v),
                       ),
+                      if (state.users.isEmpty) ...[
+                        const SizedBox(height: AppSpacing.s),
+                        Text(
+                          context.tr('no_task_assignees'),
+                          style: const TextStyle(color: AppColors.error),
+                        ),
+                      ],
                       const SizedBox(height: AppSpacing.m),
-                      AppDropdownField<String?>(
-                        label: context.tr('case'),
-                        value: _caseId,
-                        items: [null, ...state.cases.map((c) => c.id)],
-                        labelOf: (id) => id == null
-                            ? context.tr('none')
-                            : state.cases
-                                  .firstWhere((c) => c.id == id)
-                                  .caseNumber,
-                        onChanged: (v) => setState(() => _caseId = v),
-                      ),
-                      const SizedBox(height: AppSpacing.m),
+                      if (widget.fixedCaseId == null) ...[
+                        AppDropdownField<String?>(
+                          label: context.tr('case'),
+                          value: _caseId,
+                          items: state.cases.map((c) => c.id),
+                          labelOf: (id) => state.cases
+                              .firstWhere((c) => c.id == id)
+                              .caseNumber,
+                          onChanged: (v) => setState(() => _caseId = v),
+                        ),
+                        const SizedBox(height: AppSpacing.m),
+                      ],
                       AppDropdownField<TaskPriority>(
                         label: context.tr('priority'),
                         value: _priority,
@@ -226,7 +221,10 @@ class _TaskFormViewState extends State<_TaskFormView> {
                         label: context.tr('status'),
                         value: _status,
                         items: TaskStatus.values.where(
-                          (s) => s != TaskStatus.unknown,
+                          (s) =>
+                              s == TaskStatus.newTask ||
+                              s == TaskStatus.inProgress ||
+                              s == TaskStatus.waiting,
                         ),
                         labelOf: (s) => taskStatusLabel(context, s),
                         onChanged: (v) => setState(() => _status = v!),
@@ -244,7 +242,9 @@ class _TaskFormViewState extends State<_TaskFormView> {
                             ? context.tr('save_changes')
                             : context.tr('create_task'),
                         isLoading: state.isSubmitting,
-                        onPressed: () => _submit(context),
+                        onPressed: state.users.isEmpty
+                            ? null
+                            : () => _submit(context),
                       ),
                     ],
                   ),

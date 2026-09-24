@@ -9,6 +9,7 @@ import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
 import '../../domain/entities/app_notification.dart';
+import '../../domain/entities/daily_activity_item.dart';
 import '../bloc/notifications_bloc.dart';
 import '../notification_display_helpers.dart';
 
@@ -67,7 +68,8 @@ class NotificationsPage extends StatelessWidget {
                                 .add(FetchNotificationsRequested()),
                           );
                         } else if (state is NotificationsLoaded) {
-                          if (state.notifications.isEmpty) {
+                          if (state.notifications.isEmpty &&
+                              state.dailyActivities.isEmpty) {
                             return EmptyState(
                               message: context.tr('no_notifications_found'),
                             );
@@ -75,6 +77,7 @@ class NotificationsPage extends StatelessWidget {
                           return _buildNotificationsList(
                             context,
                             state.notifications,
+                            state.dailyActivities,
                           );
                         }
                         return const SizedBox();
@@ -121,14 +124,37 @@ class NotificationsPage extends StatelessWidget {
   Widget _buildNotificationsList(
     BuildContext context,
     List<AppNotification> notifications,
+    List<DailyActivityItem> dailyActivities,
   ) {
     final dateFormat = DateFormat.yMMMd().add_jm();
+    final dailyOffset = dailyActivities.isEmpty
+        ? 0
+        : dailyActivities.length + 1;
     return ListView.separated(
-      itemCount: notifications.length,
+      itemCount: notifications.length + dailyOffset,
       separatorBuilder: (_, _) =>
           const Divider(color: AppColors.surfaceLight, height: 1),
       itemBuilder: (context, index) {
-        final notification = notifications[index];
+        if (dailyActivities.isNotEmpty && index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.s),
+            child: Text(context.tr('todays_schedule'), style: AppTypography.h3),
+          );
+        }
+        if (dailyActivities.isNotEmpty && index <= dailyActivities.length) {
+          final activity = dailyActivities[index - 1];
+          return ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              _dailyActivityIcon(activity.type),
+              color: AppColors.primary,
+            ),
+            title: Text(_dailyActivityLabel(context, activity.type)),
+            subtitle: Text(activity.status),
+            trailing: Text(DateFormat.jm().format(activity.dueAt.toLocal())),
+          );
+        }
+        final notification = notifications[index - dailyOffset];
         return GestureDetector(
           onTap: () => context.read<NotificationsBloc>().add(
             NotificationMarkedAsReadRequested(notification.id),
@@ -207,4 +233,21 @@ class NotificationsPage extends StatelessWidget {
       },
     );
   }
+
+  String _dailyActivityLabel(BuildContext context, DailyActivityType type) =>
+      switch (type) {
+        DailyActivityType.hearing => context.tr('hearings'),
+        DailyActivityType.service => context.tr('service_of_process'),
+        DailyActivityType.meeting => context.tr('client_meeting'),
+        DailyActivityType.task => context.tr('tasks'),
+        DailyActivityType.unknown => context.tr('unknown'),
+      };
+
+  IconData _dailyActivityIcon(DailyActivityType type) => switch (type) {
+    DailyActivityType.hearing => Icons.gavel_outlined,
+    DailyActivityType.service => Icons.outgoing_mail,
+    DailyActivityType.meeting => Icons.groups_outlined,
+    DailyActivityType.task => Icons.task_outlined,
+    DailyActivityType.unknown => Icons.event_outlined,
+  };
 }

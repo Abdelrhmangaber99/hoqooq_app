@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/legal_case.dart';
+import '../../domain/entities/case_status.dart';
 import '../../domain/repository/i_case_repository.dart';
 
 part 'case_details_event.dart';
@@ -24,6 +25,21 @@ class CaseDetailsBloc extends Bloc<CaseDetailsEvent, CaseDetailsState> {
           CaseDetailsError(
             failure.message,
             isForbidden: failure is ForbiddenFailure,
+          ),
+        ),
+        (legalCase) => emit(CaseDetailsLoaded(legalCase)),
+      );
+    });
+    on<ChangeCaseStatusRequested>((event, emit) async {
+      final current = state;
+      if (current is! CaseDetailsLoaded || current.isUpdatingStatus) return;
+      emit(current.copyWith(isUpdatingStatus: true));
+      final result = await _repository.changeCaseStatus(event.id, event.status);
+      result.fold(
+        (failure) => emit(
+          current.copyWith(
+            isUpdatingStatus: false,
+            actionError: failure.message,
           ),
         ),
         (legalCase) => emit(CaseDetailsLoaded(legalCase)),

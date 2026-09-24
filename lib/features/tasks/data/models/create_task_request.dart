@@ -12,14 +12,15 @@ part 'create_task_request.g.dart';
 @freezed
 abstract class CreateTaskRequest with _$CreateTaskRequest {
   const factory CreateTaskRequest({
-    String? caseId,
-    required String assignedById,
+    required String caseId,
     required String assignedToId,
     required String title,
     String? description,
     TaskPriority? priority,
     TaskStatus? status,
     DateTime? dueDate,
+    String? linkedEntityType,
+    String? linkedEntityId,
   }) = _CreateTaskRequest;
 
   factory CreateTaskRequest.fromJson(Map<String, dynamic> json) =>

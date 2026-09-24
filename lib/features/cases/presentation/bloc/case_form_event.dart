@@ -7,7 +7,27 @@ abstract class CaseFormEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadCaseFormReferenceDataRequested extends CaseFormEvent {}
+class LoadCaseFormReferenceDataRequested extends CaseFormEvent {
+  const LoadCaseFormReferenceDataRequested();
+}
+
+class LoadCaseCourtsRequested extends CaseFormEvent {
+  const LoadCaseCourtsRequested(this.governorateId);
+
+  final String governorateId;
+
+  @override
+  List<Object?> get props => [governorateId];
+}
+
+class LoadCaseCircuitsRequested extends CaseFormEvent {
+  const LoadCaseCircuitsRequested(this.courtId);
+
+  final String courtId;
+
+  @override
+  List<Object?> get props => [courtId];
+}
 
 class CreateCaseSubmitted extends CaseFormEvent {
   final CreateCaseRequest request;

@@ -31,10 +31,15 @@ class DocumentUploadBloc
     DocumentUploadRequested event,
     Emitter<DocumentUploadState> emit,
   ) async {
+    if (state is DocumentUploadInProgress) return;
     emit(const DocumentUploadInProgress(0));
     final result = await _documentRepository.uploadDocument(
       filePath: event.filePath,
       caseId: event.caseId,
+      categoryId: event.categoryId,
+      description: event.description,
+      linkedEntityType: event.linkedEntityType,
+      linkedEntityId: event.linkedEntityId,
       onSendProgress: (sent, total) {
         if (total > 0) emit(DocumentUploadInProgress(sent / total));
       },

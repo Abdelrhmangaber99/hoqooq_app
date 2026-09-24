@@ -13,5 +13,8 @@ abstract class CaseTypeLookup with _$CaseTypeLookup {
       _CaseTypeLookup;
 
   factory CaseTypeLookup.fromJson(Map<String, dynamic> json) =>
-      _$CaseTypeLookupFromJson(json);
+      _$CaseTypeLookupFromJson({
+        ...json,
+        'name': json['name'] ?? json['nameEn'] ?? json['code'] ?? '',
+      });
 }

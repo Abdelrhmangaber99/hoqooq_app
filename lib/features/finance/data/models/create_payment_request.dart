@@ -1,34 +1,32 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:equatable/equatable.dart';
 import '../../domain/entities/payment_method.dart';
 
-part 'create_payment_request.freezed.dart';
-part 'create_payment_request.g.dart';
+class CreatePaymentRequest extends Equatable {
+  const CreatePaymentRequest({
+    required this.amount,
+    required this.paidAt,
+    required this.method,
+    this.reference,
+    this.note,
+  });
 
-/// Request body for `POST /finance/payments` per `CreatePaymentDto`
-/// (`Hoqooq-main/src/modules/finance/dtos/create-payment.dto.ts`).
-///
-/// No update/delete request models — `FinanceController` has no `PATCH
-/// /finance/payments/{id}` at all (a payment can be created or deleted,
-/// never edited), and delete is out of scope for this milestone (see
-/// API_CONTRACT.md finding R — Finance hard-deletes, contradicting
-/// BR-028/BR-029).
-///
-/// The field is `method` here (matches the DTO exactly), not
-/// `paymentMethod` — that's the `Payment` *entity*'s column name, returned
-/// on read, not what's accepted on write. Two different names for the same
-/// concept depending on which side of the request you're on, confirmed
-/// from source, not a typo.
-@freezed
-abstract class CreatePaymentRequest with _$CreatePaymentRequest {
-  const factory CreatePaymentRequest({
-    required String invoiceId,
-    required double amount,
-    required DateTime paymentDate,
-    @JsonKey(unknownEnumValue: PaymentMethod.unknown)
-    required PaymentMethod method,
-    String? referenceNumber,
-  }) = _CreatePaymentRequest;
+  final double amount;
+  final String paidAt; // YYYY-MM-DD
+  final PaymentMethod method;
+  final String? reference;
+  final String? note;
 
-  factory CreatePaymentRequest.fromJson(Map<String, dynamic> json) =>
-      _$CreatePaymentRequestFromJson(json);
+  Map<String, dynamic> toJson() {
+    return {
+      'amount': amount,
+      'paidAt': paidAt,
+      'method': method.toServerString(),
+      if (reference != null && reference!.trim().isNotEmpty)
+        'reference': reference!.trim(),
+      if (note != null && note!.trim().isNotEmpty) 'note': note!.trim(),
+    };
+  }
+
+  @override
+  List<Object?> get props => [amount, paidAt, method, reference, note];
 }

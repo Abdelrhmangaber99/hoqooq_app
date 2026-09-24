@@ -43,7 +43,7 @@ void main() {
   // Real shape confirmed from source: TasksService.findAll loads
   // relations: ['case', 'assignedTo', 'assignedBy'] -- all three nested.
   Map<String, dynamic> taskJson({
-    String status = 'PENDING',
+    String status = 'NEW',
     String priority = 'HIGH',
   }) {
     return {
@@ -88,7 +88,7 @@ void main() {
         expect(tasks.first.assignedTo?.fullName, 'John Roe');
         expect(tasks.first.assignedBy?.fullName, 'Jane Doe');
         expect(tasks.first.caseSummary?.caseNumber, 'CASE-2026-00001');
-        expect(tasks.first.status, TaskStatus.pending);
+        expect(tasks.first.status, TaskStatus.newTask);
         expect(tasks.first.priority, TaskPriority.high);
       });
     });
@@ -136,7 +136,7 @@ void main() {
       ).thenAnswer((_) async => okResponse('/tasks', taskJson()));
 
       const request = CreateTaskRequest(
-        assignedById: 'u1',
+        caseId: 'c1',
         assignedToId: 'u2',
         title: 'File motion',
       );
@@ -151,14 +151,15 @@ void main() {
       // CreateTaskDto's @IsOptional() fields tolerate fine (whitelist only
       // rejects undeclared keys, not null values for declared ones).
       expect(body, {
-        'caseId': null,
-        'assignedById': 'u1',
+        'caseId': 'c1',
         'assignedToId': 'u2',
         'title': 'File motion',
         'description': null,
         'priority': null,
         'status': null,
         'dueDate': null,
+        'linkedEntityType': null,
+        'linkedEntityId': null,
       });
     });
 
@@ -176,7 +177,7 @@ void main() {
       );
 
       const request = CreateTaskRequest(
-        assignedById: 'u1',
+        caseId: 'c1',
         assignedToId: 'u2',
         title: '',
       );
@@ -195,14 +196,50 @@ void main() {
         () => dio.patch('/tasks/t1', data: any(named: 'data')),
       ).thenAnswer((_) async => okResponse('/tasks/t1', taskJson()));
 
-      const request = UpdateTaskRequest(status: TaskStatus.completed);
+      const request = UpdateTaskRequest(status: TaskStatus.inProgress);
       await repository.updateTask('t1', request);
 
       final captured = verify(
         () => dio.patch('/tasks/t1', data: captureAny(named: 'data')),
       ).captured;
       final body = captured.single as Map<String, dynamic>;
-      expect(body, {'status': 'COMPLETED'});
+      expect(body, {'status': 'IN_PROGRESS'});
+    });
+  });
+
+  group('completeTask', () {
+    test('PATCHes the dedicated completion endpoint with a note', () async {
+      when(
+        () => dio.patch('/tasks/t1/complete', data: any(named: 'data')),
+      ).thenAnswer(
+        (_) async =>
+            okResponse('/tasks/t1/complete', taskJson(status: 'COMPLETED')),
+      );
+
+      await repository.completeTask('t1', 'Filed and confirmed');
+
+      verify(
+        () => dio.patch(
+          '/tasks/t1/complete',
+          data: {'completionNote': 'Filed and confirmed'},
+        ),
+      ).called(1);
+    });
+  });
+
+  group('cancelTask', () {
+    test('DELETEs the retained-cancellation endpoint', () async {
+      when(() => dio.delete('/tasks/t1')).thenAnswer(
+        (_) async => Response<void>(
+          requestOptions: RequestOptions(path: '/tasks/t1'),
+          statusCode: 204,
+        ),
+      );
+
+      final result = await repository.cancelTask('t1');
+
+      expect(result.isRight(), isTrue);
+      verify(() => dio.delete('/tasks/t1')).called(1);
     });
   });
 }

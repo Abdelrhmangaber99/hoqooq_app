@@ -22,7 +22,6 @@ class CalendarRepository implements ICalendarRepository {
     DateTime? startDate,
     DateTime? endDate,
     String? caseId,
-    String? userId,
   }) async {
     try {
       final response = await _dio.get(
@@ -31,7 +30,6 @@ class CalendarRepository implements ICalendarRepository {
           if (startDate != null) 'startDate': startDate.toIso8601String(),
           if (endDate != null) 'endDate': endDate.toIso8601String(),
           if (caseId != null) 'caseId': caseId,
-          if (userId != null) 'userId': userId,
         },
       );
       final data = response.data as List<dynamic>;

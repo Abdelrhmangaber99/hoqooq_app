@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'role.dart';
 import 'tenant_ref.dart';
 
 part 'user.freezed.dart';
@@ -37,31 +36,25 @@ abstract class User with _$User {
     required DateTime updatedAt,
     String? avatarUrl,
     DateTime? lastLoginAt,
-    required List<Role> roles,
+    String? accountType,
+    String? jobClassification,
+    @Default(<String>[]) List<String> permissions,
     TenantRef? tenant,
   }) = _User;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
-  /// Flattens permission codes across all of this user's roles. Confirmed
-  /// format from the actual backend source
-  /// (`src/core/constants/permissions.constant.ts`): `<module>.<action>`,
-  /// e.g. `cases.read`.
-  bool hasPerm(String permissionCode) {
-    return roles.any(
-      (role) => role.permissions.any(
-        (permission) => permission.code == permissionCode,
-      ),
-    );
-  }
+  bool hasPerm(String permissionCode) => permissions.contains(permissionCode);
 
-  /// BR-005: true iff this user holds the `FIRM_ADMIN` role — confirmed
-  /// by the backend team as the real mechanism (2026-08-05), and
-  /// independently confirmed by reading every server-side "is this user a
-  /// firm admin" check in the backend source, all of which check
-  /// `roles.includes('FIRM_ADMIN')`. Supersedes the earlier
-  /// `Tenant.ownerUserId == user.id` mechanism (API_CONTRACT.md finding
-  /// D), which is no longer what the backend itself uses and should not
-  /// be relied on going forward — see finding L.
-  bool get isFirmAdmin => roles.any((role) => role.code == 'FIRM_ADMIN');
+  /// BR-002/BR-005: exactly three account types (`SUPER_ADMIN`/
+  /// `FIRM_ADMIN`/`EMPLOYEE`); Firm Admin is determined solely by
+  /// `accountType`, per the v2 PRD's replacement of the old
+  /// role-code-based mechanism.
+  bool get isFirmAdmin => accountType == 'FIRM_ADMIN';
+  bool get isEmployee => accountType == 'EMPLOYEE';
+  bool get isLawyer => jobClassification == 'LAWYER';
+  bool get isActive => status == 'ACTIVE';
+
+  bool hasAnyPermission(Iterable<String> permissionCodes) =>
+      permissionCodes.any(hasPerm);
 }

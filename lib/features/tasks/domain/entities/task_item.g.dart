@@ -38,6 +38,9 @@ _TaskItem _$TaskItemFromJson(Map<String, dynamic> json) => _TaskItem(
   completedAt: json['completedAt'] == null
       ? null
       : DateTime.parse(json['completedAt'] as String),
+  linkedEntityType: json['linkedEntityType'] as String?,
+  linkedEntityId: json['linkedEntityId'] as String?,
+  completionNote: json['completionNote'] as String?,
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
 );
@@ -56,6 +59,9 @@ Map<String, dynamic> _$TaskItemToJson(_TaskItem instance) => <String, dynamic>{
   'status': _$TaskStatusEnumMap[instance.status]!,
   'dueDate': instance.dueDate?.toIso8601String(),
   'completedAt': instance.completedAt?.toIso8601String(),
+  'linkedEntityType': instance.linkedEntityType,
+  'linkedEntityId': instance.linkedEntityId,
+  'completionNote': instance.completionNote,
   'createdAt': instance.createdAt.toIso8601String(),
   'updatedAt': instance.updatedAt.toIso8601String(),
 };
@@ -69,8 +75,9 @@ const _$TaskPriorityEnumMap = {
 };
 
 const _$TaskStatusEnumMap = {
-  TaskStatus.pending: 'PENDING',
+  TaskStatus.newTask: 'NEW',
   TaskStatus.inProgress: 'IN_PROGRESS',
+  TaskStatus.waiting: 'WAITING',
   TaskStatus.completed: 'COMPLETED',
   TaskStatus.cancelled: 'CANCELLED',
   TaskStatus.unknown: 'unknown',

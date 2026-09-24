@@ -1,5 +1,141 @@
 # Hoqooq API Contract
 
+> **2026-08-14 v2 backend cutover:** The section immediately below is the
+> current contract verified from `D:\hoqooq\Hoqooq` at commit `7a615c8` and
+> `swagger.json`. Older dated findings remain historical and must not be used
+> to construct new requests when they conflict with this section.
+
+## Current v2 surface (2026-08-14)
+
+- Base prefix remains `/api`. Public signup and AI routes no longer exist.
+- Identity uses `accountType: SUPER_ADMIN|FIRM_ADMIN|EMPLOYEE`, optional
+  `jobClassification`, flat `permissions: string[]`, account `status`, and
+  optional tenant. Current responses may omit the legacy `roles` array.
+- `GET /permissions` returns the canonical permission catalog.
+- Firm Employee management is under `/employees`: tenant-scoped list/detail,
+  `POST /employees/onboard`, `PATCH /employees/:id`, deactivation through
+  `DELETE /employees/:id`, and get/set permissions under
+  `/employees/:id/permissions`. See BV2-016/017 for response/update gaps.
+- Judicial references are read-only:
+  `GET /reference/governorates`,
+  `GET /reference/governorates/:id/courts`,
+  `GET /reference/courts/:id/circuits`, and
+  `GET /reference/case-types`.
+- `POST /cases` derives tenant/owner from JWT and accepts optional Case core
+  fields plus required embedded `client: {clientType,name,...}` and optional
+  `opponents: [{opponentType,name,...}]`. It does **not** accept `clientId` or
+  client-supplied `tenantId`. Case Court selection is sent as optional
+  `courtName` (maximum 255 characters); `defaultCourtId` and Case `circuitId`
+  are not accepted. Cases start as `DRAFT` and activate through
+  `PATCH /cases/:id/status`, where `courtName` is an activation prerequisite.
+- `PATCH /cases/:id` accepts the same optional Case core fields except
+  `client`, `opponents`, and `status`. Case-owned parties currently have no
+  update operation (BV2-021). The raw Case response includes
+  `primaryLawyerId`, capability-gated `clientSnapshot`/`opponentSnapshots`,
+  and the judicial/core fields used by the v2 form.
+- Flutter obtains Case Court choices directly from Google Places after a
+  backend Governorate is selected. Only the selected display name is persisted
+  in `cases.court_name`; Place IDs, coordinates, and addresses are not part of
+  the Case API contract. Backend Court/Circuit UUIDs remain authoritative for
+  Hearings and other workflows that explicitly require those references.
+- The backend Case enum currently also includes `SUSPENDED`, and the status
+  endpoint does not enforce a transition matrix (BV2-022). Flutter does not
+  offer `SUSPENDED`, because the production-readiness Phase 5 lifecycle is
+  `DRAFT|ACTIVE|CLOSED|ARCHIVED`.
+- Case access is replaced/revoked with
+  `PUT|DELETE /cases/:caseId/access-grants/:userId` using
+  `{capabilities: string[]}`. There is currently no grant-list endpoint.
+- Hearings have assignment/completion routes. First-class Client Meetings and
+  Service of Process expose list/detail/create/update/assignment/completion.
+- Legal Tasks require `caseId`, `assignedToId`, and `title`; statuses are
+  `NEW|IN_PROGRESS|WAITING|COMPLETED|CANCELLED` and optional activity links
+  use `HEARING|SERVICE|MEETING`.
+- Finance is Case-ledger based:
+  `GET /finance/cases/:caseId`,
+  `POST /finance/cases/:caseId/payments`,
+  `PATCH /finance/payments/:id/reverse`, and
+  `GET /finance/summary`. Invoice/expense endpoints were removed.
+- Current Document upload is `POST /documents` (multipart), requiring `file`,
+  `caseId`, and global `DOCUMENT_CATEGORY` `categoryId`; it optionally accepts
+  `description`, plus paired `linkedEntityType` and `linkedEntityId` for
+  `HEARING|SERVICE|MEETING|TASK`. The legacy `/documents/upload` route is no
+  longer current. Service-of-Process completion requires a non-archived
+  Document already linked to that Service activity.
+- Document lifecycle also exposes `POST /documents/:id/versions` for an
+  immutable current-version replacement, `GET /documents/:id/download` for
+  separately authorized current-version bytes, and `DELETE /documents/:id`
+  for retained archive (not physical deletion). There is no endpoint to list
+  or download prior `document_versions`, and no document metadata PATCH.
+- `GET /cases/:id` embeds `timelineEvents`. Case status and Case access-grant
+  changes write timeline records; access-grant changes also write internal
+  audit logs. No audit-log read endpoint exists.
+- `GET /calendar/timeline` returns the current unified schedule shape using
+  `type` and `startsAt` for `CUSTOM|HEARING|SERVICE|MEETING|TASK`; it no longer
+  uses the historical `itemType`/`date` shape. Employee activity rows are
+  assignment/Case-capability scoped. Firm Admin rows are currently tenant-wide
+  once `calendar.read` passes and are not additionally filtered by each source
+  permission.
+- Notifications expose unread scoped items at `GET /notifications/me`, owned
+  mark-read at `PATCH /notifications/:id/read`, and the date-scoped operational
+  feed at `GET /notifications/daily?date=YYYY-MM-DD`. The daily feed returns
+  `HEARING|SERVICE|MEETING|TASK` items with `caseId`, `dueAt`, and `status`.
+- The old global subscription guard was removed. Subscription changes are
+  platform operations under `/subscriptions/:tenantId`.
+- Platform Firm administration uses `GET /tenants` (raw Firm records with a
+  versioned `subscriptions[]` relation), `POST /tenants/provision`, and
+  `GET /tenants/:id`, whose response is
+  `{firm, employees, currentSubscription}`. Firm status changes independently
+  through `PATCH /tenants/:id/status` with `ACTIVE|INACTIVE`; Firm Admin grants
+  are replaced through `PATCH /tenants/:id/firm-admin/permissions`.
+- `GET /permissions` returns `{codes: string[]}`, not a list of permission
+  objects. `GET /users` is a Super-Admin-only metadata surface in the current
+  source; `PATCH /users/:id/status` accepts `ACTIVE|INACTIVE`.
+- Plans are currently read-only at public `GET /subscriptions/plans` and only
+  active plans are returned. Super Admin can activate/cancel a Firm
+  subscription with `POST /subscriptions/:tenantId/activate|deactivate` and
+  create a versioned plan/cycle change with `PATCH /subscriptions/:tenantId`.
+  No automatic EXPIRED transition, plan-management routes, or platform-audit
+  read route currently exists.
+
+Seeder verification: case types, Governorates, plans, lookups, permissions,
+and an environment-configured Super Admin are seeded idempotently by stable
+keys. The current catalog contains only two Courts and no Circuits; this no
+longer blocks Case Court selection, but still affects Hearing Court/Circuit
+workflows. See BV2-019 in `BACKEND_VIOLATIONS_V2.md`.
+
+> **v2 re-verification status (2026-08-11):** The backend source at
+> `D:\hoqooq\Hoqooq` and its `swagger.json` have been checked. The requested
+> filename `HOQOOQ_PRD_v2.0_UPDATED.md` is absent; the available
+> `HOQOOQ_PRD_v2.0.md` was used as the v2 PRD. See
+> `BACKEND_VIOLATIONS_V2.md` for the source-backed compliance audit and v2
+> blockers. Do not implement behavior marked blocked there.
+
+## ⚠️ Current source re-verification (2026-08-11) — v2 Phase 0
+
+The current NestJS source at `D:\hoqooq\Hoqooq` and its `swagger.json` were
+reviewed on 2026-08-11. Older source-sync findings below are historical unless
+this re-verification explicitly confirms them. The v2-specific compliance
+result is maintained in `BACKEND_VIOLATIONS_V2.md` and is authoritative for
+migration planning.
+
+- `POST/GET/PATCH/DELETE /api/service-of-process` now exists in Swagger. It is
+  not v2-complete: it has no v2 schedule/assignee/result/attachment/calendar
+  contract and uses legacy CaseTeam authorization.
+- No Client Meeting endpoint exists.
+- `GET /api/users` is still globally unscoped; `POST /api/users` still accepts
+  caller-supplied `tenantId` and `isSuperAdmin`.
+- Courts are still tenant-owned CRUD (`/api/courts`, including catalog import),
+  not global Governorate -> Court -> Circuit references.
+- Finance is still Invoice/Payment based; no Case payment-ledger endpoint
+  exists. Accountants receive a hard-coded finance bypass.
+- The global `SubscriptionGuard` still returns 402 for all tenant requests
+  whose subscription is not active/unexpired.
+- Existing CaseTeam access levels remain broad and are not v2 capability
+  grants. Client/Opponent remain reusable records rather than Case snapshots.
+
+Do not add mobile integration for any v2-blocked behavior above. The current
+source does confirm the historical Client raw-SQL crash is no longer present.
+
 **Source (superseded 2026-07-30):** `hoqooq-postman-import.json` (87 requests, Postman Collection v2.1, `_postman_id: 0d05367b-0d3a-4c07-a99e-248fd3ff53b5`).
 
 **Current primary source of truth (2026-07-30, same day): the real NestJS backend source at `Hoqooq-main/`** (gitignored — reference-only, not part of this Flutter repo). The user gave direct filesystem access to the actual backend. Where the Postman collection and the TypeScript source disagree, **the source wins** — the collection is now a secondary/illustrative artifact, not ground truth. `swagger.json`/`swagger2.json` in `Hoqooq-main/` are empty (0 bytes); `swagger-spec.json` is stale (matches the pre-re-sync collection) — neither is used as ground truth.

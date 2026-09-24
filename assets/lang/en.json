@@ -1,4 +1,53 @@
 {
+  "remaining": "Remaining",
+  "currency_sar": "SAR ",
+  "reverse_payment": "Reverse payment",
+  "reversal_reason": "Reversal reason",
+  "all": "All",
+  "export": "Export",
+  "exporting": "Exporting...",
+  "case_export_failed": "Cases could not be exported right now",
+  "case_export_open_failed": "The exported CSV could not be opened",
+  "dashboard": "Dashboard",
+  "total_cases": "Total cases",
+  "financial_position": "Financial position",
+  "collected": "Collected",
+  "outstanding": "Outstanding",
+  "total_case_fees": "Total case fees",
+  "no_financial_data": "No financial data yet",
+  "no_finance_permission": "You do not have permission to view financial data",
+  "total_case_value": "Total Case Value",
+  "total_collected": "Total Collected",
+  "paid_in_full": "Paid in Full",
+  "partially_paid": "Partially Paid",
+  "account_details_and_ledger": "Account Details & Financial Ledger",
+  "record_new_payment": "Record New Payment",
+  "cancel_payment_recording": "Cancel Recording Payment",
+  "payment_records_history": "Payment History",
+  "no_payments_recorded_for_case": "No payments recorded for this case yet",
+  "add_payment": "Add Payment",
+  "reference_optional": "Reference (optional)",
+  "note_optional": "Note (optional)",
+  "save_payment": "Save Payment",
+  "payment_recorded_successfully": "Payment recorded successfully",
+  "enter_valid_amount": "Please enter a valid amount",
+  "reverse_financial_operation": "Cancel Financial Operation",
+  "reverse_payment_confirm_message": "Reverse this payment? The record is kept for audit.",
+  "confirm_cancellation": "Confirm Cancellation",
+  "cancelled_payment": "Cancelled",
+  "default_reversal_reason": "Payment was cancelled",
+  "no_cases_matching_filter": "No cases match the selected filter",
+  "case_number_prefix": "Case #",
+  "recent_activity": "Recent activity",
+  "no_recent_activity": "No recent activity",
+  "remember_me": "Remember me",
+  "no_hearings_found": "No hearings scheduled yet",
+  "todays_hearings": "Today's hearings",
+  "court_not_selected": "Court not selected",
+  "platform_admin": "Platform administration",
+  "invite_only_access": "Access is by invitation only. Contact platform administration to create a workspace.",
+  "hoqooq_brand": "Hoqooq",
+  "brand_quote": "We simplify legal work so you can focus on justice.",
   "lexora": "Lexora",
   "legal_case_management": "LEGAL CASE MANAGEMENT",
   "securing_your_session": "SECURING YOUR SESSION",
@@ -15,6 +64,8 @@
   "create_account": "Create account",
   "home": "Home",
   "calendar": "Calendar",
+  "calendar_manage_permission_title": "Calendar permission required",
+  "calendar_manage_permission_message": "Creating calendar events requires calendar.manage. Ask the Super Admin to assign this permission to your account.",
   "clients": "Clients",
   "alerts": "Alerts",
   "profile": "Profile",
@@ -134,6 +185,13 @@
   "outcome_summary": "Outcome Summary",
   "agreed_fee": "Agreed Fee",
   "primary_lawyer": "Primary Lawyer",
+  "primary_lawyer_optional": "Primary Lawyer (required to activate)",
+  "current_primary_lawyer": "Current primary lawyer",
+  "could_not_load_primary_lawyers": "Primary lawyers could not be loaded. Your account needs employee.read to select one.",
+  "select_case_type_before_lawyer": "Select a Case Type before choosing the Primary Lawyer.",
+  "no_matching_primary_lawyers": "No eligible lawyer matches this Case Type. The employee must be created as Lawyer, have this specialization, and activate the account before the Case can become Active.",
+  "primary_lawyer_ineligible": "The selected employee has this specialization but is not currently an eligible Primary Lawyer. Confirm the account was classified as Lawyer and has completed invitation activation (status ACTIVE).",
+  "employee_invitation_pending": "Employee created. They must complete invitation activation before they can be assigned as Primary Lawyer.",
   "client_code": "Client Code",
   "national_id": "National ID",
   "commercial_reg": "Commercial Registration",
@@ -189,6 +247,8 @@
   "next_hearing_at": "Next Hearing At",
   "description": "Description",
   "assigned_to": "Assigned To",
+  "task_assignee_required": "Select an assignee before creating the Task.",
+  "no_task_assignees": "No active assignee is available. Employee access may be missing.",
   "case": "Case",
   "edit_task": "Edit Task",
   "new_task": "New Task",
@@ -205,11 +265,18 @@
   "assign_hearing": "Assign Hearing",
   "new_case": "New Case",
   "create_case": "Create Case",
+  "start_new_case": "Start a New Case",
+  "update_case_details": "Update Case Details",
   "add_team_member": "Add Team Member",
   "team_member": "Team Member",
   "access_level": "Access Level",
   "new_hearing": "New Hearing",
   "create_hearing": "Create Hearing",
+  "no_backend_courts_for_hearing": "No official Court is configured in the backend for this Case governorate. A Hearing requires a backend Court UUID; OpenStreetMap locations cannot be used for this field.",
+  "no_circuits_optional": "No Circuits are configured for this Court. Circuit is optional, so you can still create the Hearing.",
+  "court_load_failed": "Could not load Courts:",
+  "hearing_type_load_failed": "Could not load Hearing Types:",
+  "hearing_required_fields": "Select a Hearing Type, Court, and scheduled date and time.",
   "hearing_type": "Hearing Type",
   "assign": "Assign",
   "reactivate_subscription": "Reactivate Subscription",
@@ -259,5 +326,256 @@
   "bank_transfer": "Bank Transfer",
   "cheque": "Cheque",
   "online": "Online",
-  "no_notifications_found": "No notifications"
+  "no_notifications_found": "No notifications",
+  "firms": "Firms",
+  "provision_firm": "Provision firm",
+  "no_firms_found": "No firms have been provisioned yet.",
+  "unnamed_firm": "Unnamed firm",
+  "no_plan": "No plan",
+  "firm_details": "Firm details",
+  "plan": "Plan",
+  "subscription": "Subscription",
+  "firm_employees": "Firm employees",
+  "employees": "Employees",
+  "no_employees_found": "No employees found for this firm.",
+  "could_not_load_employees": "Could not load employees.",
+  "unnamed_employee": "Unnamed employee",
+  "create_employee": "Create employee",
+  "edit_employee": "Edit employee",
+  "archive_firm": "Archive firm",
+  "complete_all_employee_fields": "Complete all fields to create the employee.",
+  "could_not_create_employee": "Could not create this employee.",
+  "could_not_load_employee_setup": "Could not load employee setup.",
+  "job_classification": "Job classification",
+  "department_optional": "Department (optional)",
+  "hire_date": "Hire date",
+  "lawyer_specializations": "Lawyer specializations",
+  "base_permissions": "Base permissions",
+  "employee_permissions_explanation": "Choose what this employee may access. Classification alone grants no access."
+  ,"employee_position": "Employee position",
+  "employee_read_permission_required": "Employee management is available, but your account cannot load the employee list until employee.read is assigned.",
+  "employee_create_permissions_required": "Creating employees additionally requires employee.create and employee.permission.manage."
+  ,"lawyer_position_not_classification": "This employee has a lawyer position but was not onboarded with Lawyer classification. Position changes cannot enable Case Type specializations."
+  ,"employee_create_permission_title": "Creation permission required",
+  "employee_create_permission_message": "Ask the Super Admin to assign these permissions to your Firm Admin account:"
+  ,"delete_employee": "Delete employee",
+  "delete_employee_confirmation": "Delete this employee? This action cannot be undone.",
+  "could_not_delete_employee": "Could not delete this employee.",
+  "delete": "Delete"
+  ,"permissions_selected": "permissions selected",
+  "case_title": "Case title",
+  "client_type": "Client type",
+  "client_name": "Client name",
+  "individual": "Individual",
+  "company": "Company",
+  "description": "Description"
+  ,"manage_firm_admin_permissions": "Manage Firm Admin permissions",
+  "firm_admin_permissions_explanation": "Select the complete permission set for this Firm Admin. Saving replaces the current set and signs the account out.",
+  "firm_admin_permissions_updated": "Firm Admin permissions updated.",
+  "firm_admin_not_found": "No Firm Admin account was found for this firm.",
+  "could_not_update_permissions": "Could not update permissions.",
+  "could_not_load_firm": "Could not load this firm."
+  ,"registration_number": "Registration number",
+  "invalid_email": "Enter a valid email address",
+  "opponents": "Opponents",
+  "opponent": "Opponent",
+  "opponent_type": "Opponent type",
+  "opponent_name": "Opponent name",
+  "contact_details": "Contact details",
+  "representative": "Representative",
+  "add_opponent": "Add opponent",
+  "remove_opponent": "Remove opponent",
+  "no_opponents_added": "No opponents added.",
+  "change_case_status": "Change case status",
+  "confirm": "Confirm",
+  "cancel": "Cancel"
+  ,"court_case_number": "Court case number",
+  "court_case_year": "Court case year"
+  ,"invalid_court_case_year": "Enter a year of 1900 or later"
+  ,"courts_unavailable": "Courts are unavailable. Connect to the internet and try again."
+  ,"open_in_maps": "Open in Maps"
+  ,"osm_attribution": "© OpenStreetMap contributors"
+  ,"manage_case_access": "Manage Case access"
+  ,"case_access_replace_warning": "Saving replaces this Employee's complete capability set for this Case. Existing grants cannot be preloaded until the backend listing endpoint is available."
+  ,"save_access": "Save access"
+  ,"revoke_all_case_access": "Revoke all Case access"
+  ,"no_delegable_capabilities": "You do not hold any capabilities that can be delegated."
+  ,"case_data": "Case"
+  ,"case_parties": "Client and opponents"
+  ,"service_of_process": "Service of process"
+  ,"client_meetings": "Client meetings"
+  ,"access_management": "Access management"
+  ,"employee": "Employee"
+  ,"circuit": "Circuit"
+  ,"complete_hearing": "Complete Hearing"
+  ,"hearing_outcome_min_length": "The hearing outcome must be at least 50 characters."
+  ,"failed": "Failed"
+  ,"rescheduled": "Rescheduled"
+  ,"new_service_process": "New Service of Process"
+  ,"edit_service_process": "Edit Service of Process"
+  ,"create_service_process": "Create Service of Process"
+  ,"service_target_name": "Recipient / target name"
+  ,"service_method": "Service method"
+  ,"service_deadline": "Service deadline"
+  ,"process_server_name": "Process server name"
+  ,"recipient_details": "Recipient details"
+  ,"complete_service_fields": "Enter the target, service method, and scheduled date."
+  ,"no_service_processes": "No service-of-process activities for this case."
+  ,"document_category": "Document category"
+  ,"document_categories_unavailable": "No active document categories are available."
+  ,"complete_service_process": "Complete Service of Process"
+  ,"completion_result": "Completion result"
+  ,"result_notes": "Result notes"
+  ,"choose_evidence_file": "Choose evidence file"
+  ,"submit_completion": "Upload evidence and complete"
+  ,"complete_service_evidence_fields": "Enter result notes, select a category, and attach an evidence file."
+  ,"cancel_service_process": "Cancel Service of Process"
+  ,"cancel_service_process_confirmation": "Cancel this activity while retaining its legal history?"
+  ,"new_client_meeting": "New Client Meeting"
+  ,"edit_client_meeting": "Edit Client Meeting"
+  ,"create_client_meeting": "Create Client Meeting"
+  ,"meeting_subject": "Meeting subject"
+  ,"meeting_location_method": "Location or method"
+  ,"complete_meeting_fields": "Enter the subject, location or method, and scheduled date."
+  ,"no_client_meetings": "No client meetings for this case."
+  ,"complete_client_meeting": "Complete Client Meeting"
+  ,"outcome_notes": "Outcome notes"
+  ,"cancel_client_meeting": "Cancel Client Meeting"
+  ,"cancel_client_meeting_confirmation": "Cancel this meeting while retaining its history?"
+  ,"waiting": "Waiting"
+  ,"no_tasks_for_case": "No tasks for this case."
+  ,"complete_task": "Complete Task"
+  ,"completion_note": "Completion note"
+  ,"cancel_task": "Cancel Task"
+  ,"cancel_task_confirmation": "Cancel this task while retaining its history?"
+  ,"case_timeline": "Case Timeline"
+  ,"download_document": "Download document"
+  ,"document_saved_to": "Document saved to"
+  ,"upload_new_version": "Upload new version"
+  ,"change_summary_optional": "Change summary (optional)"
+  ,"archive_document": "Archive document"
+  ,"archive_document_confirmation": "Archive this document while retaining its versions and audit record?"
+  ,"timeline_case_created": "Case created"
+  ,"timeline_lawyer_changed": "Lawyer changed"
+  ,"timeline_status_changed": "Case status changed"
+  ,"timeline_hearing_scheduled": "Hearing scheduled"
+  ,"timeline_hearing_completed": "Hearing completed"
+  ,"timeline_document_uploaded": "Document uploaded"
+  ,"timeline_note_added": "Note added"
+  ,"timeline_payment_received": "Payment received"
+  ,"timeline_task_assigned": "Task assigned"
+  ,"timeline_service_added": "Service of Process added"
+  ,"timeline_service_updated": "Service of Process updated"
+  ,"timeline_grant_added": "Case access updated"
+  ,"timeline_grant_revoked": "Case access revoked"
+  ,"document_open_failed": "The document was downloaded but could not be opened:"
+  ,"case_information": "Case Information"
+  ,"case_number_optional": "Case Number (optional — generated automatically)"
+  ,"description_optional": "Case Description (optional)"
+  ,"court_optional": "Court (optional)"
+  ,"responsible_lawyer_optional": "Responsible Lawyer (optional)"
+  ,"national_id_or_registration": "National ID / Commercial Registration"
+  ,"company_registration_number": "Registration Number (companies)"
+  ,"add_another_opponent": "Add Another Opponent"
+  ,"invalid_amount": "Enter a valid non-negative amount"
+  ,"agreed_fee": "Agreed Fee"
+  ,"select": "Select..."
+  ,"unknown_case": "Case"
+  ,"card": "Card"
+  ,"other": "Other"
+  ,"recorded_by": "Recorded by"
+  ,"payment_history": "Payment History"
+  ,"set_agreed_fee": "Set Agreed Fee"
+  ,"update_agreed_fee": "Update Agreed Fee"
+  ,"agreed_fee_not_set": "No agreed fee set"
+  ,"agreed_fee_not_set_hint": "No agreed fee is recorded for this case yet, so payments cannot be accepted. Set it on the case itself (Edit Case → Agreed Fee); paid amounts and the remaining balance appear here once it is set."
+  ,"record_first_payment": "Record First Payment"
+  ,"payment_exceeds_remaining": "Amount exceeds the remaining balance"
+  ,"agreed_fee_updated": "Agreed fee saved"
+  ,"paid_cases": "Paid Cases"
+  ,"partial_cases": "Partially Paid Cases"
+  ,"unpaid_cases": "Unpaid Cases"
+  ,"retry_finance_summary": "Retry"
+  ,"case_finance": "Case Finance"
+  ,"case_finance_permissions": "Case Finance permissions"
+  ,"firm_finance_permission": "Firm Finance permission"
+  ,"finance_permission_classification_note": "Granting finance permissions is explicit. A job classification such as Accountant grants no finance access by itself."
+  ,"firm_information": "Firm Information"
+  ,"firm_name": "Firm Name"
+  ,"firm_address": "Address"
+  ,"contact_email": "Contact Email"
+  ,"firm_logo": "Firm Logo"
+  ,"firm_logo_hint": "Optional — shown in your firm workspace and in the firms list on the platform."
+  ,"upload_logo": "Upload logo"
+  ,"uploading": "Uploading..."
+  ,"save_changes": "Save Changes"
+  ,"changes_saved": "Changes saved successfully"
+  ,"firm_name_required": "Firm name is required"
+  ,"firm_members_section": "Members"
+  ,"roles_and_permissions": "Roles & Permissions"
+  ,"subscription_plan_and_billing": "Subscription plan & billing"
+  ,"subscribed_firm_details": "Subscribed firm details"
+  ,"yearly": "Yearly"
+  ,"monthly": "Monthly"
+  ,"no_active_plan": "No active subscription plan"
+  ,"subscription_ends_on": "Renews on"
+  ,"subscription_status_pending": "Pending activation"
+  ,"subscription_status_active": "Active"
+  ,"subscription_status_expired": "Expired"
+  ,"subscription_status_cancelled": "Cancelled"
+  ,"current_password": "Current Password"
+  ,"new_password": "New Password"
+  ,"confirm_new_password": "Confirm New Password"
+  ,"password_mismatch": "The new passwords do not match"
+  ,"password_required": "Current password is required"
+  ,"new_password_required": "New password is required"
+  ,"password_min_length": "Password must be at least 8 characters"
+  ,"password_changed_success": "Password changed successfully"
+  ,"password_change_wrong_current": "The current password is incorrect"
+  ,"password_change_forbidden": "You don't have permission to change this password"
+  ,"password_change_generic_error": "Could not change the password. Please try again."
+  ,"theme_light": "Light"
+  ,"theme_dark": "Dark"
+  ,"theme_system": "System"
+  ,"personal_information": "Personal Information"
+  ,"full_name": "Full Name"
+  ,"phone_number": "Phone Number"
+  ,"profile_updated_success": "Profile updated successfully"
+  ,"full_name_required": "Full name is required"
+  ,"avatar_url": "Avatar URL"
+  ,"profile_image": "Profile Picture"
+  ,"preferences": "Preferences"
+  ,"appearance_and_language": "Appearance & Language"
+  ,"theme_mode": "Theme Mode"
+  ,"arabic_language": "Arabic"
+  ,"english_language": "English"
+  ,"current_language": "Current Language"
+  ,"forgot_password_help": "Enter your email address and we'll send you a link to reset your password"
+  ,"send_reset_link": "Send Reset Link"
+  ,"reset_link_sent": "If that email is registered with us, you will receive a message containing a password reset link."
+  ,"back_to_login": "Back to sign in"
+  ,"email_required": "Email address is required"
+  ,"set_new_password": "Set a new password"
+  ,"reset_password_help": "Enter a new password for your account"
+  ,"invalid_reset_link": "This reset link is invalid or has expired."
+  ,"update_password": "Update Password"
+  ,"password_reset_success": "Password updated successfully. You can sign in with your new password."
+  ,"network_error_message": "Could not reach the server. Check your connection and try again."
+  ,"recovery_failed": "Could not complete the request. Please try again."
+  ,"back": "Back"
+  ,"settings": "Settings"
+  ,"governorate": "Governorate"
+  ,"try_again": "Try again"
+  ,"billing_cycle": "Billing Cycle"
+  ,"subscription_plan": "Subscription Plan"
+  ,"no_subscription_plans": "No subscription plans available."
+  ,"firm_contact_email": "Contact Email"
+  ,"create_firm_and_admin": "Create Firm & Admin"
+  ,"initial_firm_admin": "Initial Firm Admin"
+  ,"temporary_password": "Temporary Password"
+  ,"firm_admin_permissions": "Firm Admin Permissions"
+  ,"save_employee": "Save Employee"
+  ,"could_not_load_employee": "Could not load the employee's details."
+  ,"refresh_after_action_failed": "The change was saved, but the latest firm data could not be reloaded. Pull to refresh or reopen this screen."
 }
+

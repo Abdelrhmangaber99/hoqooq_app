@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
 import 'package:hqooq/features/notifications/domain/entities/app_notification.dart';
 import 'package:hqooq/features/notifications/domain/entities/notification_type.dart';
+import 'package:hqooq/features/notifications/domain/entities/daily_activity_item.dart';
 import 'package:hqooq/features/notifications/domain/repository/i_notification_repository.dart';
 import 'package:hqooq/features/notifications/presentation/bloc/notifications_bloc.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,8 +30,15 @@ void main() {
   final notificationA = buildNotification('n1');
   final notificationB = buildNotification('n2');
 
+  setUpAll(() {
+    registerFallbackValue(DateTime(2026, 1, 1));
+  });
+
   setUp(() {
     repository = MockNotificationRepository();
+    when(
+      () => repository.getDailyFeed(any()),
+    ).thenAnswer((_) async => const Right([]));
   });
 
   blocTest<NotificationsBloc, NotificationsState>(
@@ -45,6 +53,35 @@ void main() {
     expect: () => [
       isA<NotificationsLoading>(),
       NotificationsLoaded([notificationA, notificationB]),
+    ],
+  );
+
+  blocTest<NotificationsBloc, NotificationsState>(
+    'loads the scoped daily activity feed with unread notifications',
+    build: () {
+      final daily = DailyActivityItem(
+        id: 'h1',
+        type: DailyActivityType.hearing,
+        caseId: 'c1',
+        dueAt: DateTime(2026, 1, 1, 9),
+        status: 'SCHEDULED',
+      );
+      when(
+        () => repository.getNotifications(),
+      ).thenAnswer((_) async => Right([notificationA]));
+      when(
+        () => repository.getDailyFeed(any()),
+      ).thenAnswer((_) async => Right([daily]));
+      return NotificationsBloc(repository);
+    },
+    act: (bloc) => bloc.add(FetchNotificationsRequested()),
+    expect: () => [
+      isA<NotificationsLoading>(),
+      isA<NotificationsLoaded>().having(
+        (state) => state.dailyActivities.single.type,
+        'daily activity type',
+        DailyActivityType.hearing,
+      ),
     ],
   );
 

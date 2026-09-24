@@ -18,3 +18,12 @@ class CaseTeamAssignmentSubmitted extends CaseTeamAssignmentEvent {
   @override
   List<Object?> get props => [caseId, request];
 }
+
+class CaseAccessRevocationSubmitted extends CaseTeamAssignmentEvent {
+  final String caseId;
+  final String userId;
+  const CaseAccessRevocationSubmitted(this.caseId, this.userId);
+
+  @override
+  List<Object?> get props => [caseId, userId];
+}

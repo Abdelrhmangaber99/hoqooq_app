@@ -19,9 +19,13 @@ _User _$UserFromJson(Map<String, dynamic> json) => _User(
   lastLoginAt: json['lastLoginAt'] == null
       ? null
       : DateTime.parse(json['lastLoginAt'] as String),
-  roles: (json['roles'] as List<dynamic>)
-      .map((e) => Role.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  accountType: json['accountType'] as String?,
+  jobClassification: json['jobClassification'] as String?,
+  permissions:
+      (json['permissions'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
   tenant: json['tenant'] == null
       ? null
       : TenantRef.fromJson(json['tenant'] as Map<String, dynamic>),
@@ -38,6 +42,8 @@ Map<String, dynamic> _$UserToJson(_User instance) => <String, dynamic>{
   'updatedAt': instance.updatedAt.toIso8601String(),
   'avatarUrl': instance.avatarUrl,
   'lastLoginAt': instance.lastLoginAt?.toIso8601String(),
-  'roles': instance.roles,
+  'accountType': instance.accountType,
+  'jobClassification': instance.jobClassification,
+  'permissions': instance.permissions,
   'tenant': instance.tenant,
 };

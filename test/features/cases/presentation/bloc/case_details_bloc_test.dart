@@ -2,15 +2,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
+import 'package:hqooq/features/cases/domain/entities/case_party_snapshot.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
-import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
 import 'package:hqooq/features/cases/domain/repository/i_case_repository.dart';
 import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart';
-import 'package:hqooq/features/clients/domain/entities/client.dart';
-import 'package:hqooq/features/clients/domain/entities/client_status.dart';
-import 'package:hqooq/features/clients/domain/entities/client_type.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCaseRepository extends Mock implements ICaseRepository {}
@@ -23,33 +20,16 @@ void main() {
     tenantId: 't1',
     caseNumber: 'CASE-2026-00001',
     status: CaseStatus.active,
-    clientId: 'cl1',
     caseTypeId: 'ct1',
     priority: CasePriority.high,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    client: Client(
+    clientSnapshot: const CaseClientSnapshot(
       id: 'cl1',
-      tenantId: 't1',
-      clientCode: 'CLI-001',
-      type: ClientType.individual,
-      fullName: 'Carlos Hernandez',
-      status: ClientStatus.active,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-      emails: const [],
-      phones: const [],
-      addresses: const [],
+      clientType: 'INDIVIDUAL',
+      name: 'Carlos Hernandez',
     ),
-    defaultCourtId: 'co1',
-    defaultCourt: Court(
-      id: 'co1',
-      name: 'District Court',
-      type: 'FIRST_INSTANCE',
-      isActive: true,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-    ),
+    courtName: 'District Court',
     team: const [],
   );
 
@@ -79,5 +59,45 @@ void main() {
     },
     act: (bloc) => bloc.add(const FetchCaseDetailsRequested('missing')),
     expect: () => [isA<CaseDetailsLoading>(), isA<CaseDetailsError>()],
+  );
+
+  blocTest<CaseDetailsBloc, CaseDetailsState>(
+    'updates the loaded case after a successful status change',
+    build: () {
+      final updatedCase = legalCase.copyWith(status: CaseStatus.closed);
+      when(
+        () => repository.changeCaseStatus('c1', CaseStatus.closed),
+      ).thenAnswer((_) async => Right(updatedCase));
+      return CaseDetailsBloc(repository);
+    },
+    seed: () => CaseDetailsLoaded(legalCase),
+    act: (bloc) =>
+        bloc.add(const ChangeCaseStatusRequested('c1', CaseStatus.closed)),
+    expect: () => [
+      CaseDetailsLoaded(legalCase, isUpdatingStatus: true),
+      CaseDetailsLoaded(legalCase.copyWith(status: CaseStatus.closed)),
+    ],
+    verify: (_) => verify(
+      () => repository.changeCaseStatus('c1', CaseStatus.closed),
+    ).called(1),
+  );
+
+  blocTest<CaseDetailsBloc, CaseDetailsState>(
+    'keeps the loaded case and exposes the error when status change fails',
+    build: () {
+      when(
+        () => repository.changeCaseStatus('c1', CaseStatus.suspended),
+      ).thenAnswer(
+        (_) async => const Left(ServerFailure('Status change rejected')),
+      );
+      return CaseDetailsBloc(repository);
+    },
+    seed: () => CaseDetailsLoaded(legalCase),
+    act: (bloc) =>
+        bloc.add(const ChangeCaseStatusRequested('c1', CaseStatus.suspended)),
+    expect: () => [
+      CaseDetailsLoaded(legalCase, isUpdatingStatus: true),
+      CaseDetailsLoaded(legalCase, actionError: 'Status change rejected'),
+    ],
   );
 }

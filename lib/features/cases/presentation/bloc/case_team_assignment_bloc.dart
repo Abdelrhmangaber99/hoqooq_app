@@ -4,7 +4,6 @@ import 'package:injectable/injectable.dart';
 import '../../../authentication/domain/entities/user.dart';
 import '../../../users/domain/repository/i_user_repository.dart';
 import '../../data/models/assign_case_request.dart';
-import '../../domain/entities/case_team_member.dart';
 import '../../domain/repository/i_case_repository.dart';
 
 part 'case_team_assignment_event.dart';
@@ -29,6 +28,7 @@ class CaseTeamAssignmentBloc
     : super(CaseTeamAssignmentInitial()) {
     on<LoadCaseTeamAssignmentReferenceDataRequested>(_onLoad);
     on<CaseTeamAssignmentSubmitted>(_onSubmit);
+    on<CaseAccessRevocationSubmitted>(_onRevoke);
   }
 
   Future<void> _onLoad(
@@ -37,7 +37,15 @@ class CaseTeamAssignmentBloc
   ) async {
     emit(CaseTeamAssignmentLoading());
     final usersResult = await _userRepository.getUsers();
-    final users = usersResult.fold((_) => const <User>[], (u) => u);
+    final users = usersResult.fold(
+      (_) => const <User>[],
+      (items) => items
+          .where(
+            (user) =>
+                user.isActive && (user.accountType == null || user.isEmployee),
+          )
+          .toList(growable: false),
+    );
     emit(CaseTeamAssignmentReady(users: users));
   }
 
@@ -47,9 +55,10 @@ class CaseTeamAssignmentBloc
   ) async {
     final current = state;
     if (current is! CaseTeamAssignmentReady) return;
+    if (current.isSubmitting) return;
 
     emit(current.copyWith(isSubmitting: true, submitError: null));
-    final result = await _caseRepository.assignTeamMember(
+    final result = await _caseRepository.setCaseAccess(
       event.caseId,
       event.request,
     );
@@ -57,7 +66,28 @@ class CaseTeamAssignmentBloc
       (failure) => emit(
         current.copyWith(isSubmitting: false, submitError: failure.message),
       ),
-      (member) => emit(CaseTeamAssignmentSuccess(member)),
+      (_) => emit(const CaseTeamAssignmentSuccess()),
+    );
+  }
+
+  Future<void> _onRevoke(
+    CaseAccessRevocationSubmitted event,
+    Emitter<CaseTeamAssignmentState> emit,
+  ) async {
+    final current = state;
+    if (current is! CaseTeamAssignmentReady) return;
+    if (current.isSubmitting) return;
+
+    emit(current.copyWith(isSubmitting: true, submitError: null));
+    final result = await _caseRepository.revokeCaseAccess(
+      event.caseId,
+      event.userId,
+    );
+    result.fold(
+      (failure) => emit(
+        current.copyWith(isSubmitting: false, submitError: failure.message),
+      ),
+      (_) => emit(const CaseTeamAssignmentSuccess()),
     );
   }
 }

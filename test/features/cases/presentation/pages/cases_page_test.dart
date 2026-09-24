@@ -5,21 +5,16 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/di/injection.dart';
-import 'package:hqooq/features/authentication/domain/entities/permission.dart';
-import 'package:hqooq/features/authentication/domain/entities/role.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
+import 'package:hqooq/features/cases/domain/entities/case_party_snapshot.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
 import 'package:hqooq/features/cases/domain/entities/case_type_lookup.dart';
-import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
 import 'package:hqooq/features/cases/presentation/bloc/cases_bloc.dart';
 import 'package:hqooq/features/cases/presentation/pages/cases_page.dart';
-import 'package:hqooq/features/clients/domain/entities/client.dart';
-import 'package:hqooq/features/clients/domain/entities/client_status.dart';
-import 'package:hqooq/features/clients/domain/entities/client_type.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCasesBloc extends MockBloc<CasesEvent, CasesState>
@@ -60,14 +55,7 @@ void main() {
     mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    roles: const [
-      Role(
-        id: 'r1',
-        code: 'LAWYER',
-        scope: 'TENANT',
-        permissions: [Permission(id: 'p1', code: 'cases.create')],
-      ),
-    ],
+    permissions: const ['case.view', 'case.create'],
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
   );
 
@@ -76,34 +64,17 @@ void main() {
     tenantId: 't1',
     caseNumber: 'CASE-2026-00001',
     status: CaseStatus.active,
-    clientId: 'cl1',
     caseTypeId: 'ct1',
     priority: CasePriority.high,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    client: Client(
+    clientSnapshot: const CaseClientSnapshot(
       id: 'cl1',
-      tenantId: 't1',
-      clientCode: 'CLI-001',
-      type: ClientType.individual,
-      fullName: 'Carlos Hernandez',
-      status: ClientStatus.active,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-      emails: const [],
-      phones: const [],
-      addresses: const [],
+      clientType: 'INDIVIDUAL',
+      name: 'Carlos Hernandez',
     ),
     caseType: const CaseTypeLookup(id: 'ct1', name: 'Civil'),
-    defaultCourtId: 'co1',
-    defaultCourt: Court(
-      id: 'co1',
-      name: 'District Court',
-      type: 'FIRST_INSTANCE',
-      isActive: true,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-    ),
+    courtName: 'District Court',
     team: const [],
   );
 
@@ -120,7 +91,7 @@ void main() {
     getIt.registerSingleton<SessionCubit>(sessionCubit);
     when(
       () => sessionCubit.state,
-    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: false));
+    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: true));
   });
 
   tearDown(() async {
@@ -186,45 +157,40 @@ void main() {
     expect(find.text('CASE-2026-00001'), findsNothing);
   });
 
-  testWidgets(
-    'architecture-review finding #2: shows the new-case FAB when the user '
-    'holds cases.create',
-    (tester) async {
-      whenListen(
-        bloc,
-        const Stream<CasesState>.empty(),
-        initialState: const CasesLoaded([]),
-      );
+  testWidgets('shows the new-case header action when the user '
+      'is a Firm Admin and holds cases.create', (tester) async {
+    whenListen(
+      bloc,
+      const Stream<CasesState>.empty(),
+      initialState: const CasesLoaded([]),
+    );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
 
-      expect(find.byType(FloatingActionButton), findsOneWidget);
-    },
-  );
+    expect(find.text('New Case'), findsWidgets);
+    expect(find.byType(FloatingActionButton), findsNothing);
+  });
 
-  testWidgets(
-    'architecture-review finding #2: hides the new-case FAB when the user '
-    'lacks cases.create',
-    (tester) async {
-      when(() => sessionCubit.state).thenReturn(
-        SessionAuthenticated(
-          user.copyWith(roles: const []),
-          isFirmAdmin: false,
-        ),
-      );
-      whenListen(
-        bloc,
-        const Stream<CasesState>.empty(),
-        initialState: const CasesLoaded([]),
-      );
+  testWidgets('hides the new-case action when the user '
+      'lacks cases.create', (tester) async {
+    when(() => sessionCubit.state).thenReturn(
+      SessionAuthenticated(
+        user.copyWith(permissions: const ['case.view']),
+        isFirmAdmin: true,
+      ),
+    );
+    whenListen(
+      bloc,
+      const Stream<CasesState>.empty(),
+      initialState: const CasesLoaded([]),
+    );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
 
-      expect(find.byType(FloatingActionButton), findsNothing);
-    },
-  );
+    expect(find.text('New Case'), findsNothing);
+  });
 
   testWidgets('renders the case list on CasesLoaded', (tester) async {
     whenListen(
@@ -236,8 +202,9 @@ void main() {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    expect(find.text('CASE-2026-00001'), findsOneWidget);
-    expect(find.text('Carlos Hernandez'), findsOneWidget);
+    expect(find.text('CASE-2026-00001'), findsNWidgets(2));
+    expect(find.text('Civil'), findsOneWidget);
+    expect(find.text('District Court'), findsOneWidget);
   });
 
   testWidgets(

@@ -2,8 +2,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/auth/permission_check.dart';
 import 'package:hqooq/di/injection.dart';
-import 'package:hqooq/features/authentication/domain/entities/permission.dart';
-import 'package:hqooq/features/authentication/domain/entities/role.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
@@ -24,14 +22,7 @@ void main() {
     mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    roles: const [
-      Role(
-        id: 'r1',
-        code: 'LAWYER',
-        scope: 'TENANT',
-        permissions: [Permission(id: 'p1', code: 'cases.create')],
-      ),
-    ],
+    permissions: const ['cases.create'],
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
   );
 

@@ -51,6 +51,17 @@ After the login-crash fix, the user reported the seeded `admin@hoqooq.local` (`S
 
 No Flutter code changed this pass — this was pure investigation + a backend-side data-provisioning action (creating the Demo Law Firm tenant) via the already-existing `POST /tenants/provision`/`POST /subscriptions/activate` endpoints. M7 stays paused until the user has verified Firm Admin access end-to-end on the physical iPhone using the credentials above.
 
+## ⚠️ Backend was reseeded 2026-08-07 — the Demo Law Firm tenant above no longer exists; re-provisioned 2026-08-10; Clients 500 bug no longer reproduces
+
+User tested on a physical device with the credentials above and still got "Insufficient Permission" — but turned out to still be logged in as `admin@hoqooq.local` (`SUPER_ADMIN`), not `admin@demo.local`. While verifying that, direct `curl` against the backend found `admin@demo.local` / `Password123!` now returns **`401 Invalid credentials`** — the tenant from the 2026-08-06 entry above is simply gone. `GET /subscriptions/plans` timestamps confirm the seeder re-ran on **2026-08-07T17:44:38Z**, a day after that tenant was created — a full reseed wipes any tenant/user provisioned outside the seed script itself, not just a targeted reset. **Takeaway for future sessions: any manually-provisioned dev account (this tenant, any other test data) is only as durable as the last seed run — don't assume last session's credentials still exist without checking first.**
+
+Re-provisioned via the same `POST /tenants/provision` → `POST /subscriptions/activate` flow, same email/password as before (only the tenant `id` changed):
+- Tenant: **Demo Law Firm**, `id: c6d676d6-e980-4742-91cb-8aa8daa6934d`, PREMIUM plan (`a1713b5f-5770-481e-af22-54dc2bde3954`), MONTHLY billing, subscription `ACTIVE`.
+- Firm Admin login: **`admin@demo.local` / `Password123!`** (unchanged) — roles `[FIRM_ADMIN, MANAGING_PARTNER]`, 52 permissions, matches the 2026-08-06 grant exactly.
+- Live-verified with a fresh token: `GET /reports/dashboard` → 200, `GET /cases` → 200, `GET /users/me` → 200 (tenant-scoped shape as expected).
+
+**Clients bug re-verification: `GET /clients`/`GET /clients/:id` no longer 500.** The 2026-08-06 entry above documented a 100%-reproducible `QueryFailedError` (camelCase vs snake_case column mismatch in `ClientRepository`'s raw SQL). Re-tested against this fresh tenant with an actual record (`POST /clients` → 201, then `GET /clients` and `GET /clients/:id` both → 200 with the real row returned) — **the bug does not reproduce.** Whether this was fixed as part of the same reseed/redeploy that wiped the tenant, or was already fixed and just never re-verified, isn't determinable from the client side alone. Treat Clients as tentatively working, but this needs one more confirmation pass (ideally from the backend team confirming a fix landed) before fully retiring the standing "Clients is broken" flag from `API_CONTRACT.md` finding KK — updated there with this same finding.
+
 ---
 
 ## ⚠️ Pre-existing codebase — not a blank slate

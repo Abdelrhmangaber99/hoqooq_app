@@ -1,5 +1,20 @@
 # Hoqooq Legal Practice Management - Project Summary
 
+## Cached Court selection
+
+Case forms load Governorates and Case Types from the Hoqooq backend, then query
+OpenStreetMap Nominatim resolves the selected Governorate boundary, then the
+Overpass API loads all mapped courthouse/judiciary objects inside it. Results
+are cached on-device for 30 days and stale cached data remains available when
+the public services are unavailable. The two Courts verified in the backend
+seed are bundled as first-run fallbacks. Court selection does not require an
+API key or billing and does not permit free-form Court entry.
+
+A Case request persists only the selected Court display name as `courtName`;
+OpenStreetMap identifiers, coordinates, and addresses remain temporary Flutter
+display/cache data. Hearings continue to use the backend Court/Circuit reference
+hierarchy. OpenStreetMap attribution must remain visible in the Court picker.
+
 This document provides a technical overview of the work completed for the Hoqooq (Lexora) mobile application UI.
 
 ## 🚀 Overview

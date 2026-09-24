@@ -69,7 +69,10 @@ class CasesBloc extends Bloc<CasesEvent, CasesState> {
           .where(
             (c) =>
                 c.caseNumber.toLowerCase().contains(query) ||
-                c.client.fullName.toLowerCase().contains(query),
+                (c.title?.toLowerCase().contains(query) ?? false) ||
+                (c.clientSnapshot?.name.toLowerCase().contains(query) ??
+                    false) ||
+                (c.courtName?.toLowerCase().contains(query) ?? false),
           )
           .toList();
     }
@@ -77,6 +80,11 @@ class CasesBloc extends Bloc<CasesEvent, CasesState> {
       filtered,
       statusFilter: _statusFilter,
       searchQuery: _searchQuery,
+      totalCount: _allCases.length,
+      statusCounts: {
+        for (final status in CaseStatus.values)
+          status: _allCases.where((item) => item.status == status).length,
+      },
     );
   }
 }

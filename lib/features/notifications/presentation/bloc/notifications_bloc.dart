@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/app_notification.dart';
+import '../../domain/entities/daily_activity_item.dart';
 import '../../domain/repository/i_notification_repository.dart';
 
 part 'notifications_event.dart';
@@ -35,7 +36,10 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     Emitter<NotificationsState> emit,
   ) async {
     emit(NotificationsLoading());
-    final result = await _notificationRepository.getNotifications();
+    final notificationsFuture = _notificationRepository.getNotifications();
+    final dailyFuture = _notificationRepository.getDailyFeed(DateTime.now());
+    final result = await notificationsFuture;
+    final dailyResult = await dailyFuture;
     result.fold(
       (failure) => emit(
         NotificationsError(
@@ -43,7 +47,14 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
           isForbidden: failure is ForbiddenFailure,
         ),
       ),
-      (notifications) => emit(NotificationsLoaded(notifications)),
+      (notifications) => dailyResult.fold(
+        (failure) => emit(
+          NotificationsLoaded(notifications, actionError: failure.message),
+        ),
+        (dailyActivities) => emit(
+          NotificationsLoaded(notifications, dailyActivities: dailyActivities),
+        ),
+      ),
     );
   }
 
@@ -59,12 +70,14 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
       (failure) => emit(
         NotificationsLoaded(
           current.notifications,
+          dailyActivities: current.dailyActivities,
           actionError: failure.message,
         ),
       ),
       (_) => emit(
         NotificationsLoaded(
           current.notifications.where((n) => n.id != event.id).toList(),
+          dailyActivities: current.dailyActivities,
         ),
       ),
     );
@@ -96,6 +109,7 @@ class NotificationsBloc extends Bloc<NotificationsEvent, NotificationsState> {
     emit(
       NotificationsLoaded(
         stillUnread,
+        dailyActivities: current.dailyActivities,
         actionError: stillUnread.isEmpty
             ? null
             : outcomes.firstWhere((o) => o.errorMessage != null).errorMessage,

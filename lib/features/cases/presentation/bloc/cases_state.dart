@@ -18,11 +18,25 @@ class CasesLoaded extends CasesState {
   final List<LegalCase> cases;
   final CaseStatus? statusFilter;
   final String searchQuery;
+  final int totalCount;
+  final Map<CaseStatus, int> statusCounts;
 
-  const CasesLoaded(this.cases, {this.statusFilter, this.searchQuery = ''});
+  const CasesLoaded(
+    this.cases, {
+    this.statusFilter,
+    this.searchQuery = '',
+    this.totalCount = 0,
+    this.statusCounts = const {},
+  });
 
   @override
-  List<Object?> get props => [cases, statusFilter, searchQuery];
+  List<Object?> get props => [
+    cases,
+    statusFilter,
+    searchQuery,
+    totalCount,
+    statusCounts,
+  ];
 }
 
 class CasesError extends CasesState {

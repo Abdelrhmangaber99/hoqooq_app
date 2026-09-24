@@ -1,13 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../../core/network/dio_error_mapper.dart';
 import '../../domain/entities/document_item.dart';
+import '../../domain/entities/downloaded_document.dart';
 import '../../domain/repository/i_document_repository.dart';
 
-/// Real implementation of [IDocumentRepository] against `GET /documents`
-/// and `POST /documents/upload`.
+/// Real implementation of the current `GET|POST /documents` contract.
 @LazySingleton(as: IDocumentRepository)
 class DocumentRepository implements IDocumentRepository {
   DocumentRepository(this._dio);
@@ -15,9 +17,11 @@ class DocumentRepository implements IDocumentRepository {
   final Dio _dio;
 
   @override
-  ApiResult<List<DocumentItem>> getDocuments() async {
+  ApiResult<List<DocumentItem>> getDocuments([String? caseId]) async {
     try {
-      final response = await _dio.get('/documents');
+      final response = caseId == null
+          ? await _dio.get('/documents')
+          : await _dio.get('/documents', queryParameters: {'caseId': caseId});
       final data = response.data as List<dynamic>;
       return Right(
         data
@@ -32,22 +36,93 @@ class DocumentRepository implements IDocumentRepository {
   @override
   ApiResult<DocumentItem> uploadDocument({
     required String filePath,
-    String? caseId,
+    required String caseId,
+    required String categoryId,
+    String? description,
+    String? linkedEntityType,
+    String? linkedEntityId,
     void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(filePath),
-        if (caseId != null) 'caseId': caseId,
+        'caseId': caseId,
+        'categoryId': categoryId,
+        if (description != null) 'description': description,
+        if (linkedEntityType != null) 'linkedEntityType': linkedEntityType,
+        if (linkedEntityId != null) 'linkedEntityId': linkedEntityId,
       });
       final response = await _dio.post(
-        '/documents/upload',
+        '/documents',
         data: formData,
         onSendProgress: onSendProgress,
       );
       return Right(
         DocumentItem.fromJson(response.data as Map<String, dynamic>),
       );
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+
+  @override
+  ApiResult<DocumentItem> uploadVersion({
+    required String documentId,
+    required String filePath,
+    String? changeSummary,
+    void Function(int sent, int total)? onSendProgress,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath),
+        if (changeSummary != null && changeSummary.trim().isNotEmpty)
+          'changeSummary': changeSummary.trim(),
+      });
+      final response = await _dio.post(
+        '/documents/$documentId/versions',
+        data: formData,
+        onSendProgress: onSendProgress,
+      );
+      return Right(
+        DocumentItem.fromJson(response.data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+
+  @override
+  ApiResult<DownloadedDocument> downloadDocument(
+    String id,
+    String fallbackFileName,
+  ) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        '/documents/$id/download',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final contentDisposition = response.headers.value('content-disposition');
+      final encodedName = RegExp(
+        "filename\\*=UTF-8''([^;]+)",
+      ).firstMatch(contentDisposition ?? '')?.group(1);
+      return Right(
+        DownloadedDocument(
+          fileName: encodedName == null
+              ? fallbackFileName
+              : Uri.decodeComponent(encodedName),
+          bytes: Uint8List.fromList(response.data ?? const <int>[]),
+        ),
+      );
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+
+  @override
+  ApiResult<void> archiveDocument(String id) async {
+    try {
+      await _dio.delete('/documents/$id');
+      return const Right(null);
     } on DioException catch (e) {
       return Left(mapDioError(e));
     }

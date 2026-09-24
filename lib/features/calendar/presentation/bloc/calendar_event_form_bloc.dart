@@ -29,6 +29,7 @@ class CalendarEventFormBloc
     CreateEventSubmitted event,
     Emitter<CalendarEventFormState> emit,
   ) async {
+    if (state is CalendarEventFormSubmitting) return;
     emit(CalendarEventFormSubmitting());
     final result = await _calendarRepository.createEvent(event.request);
     result.fold(

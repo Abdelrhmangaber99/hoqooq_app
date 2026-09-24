@@ -10,25 +10,27 @@ import '../../../../core/widgets/app_date_field.dart';
 import '../../../../core/widgets/app_dropdown_field.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
+import '../../../cases/domain/entities/court.dart';
 import '../../data/models/create_hearing_request.dart';
+import '../../data/models/complete_hearing_request.dart';
 import '../../data/models/update_hearing_request.dart';
 import '../../domain/entities/hearing.dart';
 import '../../domain/entities/hearing_status.dart';
 import '../bloc/hearing_form_bloc.dart';
-import '../hearing_display_helpers.dart';
 
 /// Shared Create/Edit screen — `existingHearing == null` means create
-/// mode, always scoped to [caseId] (a hearing always belongs to exactly
-/// one case, unlike Task creation's optional case link). "Complete a
-/// hearing" is just this same form with `status: completed` + an outcome.
+/// mode, always scoped to [caseId]. Completion is submitted through the
+/// backend's dedicated endpoint.
 class HearingFormPage extends StatelessWidget {
   final String caseId;
   final Hearing? existingHearing;
+  final String? governorateId;
 
   const HearingFormPage({
     super.key,
     required this.caseId,
     this.existingHearing,
+    this.governorateId,
   });
 
   @override
@@ -36,7 +38,12 @@ class HearingFormPage extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           getIt<HearingFormBloc>()
-            ..add(LoadHearingFormReferenceDataRequested()),
+            ..add(
+              LoadHearingFormReferenceDataRequested(
+                governorateId,
+                initialCourtId: existingHearing?.courtId,
+              ),
+            ),
       child: _HearingFormView(caseId: caseId, existingHearing: existingHearing),
     );
   }
@@ -58,6 +65,7 @@ class _HearingFormViewState extends State<_HearingFormView> {
   late HearingStatus _status;
   String? _courtId;
   String? _hearingTypeId;
+  String? _circuitId;
   DateTime? _scheduledAt;
   DateTime? _nextHearingAt;
 
@@ -72,6 +80,7 @@ class _HearingFormViewState extends State<_HearingFormView> {
     _status = h?.status ?? HearingStatus.scheduled;
     _courtId = h?.courtId;
     _hearingTypeId = h?.hearingTypeId;
+    _circuitId = h?.circuitId;
     _scheduledAt = h?.scheduledAt;
     _nextHearingAt = h?.nextHearingAt;
   }
@@ -131,16 +140,6 @@ class _HearingFormViewState extends State<_HearingFormView> {
                   ? null
                   : _judgeNameController.text.trim())
             : null,
-        status: _status != original.status ? _status : null,
-        outcomeText:
-            _outcomeTextController.text.trim() != (original.outcomeText ?? '')
-            ? (_outcomeTextController.text.trim().isEmpty
-                  ? null
-                  : _outcomeTextController.text.trim())
-            : null,
-        nextHearingAt: _nextHearingAt != original.nextHearingAt
-            ? _nextHearingAt
-            : null,
       );
       bloc.add(UpdateHearingSubmitted(original.id, request));
     } else {
@@ -148,6 +147,9 @@ class _HearingFormViewState extends State<_HearingFormView> {
       final hearingTypeId = _hearingTypeId;
       final scheduledAt = _scheduledAt;
       if (courtId == null || hearingTypeId == null || scheduledAt == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('hearing_required_fields'))),
+        );
         return;
       }
       final request = CreateHearingRequest(
@@ -163,9 +165,29 @@ class _HearingFormViewState extends State<_HearingFormView> {
             ? null
             : _outcomeTextController.text.trim(),
         nextHearingAt: _nextHearingAt,
+        circuitId: _circuitId,
       );
       bloc.add(CreateHearingSubmitted(request));
     }
+  }
+
+  void _complete(BuildContext context) {
+    final outcome = _outcomeTextController.text.trim();
+    if (outcome.length < 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('hearing_outcome_min_length'))),
+      );
+      return;
+    }
+    context.read<HearingFormBloc>().add(
+      CompleteHearingSubmitted(
+        widget.existingHearing!.id,
+        CompleteHearingRequest(
+          outcomeText: outcome,
+          nextHearingAt: _nextHearingAt,
+        ),
+      ),
+    );
   }
 
   @override
@@ -220,26 +242,80 @@ class _HearingFormViewState extends State<_HearingFormView> {
                         ),
                         const SizedBox(height: AppSpacing.m),
                       ],
-                      AppDropdownField<HearingStatus>(
-                        label: context.tr('status'),
-                        value: _status,
-                        items: HearingStatus.values.where(
-                          (s) => s != HearingStatus.unknown,
+                      if (state.courts.isEmpty)
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.m),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: AppColors.warning,
+                                ),
+                                const SizedBox(width: AppSpacing.s),
+                                Expanded(
+                                  child: Text(
+                                    state.courtLoadError == null
+                                        ? context.tr(
+                                            'no_backend_courts_for_hearing',
+                                          )
+                                        : '${context.tr('court_load_failed')} ${state.courtLoadError}',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        AppDropdownField<String?>(
+                          label: context.tr('court'),
+                          value: _courtId,
+                          items: [null, ...state.courts.map((c) => c.id)],
+                          labelOf: (id) => id == null
+                              ? context.tr('none')
+                              : state.courts
+                                    .firstWhere((c) => c.id == id)
+                                    .labelFor(locale.languageCode),
+                          onChanged: (v) {
+                            setState(() {
+                              _courtId = v;
+                              _circuitId = null;
+                            });
+                            if (v != null) {
+                              context.read<HearingFormBloc>().add(
+                                LoadHearingCircuitsRequested(v),
+                              );
+                            }
+                          },
                         ),
-                        labelOf: (s) => hearingStatusLabel(context, s),
-                        onChanged: (v) => setState(() => _status = v!),
-                      ),
                       const SizedBox(height: AppSpacing.m),
-                      AppDropdownField<String?>(
-                        label: context.tr('court'),
-                        value: _courtId,
-                        items: [null, ...state.courts.map((c) => c.id)],
-                        labelOf: (id) => id == null
-                            ? context.tr('none')
-                            : state.courts.firstWhere((c) => c.id == id).name,
-                        onChanged: (v) => setState(() => _courtId = v),
-                      ),
+                      if (_courtId != null && state.circuits.isEmpty)
+                        Text(
+                          context.tr('no_circuits_optional'),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )
+                      else if (state.circuits.isNotEmpty)
+                        AppDropdownField<String?>(
+                          label: context.tr('circuit'),
+                          value: _circuitId,
+                          items: [null, ...state.circuits.map((c) => c.id)],
+                          labelOf: (id) => id == null
+                              ? context.tr('none')
+                              : state.circuits
+                                    .firstWhere((c) => c.id == id)
+                                    .labelFor(locale.languageCode),
+                          onChanged: (v) => setState(() => _circuitId = v),
+                        ),
                       const SizedBox(height: AppSpacing.m),
+                      if (state.hearingTypes.isEmpty &&
+                          state.hearingTypeLoadError != null) ...[
+                        Text(
+                          '${context.tr('hearing_type_load_failed')} ${state.hearingTypeLoadError}',
+                          style: const TextStyle(color: AppColors.error),
+                        ),
+                        const SizedBox(height: AppSpacing.m),
+                      ],
                       AppDateField(
                         label: context.tr('scheduled_at'),
                         value: _scheduledAt,
@@ -252,24 +328,39 @@ class _HearingFormViewState extends State<_HearingFormView> {
                         controller: _judgeNameController,
                       ),
                       const SizedBox(height: AppSpacing.m),
-                      AppTextField(
-                        label: context.tr('outcome_text'),
-                        controller: _outcomeTextController,
-                      ),
-                      const SizedBox(height: AppSpacing.m),
-                      AppDateField(
-                        label: context.tr('next_hearing_at'),
-                        value: _nextHearingAt,
-                        dateFormat: dateFormat,
-                        onTap: () => _pickDateTime(context, isScheduled: false),
-                      ),
+                      if (_isEditMode &&
+                          _status != HearingStatus.completed &&
+                          _status != HearingStatus.cancelled) ...[
+                        AppTextField(
+                          label: context.tr('outcome_text'),
+                          controller: _outcomeTextController,
+                        ),
+                        const SizedBox(height: AppSpacing.m),
+                        AppDateField(
+                          label: context.tr('next_hearing_at'),
+                          value: _nextHearingAt,
+                          dateFormat: dateFormat,
+                          onTap: () =>
+                              _pickDateTime(context, isScheduled: false),
+                        ),
+                        const SizedBox(height: AppSpacing.m),
+                        AppButton(
+                          text: context.tr('complete_hearing'),
+                          isLoading: state.isSubmitting,
+                          onPressed: () => _complete(context),
+                        ),
+                        const SizedBox(height: AppSpacing.m),
+                      ],
                       const SizedBox(height: AppSpacing.xl),
                       AppButton(
                         text: _isEditMode
                             ? context.tr('save_changes')
                             : context.tr('create_hearing'),
                         isLoading: state.isSubmitting,
-                        onPressed: () => _submit(context),
+                        onPressed:
+                            state.courts.isEmpty || state.hearingTypes.isEmpty
+                            ? null
+                            : () => _submit(context),
                       ),
                     ],
                   ),

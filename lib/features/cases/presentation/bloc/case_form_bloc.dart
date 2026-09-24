@@ -2,11 +2,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import '../../../authentication/domain/entities/user.dart';
-import '../../../clients/domain/entities/client.dart';
-import '../../../clients/domain/repository/i_client_repository.dart';
 import '../../../courts/domain/repository/i_court_repository.dart';
-import '../../../lookups/domain/entities/lookup.dart';
-import '../../../lookups/domain/entities/lookup_kind.dart';
+import '../../../courts/domain/entities/case_type_reference.dart';
+import '../../../courts/domain/entities/governorate.dart';
+import '../../../courts/domain/entities/court_circuit.dart';
 import '../../../lookups/domain/repository/i_lookup_repository.dart';
 import '../../../users/domain/repository/i_user_repository.dart';
 import '../../data/models/create_case_request.dart';
@@ -18,13 +17,10 @@ import '../../domain/repository/i_case_repository.dart';
 part 'case_form_event.dart';
 part 'case_form_state.dart';
 
-/// Powers both the Create-Case and Edit-Case screens. Loads Courts/Users/
-/// Clients/case-type Lookups once as reference data; a failure on any one
-/// degrades to an empty list rather than failing the whole form (same
-/// precedent as M2's `ClientDetailsBloc`) — all four are either optional
-/// on write or, for `clients`/`caseTypes`, required only in create mode
-/// where the picker itself makes an empty list immediately visible as a
-/// problem, rather than silently corrupting a submit.
+/// Powers both the Create-Case and Edit-Case screens. Loads global
+/// Governorates and Case Types from the backend. Court choices use the same
+/// dependent judicial-reference endpoint as the web frontend after a
+/// Governorate is selected.
 ///
 /// Case creation was blocked until 2026-08-05 — `caseTypeId` had no real,
 /// listable source before `GET /lookups?kind=CASE_TYPE` existed
@@ -37,20 +33,68 @@ part 'case_form_state.dart';
 class CaseFormBloc extends Bloc<CaseFormEvent, CaseFormState> {
   final ICaseRepository _caseRepository;
   final ICourtRepository _courtRepository;
-  final IUserRepository _userRepository;
-  final IClientRepository _clientRepository;
-  final ILookupRepository _lookupRepository;
 
   CaseFormBloc(
     this._caseRepository,
     this._courtRepository,
-    this._userRepository,
-    this._clientRepository,
-    this._lookupRepository,
+    IUserRepository _,
+    ILookupRepository ___,
   ) : super(CaseFormInitial()) {
     on<LoadCaseFormReferenceDataRequested>(_onLoad);
+    on<LoadCaseCourtsRequested>(_onLoadCourts);
+    on<LoadCaseCircuitsRequested>(_onLoadCircuits);
     on<CreateCaseSubmitted>(_onCreate);
     on<UpdateCaseSubmitted>(_onUpdate);
+  }
+
+  Future<void> _onLoadCircuits(
+    LoadCaseCircuitsRequested event,
+    Emitter<CaseFormState> emit,
+  ) async {
+    final current = state;
+    if (current is! CaseFormReady) return;
+    final result = await _courtRepository.getCircuits(event.courtId);
+    emit(
+      current.copyWith(
+        circuits: result.fold((_) => const [], (items) => items),
+      ),
+    );
+  }
+
+  Future<void> _onLoadCourts(
+    LoadCaseCourtsRequested event,
+    Emitter<CaseFormState> emit,
+  ) async {
+    final current = state;
+    if (current is! CaseFormReady) return;
+
+    emit(
+      current.copyWith(
+        courts: const <Court>[],
+        circuits: const <CourtCircuit>[],
+        isLoadingCourts: true,
+        courtLoadError: null,
+      ),
+    );
+    final result = await _courtRepository.getCourts(event.governorateId);
+    result.fold(
+      (failure) => emit(
+        current.copyWith(
+          courts: const <Court>[],
+          circuits: const <CourtCircuit>[],
+          isLoadingCourts: false,
+          courtLoadError: failure.message,
+        ),
+      ),
+      (courts) => emit(
+        current.copyWith(
+          courts: courts,
+          circuits: const <CourtCircuit>[],
+          isLoadingCourts: false,
+          courtLoadError: null,
+        ),
+      ),
+    );
   }
 
   Future<void> _onLoad(
@@ -63,25 +107,23 @@ class CaseFormBloc extends Bloc<CaseFormEvent, CaseFormState> {
     // of latency instead of 4 sequential ones. Kept as separate typed
     // futures rather than `Future.wait` since the four results have
     // different generic types.
-    final courtsFuture = _courtRepository.getCourts();
-    final usersFuture = _userRepository.getUsers();
-    final clientsFuture = _clientRepository.getClients();
-    final caseTypesFuture = _lookupRepository.getLookups(
-      kind: LookupKind.caseType,
-    );
-    final courtsResult = await courtsFuture;
-    final usersResult = await usersFuture;
-    final clientsResult = await clientsFuture;
+    final governoratesFuture = _courtRepository.getGovernorates();
+    final caseTypesFuture = _courtRepository.getCaseTypes();
+    final governoratesResult = await governoratesFuture;
     final caseTypesResult = await caseTypesFuture;
-    final courts = courtsResult.fold((_) => const <Court>[], (c) => c);
-    final users = usersResult.fold((_) => const <User>[], (u) => u);
-    final clients = clientsResult.fold((_) => const <Client>[], (c) => c);
-    final caseTypes = caseTypesResult.fold((_) => const <Lookup>[], (l) => l);
+    final governorates = governoratesResult.fold(
+      (_) => const <Governorate>[],
+      (items) => items,
+    );
+    final caseTypes = caseTypesResult.fold(
+      (_) => const <CaseTypeReference>[],
+      (items) => items,
+    );
     emit(
       CaseFormReady(
-        courts: courts,
-        users: users,
-        clients: clients,
+        governorates: governorates,
+        courts: const <Court>[],
+        circuits: const <CourtCircuit>[],
         caseTypes: caseTypes,
       ),
     );
@@ -93,6 +135,7 @@ class CaseFormBloc extends Bloc<CaseFormEvent, CaseFormState> {
   ) async {
     final current = state;
     if (current is! CaseFormReady) return;
+    if (current.isSubmitting) return;
 
     emit(current.copyWith(isSubmitting: true, submitError: null));
     final result = await _caseRepository.createCase(event.request);
@@ -110,6 +153,7 @@ class CaseFormBloc extends Bloc<CaseFormEvent, CaseFormState> {
   ) async {
     final current = state;
     if (current is! CaseFormReady) return;
+    if (current.isSubmitting) return;
 
     emit(current.copyWith(isSubmitting: true, submitError: null));
     final result = await _caseRepository.updateCase(event.id, event.request);

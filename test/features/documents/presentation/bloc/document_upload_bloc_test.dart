@@ -35,13 +35,21 @@ void main() {
         () => documentRepository.uploadDocument(
           filePath: any(named: 'filePath'),
           caseId: any(named: 'caseId'),
+          categoryId: any(named: 'categoryId'),
+          description: any(named: 'description'),
+          linkedEntityType: any(named: 'linkedEntityType'),
+          linkedEntityId: any(named: 'linkedEntityId'),
           onSendProgress: any(named: 'onSendProgress'),
         ),
       ).thenAnswer((_) async => Right(document));
       return DocumentUploadBloc(documentRepository);
     },
     act: (bloc) => bloc.add(
-      const DocumentUploadRequested(filePath: '/tmp/motion.pdf', caseId: 'c1'),
+      const DocumentUploadRequested(
+        filePath: '/tmp/motion.pdf',
+        caseId: 'c1',
+        categoryId: 'cat1',
+      ),
     ),
     expect: () => [
       const DocumentUploadInProgress(0),
@@ -56,6 +64,10 @@ void main() {
         () => documentRepository.uploadDocument(
           filePath: any(named: 'filePath'),
           caseId: any(named: 'caseId'),
+          categoryId: any(named: 'categoryId'),
+          description: any(named: 'description'),
+          linkedEntityType: any(named: 'linkedEntityType'),
+          linkedEntityId: any(named: 'linkedEntityId'),
           onSendProgress: any(named: 'onSendProgress'),
         ),
       ).thenAnswer((invocation) async {
@@ -67,8 +79,13 @@ void main() {
       });
       return DocumentUploadBloc(documentRepository);
     },
-    act: (bloc) =>
-        bloc.add(const DocumentUploadRequested(filePath: '/tmp/motion.pdf')),
+    act: (bloc) => bloc.add(
+      const DocumentUploadRequested(
+        filePath: '/tmp/motion.pdf',
+        caseId: 'c1',
+        categoryId: 'cat1',
+      ),
+    ),
     expect: () => [
       const DocumentUploadInProgress(0),
       const DocumentUploadInProgress(0.5),
@@ -83,16 +100,60 @@ void main() {
         () => documentRepository.uploadDocument(
           filePath: any(named: 'filePath'),
           caseId: any(named: 'caseId'),
+          categoryId: any(named: 'categoryId'),
+          description: any(named: 'description'),
+          linkedEntityType: any(named: 'linkedEntityType'),
+          linkedEntityId: any(named: 'linkedEntityId'),
           onSendProgress: any(named: 'onSendProgress'),
         ),
       ).thenAnswer((_) async => const Left(ServerFailure()));
       return DocumentUploadBloc(documentRepository);
     },
-    act: (bloc) =>
-        bloc.add(const DocumentUploadRequested(filePath: '/tmp/motion.pdf')),
+    act: (bloc) => bloc.add(
+      const DocumentUploadRequested(
+        filePath: '/tmp/motion.pdf',
+        caseId: 'c1',
+        categoryId: 'cat1',
+      ),
+    ),
     expect: () => [
       const DocumentUploadInProgress(0),
       const DocumentUploadFailure('Server error occurred'),
+    ],
+  );
+
+  blocTest<DocumentUploadBloc, DocumentUploadState>(
+    'ignores duplicate upload requests while upload is in progress',
+    build: () {
+      when(
+        () => documentRepository.uploadDocument(
+          filePath: any(named: 'filePath'),
+          caseId: any(named: 'caseId'),
+          categoryId: any(named: 'categoryId'),
+          description: any(named: 'description'),
+          linkedEntityType: any(named: 'linkedEntityType'),
+          linkedEntityId: any(named: 'linkedEntityId'),
+          onSendProgress: any(named: 'onSendProgress'),
+        ),
+      ).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        return Right(document);
+      });
+      return DocumentUploadBloc(documentRepository);
+    },
+    wait: const Duration(milliseconds: 50),
+    act: (bloc) async {
+      const event = DocumentUploadRequested(
+        filePath: '/tmp/motion.pdf',
+        caseId: 'c1',
+        categoryId: 'cat1',
+      );
+      bloc.add(event);
+      bloc.add(event); // duplicate request
+    },
+    expect: () => [
+      const DocumentUploadInProgress(0),
+      DocumentUploadSuccess(document),
     ],
   );
 }

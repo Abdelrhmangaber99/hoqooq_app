@@ -1,26 +1,34 @@
 import '../../../../core/network/api_result.dart';
 import '../entities/document_item.dart';
+import '../entities/downloaded_document.dart';
 
-/// Mirrors API_CONTRACT.md finding I (Documents) — read plus upload-only
-/// for M4. No query parameters exist on `GET /documents`, so `getDocuments`
-/// fetches the full tenant collection; per-case filtering is done
-/// client-side by `caseId`. No `getDocumentById` — that endpoint doesn't
-/// exist server-side.
-///
-/// `uploadDocument` mirrors `POST /documents/upload` exactly: `file`
-/// (multipart, required) and `caseId` (optional) are the only fields the
-/// real backend controller accepts — there is no `description`/`category`/
-/// `folderId` field on the request despite the response DTO having (always
-/// null) placeholders for them, since `DocumentsService.create()` never
-/// populates those columns. No update/delete/download — none of those are
-/// real, working endpoints (delete doesn't exist at all; download is a
-/// stub that returns a fake local path, not real file bytes).
+/// Current v2 private-document contract. Lists may be scoped by Case and
+/// uploads require a Case and active global Document Category. Activity link
+/// fields are supplied together when evidence belongs to another Case activity.
 abstract class IDocumentRepository {
-  ApiResult<List<DocumentItem>> getDocuments();
+  ApiResult<List<DocumentItem>> getDocuments([String? caseId]);
 
   ApiResult<DocumentItem> uploadDocument({
     required String filePath,
-    String? caseId,
+    required String caseId,
+    required String categoryId,
+    String? description,
+    String? linkedEntityType,
+    String? linkedEntityId,
     void Function(int sent, int total)? onSendProgress,
   });
+
+  ApiResult<DocumentItem> uploadVersion({
+    required String documentId,
+    required String filePath,
+    String? changeSummary,
+    void Function(int sent, int total)? onSendProgress,
+  });
+
+  ApiResult<DownloadedDocument> downloadDocument(
+    String id,
+    String fallbackFileName,
+  );
+
+  ApiResult<void> archiveDocument(String id);
 }

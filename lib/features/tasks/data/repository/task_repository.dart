@@ -49,4 +49,27 @@ class TaskRepository implements ITaskRepository {
       return Left(mapDioError(e));
     }
   }
+
+  @override
+  ApiResult<TaskItem> completeTask(String id, String completionNote) async {
+    try {
+      final response = await _dio.patch(
+        '/tasks/$id/complete',
+        data: {'completionNote': completionNote},
+      );
+      return Right(TaskItem.fromJson(response.data as Map<String, dynamic>));
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+
+  @override
+  ApiResult<void> cancelTask(String id) async {
+    try {
+      await _dio.delete('/tasks/$id');
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
 }

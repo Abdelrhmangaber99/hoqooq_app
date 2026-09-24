@@ -9,19 +9,10 @@ part of 'assign_case_request.dart';
 _AssignCaseRequest _$AssignCaseRequestFromJson(Map<String, dynamic> json) =>
     _AssignCaseRequest(
       userId: json['userId'] as String,
-      accessLevel: $enumDecode(_$CaseAccessLevelEnumMap, json['accessLevel']),
+      capabilities: (json['capabilities'] as List<dynamic>)
+          .map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$AssignCaseRequestToJson(_AssignCaseRequest instance) =>
-    <String, dynamic>{
-      'userId': instance.userId,
-      'accessLevel': _$CaseAccessLevelEnumMap[instance.accessLevel]!,
-    };
-
-const _$CaseAccessLevelEnumMap = {
-  CaseAccessLevel.fullAccess: 'FULL_ACCESS',
-  CaseAccessLevel.readOnly: 'READ_ONLY',
-  CaseAccessLevel.uploadDocuments: 'UPLOAD_DOCUMENTS',
-  CaseAccessLevel.assignHearing: 'ASSIGN_HEARING',
-  CaseAccessLevel.unknown: 'unknown',
-};
+    <String, dynamic>{'capabilities': instance.capabilities};

@@ -74,18 +74,56 @@ void main() {
     expect(failure.message, 'Missing permission: cases.delete');
   });
 
-  test('maps 400 to ValidationFailure', () {
+  test('maps 400 to ValidationFailure with string or list message', () {
     final failure = mapDioError(
       errorWith(statusCode: 400, data: {'message': 'caseNumber is required'}),
     );
 
     expect(failure, isA<ValidationFailure>());
     expect(failure.message, 'caseNumber is required');
+
+    final listFailure = mapDioError(
+      errorWith(
+        statusCode: 400,
+        data: {
+          'message': ['email must be valid', 'password too short'],
+        },
+      ),
+    );
+
+    expect(listFailure, isA<ValidationFailure>());
+    expect(listFailure.message, 'email must be valid');
   });
 
-  test('maps any other status code to ServerFailure', () {
-    final failure = mapDioError(errorWith(statusCode: 500, data: null));
+  test('maps sendTimeout to NetworkFailure', () {
+    final error = DioException(
+      requestOptions: RequestOptions(path: '/test'),
+      type: DioExceptionType.sendTimeout,
+    );
 
-    expect(failure, isA<ServerFailure>());
+    expect(mapDioError(error), isA<NetworkFailure>());
+  });
+
+  test('maps 422 to ValidationFailure', () {
+    final failure = mapDioError(
+      errorWith(statusCode: 422, data: {'message': 'Unprocessable entity'}),
+    );
+
+    expect(failure, isA<ValidationFailure>());
+    expect(failure.message, 'Unprocessable entity');
+  });
+
+  test('maps 429 and 503 status codes to ServerFailure', () {
+    final rateLimit = mapDioError(
+      errorWith(statusCode: 429, data: {'message': 'Too many requests'}),
+    );
+    expect(rateLimit, isA<ServerFailure>());
+    expect(rateLimit.message, 'Too many requests');
+
+    final serverError = mapDioError(
+      errorWith(statusCode: 503, data: {'message': 'Service unavailable'}),
+    );
+    expect(serverError, isA<ServerFailure>());
+    expect(serverError.message, 'Service unavailable');
   });
 }

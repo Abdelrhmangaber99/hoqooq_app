@@ -7,10 +7,15 @@ enum AppButtonStyle { primary, secondary, outline }
 
 class AppButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final AppButtonStyle style;
   final bool isLoading;
   final IconData? icon;
+
+  /// Stretch to the full available width (the form/fallback style) or size
+  /// to the label. The reference web app's Settings buttons are inline
+  /// (`self-start`), not full-bleed, so panels opt out with `false`.
+  final bool fullWidth;
 
   const AppButton({
     super.key,
@@ -19,6 +24,7 @@ class AppButton extends StatelessWidget {
     this.style = AppButtonStyle.primary,
     this.isLoading = false,
     this.icon,
+    this.fullWidth = true,
   });
 
   @override
@@ -35,7 +41,7 @@ class AppButton extends StatelessWidget {
 
   Widget _buildPrimaryButton() {
     return Container(
-      width: double.infinity,
+      width: fullWidth ? double.infinity : null,
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: AppRadius.medium,
@@ -54,7 +60,7 @@ class AppButton extends StatelessWidget {
 
   Widget _buildSecondaryButton() {
     return SizedBox(
-      width: double.infinity,
+      width: fullWidth ? double.infinity : null,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
@@ -69,7 +75,7 @@ class AppButton extends StatelessWidget {
 
   Widget _buildOutlineButton() {
     return SizedBox(
-      width: double.infinity,
+      width: fullWidth ? double.infinity : null,
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
@@ -95,14 +101,15 @@ class AppButton extends StatelessWidget {
     }
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (icon != null) ...[
-          Icon(icon, size: 20),
-          const SizedBox(width: 8),
-        ],
-        Text(
-          text,
-          style: AppTypography.labelLarge.copyWith(color: textColor),
+        if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
+        Flexible(
+          child: Text(
+            text,
+            style: AppTypography.labelLarge.copyWith(color: textColor),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );

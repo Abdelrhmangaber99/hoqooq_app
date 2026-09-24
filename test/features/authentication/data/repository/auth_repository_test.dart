@@ -154,16 +154,7 @@ void main() {
       'mfaEnabled': false,
       'createdAt': '2026-01-01T00:00:00.000Z',
       'updatedAt': '2026-01-01T00:00:00.000Z',
-      'roles': [
-        {
-          'id': 'r1',
-          'code': 'LAWYER',
-          'scope': 'TENANT',
-          'permissions': [
-            {'id': 'p1', 'code': 'cases.read'},
-          ],
-        },
-      ],
+      'permissions': ['cases.read'],
       'tenant': {'id': 't1', 'name': 'Reynolds & Associates'},
     };
 

@@ -28,7 +28,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(
-      CreateEventRequest(userId: '', title: '', startsAt: DateTime.utc(2026)),
+      CreateEventRequest(title: '', startsAt: DateTime.utc(2026)),
     );
   });
 
@@ -47,7 +47,6 @@ void main() {
     act: (bloc) => bloc.add(
       CreateEventSubmitted(
         CreateEventRequest(
-          userId: 'u1',
           title: 'Team sync',
           startsAt: DateTime.utc(2026, 2, 1, 9),
         ),
@@ -69,11 +68,7 @@ void main() {
     },
     act: (bloc) => bloc.add(
       CreateEventSubmitted(
-        CreateEventRequest(
-          userId: 'u1',
-          title: '',
-          startsAt: DateTime.utc(2026, 2, 1, 9),
-        ),
+        CreateEventRequest(title: '', startsAt: DateTime.utc(2026, 2, 1, 9)),
       ),
     ),
     expect: () => [

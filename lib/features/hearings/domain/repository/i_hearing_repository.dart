@@ -1,4 +1,5 @@
 import '../../../../core/network/api_result.dart';
+import '../../data/models/complete_hearing_request.dart';
 import '../../data/models/create_hearing_request.dart';
 import '../../data/models/update_hearing_request.dart';
 import '../entities/hearing.dart';
@@ -16,4 +17,5 @@ abstract class IHearingRepository {
   ApiResult<List<Hearing>> getHearings();
   ApiResult<Hearing> createHearing(CreateHearingRequest request);
   ApiResult<Hearing> updateHearing(String id, UpdateHearingRequest request);
+  ApiResult<Hearing> completeHearing(String id, CompleteHearingRequest request);
 }

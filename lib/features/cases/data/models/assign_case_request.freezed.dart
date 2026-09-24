@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AssignCaseRequest {
 
- String get userId; CaseAccessLevel get accessLevel;
+@JsonKey(includeToJson: false) String get userId; List<String> get capabilities;
 /// Create a copy of AssignCaseRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $AssignCaseRequestCopyWith<AssignCaseRequest> get copyWith => _$AssignCaseReques
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AssignCaseRequest&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.accessLevel, accessLevel) || other.accessLevel == accessLevel));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AssignCaseRequest&&(identical(other.userId, userId) || other.userId == userId)&&const DeepCollectionEquality().equals(other.capabilities, capabilities));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,userId,accessLevel);
+int get hashCode => Object.hash(runtimeType,userId,const DeepCollectionEquality().hash(capabilities));
 
 @override
 String toString() {
-  return 'AssignCaseRequest(userId: $userId, accessLevel: $accessLevel)';
+  return 'AssignCaseRequest(userId: $userId, capabilities: $capabilities)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $AssignCaseRequestCopyWith<$Res>  {
   factory $AssignCaseRequestCopyWith(AssignCaseRequest value, $Res Function(AssignCaseRequest) _then) = _$AssignCaseRequestCopyWithImpl;
 @useResult
 $Res call({
- String userId, CaseAccessLevel accessLevel
+@JsonKey(includeToJson: false) String userId, List<String> capabilities
 });
 
 
@@ -65,11 +65,11 @@ class _$AssignCaseRequestCopyWithImpl<$Res>
 
 /// Create a copy of AssignCaseRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? userId = null,Object? accessLevel = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? userId = null,Object? capabilities = null,}) {
   return _then(_self.copyWith(
 userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
-as String,accessLevel: null == accessLevel ? _self.accessLevel : accessLevel // ignore: cast_nullable_to_non_nullable
-as CaseAccessLevel,
+as String,capabilities: null == capabilities ? _self.capabilities : capabilities // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 
@@ -154,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String userId,  CaseAccessLevel accessLevel)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeToJson: false)  String userId,  List<String> capabilities)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AssignCaseRequest() when $default != null:
-return $default(_that.userId,_that.accessLevel);case _:
+return $default(_that.userId,_that.capabilities);case _:
   return orElse();
 
 }
@@ -175,10 +175,10 @@ return $default(_that.userId,_that.accessLevel);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String userId,  CaseAccessLevel accessLevel)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeToJson: false)  String userId,  List<String> capabilities)  $default,) {final _that = this;
 switch (_that) {
 case _AssignCaseRequest():
-return $default(_that.userId,_that.accessLevel);case _:
+return $default(_that.userId,_that.capabilities);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +195,10 @@ return $default(_that.userId,_that.accessLevel);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String userId,  CaseAccessLevel accessLevel)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeToJson: false)  String userId,  List<String> capabilities)?  $default,) {final _that = this;
 switch (_that) {
 case _AssignCaseRequest() when $default != null:
-return $default(_that.userId,_that.accessLevel);case _:
+return $default(_that.userId,_that.capabilities);case _:
   return null;
 
 }
@@ -210,11 +210,17 @@ return $default(_that.userId,_that.accessLevel);case _:
 @JsonSerializable()
 
 class _AssignCaseRequest implements AssignCaseRequest {
-  const _AssignCaseRequest({required this.userId, required this.accessLevel});
+  const _AssignCaseRequest({@JsonKey(includeToJson: false) required this.userId, required final  List<String> capabilities}): _capabilities = capabilities;
   factory _AssignCaseRequest.fromJson(Map<String, dynamic> json) => _$AssignCaseRequestFromJson(json);
 
-@override final  String userId;
-@override final  CaseAccessLevel accessLevel;
+@override@JsonKey(includeToJson: false) final  String userId;
+ final  List<String> _capabilities;
+@override List<String> get capabilities {
+  if (_capabilities is EqualUnmodifiableListView) return _capabilities;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_capabilities);
+}
+
 
 /// Create a copy of AssignCaseRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -229,16 +235,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AssignCaseRequest&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.accessLevel, accessLevel) || other.accessLevel == accessLevel));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AssignCaseRequest&&(identical(other.userId, userId) || other.userId == userId)&&const DeepCollectionEquality().equals(other._capabilities, _capabilities));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,userId,accessLevel);
+int get hashCode => Object.hash(runtimeType,userId,const DeepCollectionEquality().hash(_capabilities));
 
 @override
 String toString() {
-  return 'AssignCaseRequest(userId: $userId, accessLevel: $accessLevel)';
+  return 'AssignCaseRequest(userId: $userId, capabilities: $capabilities)';
 }
 
 
@@ -249,7 +255,7 @@ abstract mixin class _$AssignCaseRequestCopyWith<$Res> implements $AssignCaseReq
   factory _$AssignCaseRequestCopyWith(_AssignCaseRequest value, $Res Function(_AssignCaseRequest) _then) = __$AssignCaseRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String userId, CaseAccessLevel accessLevel
+@JsonKey(includeToJson: false) String userId, List<String> capabilities
 });
 
 
@@ -266,11 +272,11 @@ class __$AssignCaseRequestCopyWithImpl<$Res>
 
 /// Create a copy of AssignCaseRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? accessLevel = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? userId = null,Object? capabilities = null,}) {
   return _then(_AssignCaseRequest(
 userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
-as String,accessLevel: null == accessLevel ? _self.accessLevel : accessLevel // ignore: cast_nullable_to_non_nullable
-as CaseAccessLevel,
+as String,capabilities: null == capabilities ? _self._capabilities : capabilities // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 

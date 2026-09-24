@@ -1,27 +1,59 @@
-import 'package:json_annotation/json_annotation.dart';
+import 'package:flutter/material.dart';
+import '../../../../core/localization/app_localizations.dart';
 
-/// `method` on `CreatePaymentDto` / `paymentMethod` on the `Payment` entity
-/// per API_CONTRACT.md finding R.
-///
-/// **Deliberately modeled from `CreatePaymentDto`'s enum
-/// (`src/modules/finance/enums/payment-method.enum.ts`:
-/// `CASH|BANK_TRANSFER|CHEQUE|ONLINE`), not the `Payment` entity's own
-/// inline-declared enum (`payment.entity.ts`:
-/// `CASH|BANK_TRANSFER|CREDIT_CARD|CHECK`)** — a real backend
-/// inconsistency, two separately-declared enums with the same name and
-/// different values. The DTO's enum is what `class-validator` actually
-/// enforces on write, so that's the value set this app sends; `unknown`
-/// covers a value the entity's enum might have used instead (`CREDIT_CARD`/
-/// `CHECK`) showing up on a read.
 enum PaymentMethod {
-  @JsonValue('CASH')
   cash,
-  @JsonValue('BANK_TRANSFER')
   bankTransfer,
-  @JsonValue('CHEQUE')
   cheque,
-  @JsonValue('ONLINE')
-  online,
-  @JsonValue('unknown')
-  unknown,
+  card,
+  other;
+
+  String toServerString() {
+    switch (this) {
+      case PaymentMethod.cash:
+        return 'CASH';
+      case PaymentMethod.bankTransfer:
+        return 'BANK_TRANSFER';
+      case PaymentMethod.cheque:
+        return 'CHEQUE';
+      case PaymentMethod.card:
+        return 'CARD';
+      case PaymentMethod.other:
+        return 'OTHER';
+    }
+  }
+}
+
+PaymentMethod paymentMethodFromJson(dynamic value) {
+  if (value is String) {
+    switch (value.toUpperCase()) {
+      case 'BANK_TRANSFER':
+        return PaymentMethod.bankTransfer;
+      case 'CHEQUE':
+        return PaymentMethod.cheque;
+      case 'CARD':
+        return PaymentMethod.card;
+      case 'OTHER':
+        return PaymentMethod.other;
+      case 'CASH':
+      default:
+        return PaymentMethod.cash;
+    }
+  }
+  return PaymentMethod.cash;
+}
+
+String paymentMethodLabel(BuildContext context, PaymentMethod method) {
+  switch (method) {
+    case PaymentMethod.cash:
+      return context.tr('cash');
+    case PaymentMethod.bankTransfer:
+      return context.tr('bank_transfer');
+    case PaymentMethod.cheque:
+      return context.tr('cheque');
+    case PaymentMethod.card:
+      return context.tr('card');
+    case PaymentMethod.other:
+      return context.tr('other');
+  }
 }

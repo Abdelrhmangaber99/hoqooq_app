@@ -99,7 +99,13 @@ class AppointmentDetailsPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.labelMedium.copyWith(fontSize: 10, color: AppColors.textHint)),
+        Text(
+          label,
+          style: AppTypography.labelMedium.copyWith(
+            fontSize: 10,
+            color: AppColors.textHint,
+          ),
+        ),
         const SizedBox(height: 4),
         Text(value, style: AppTypography.labelLarge.copyWith(fontSize: 13)),
       ],
@@ -122,7 +128,11 @@ class AppointmentDetailsPage extends StatelessWidget {
             showArrow: true,
           ),
           const Divider(color: AppColors.surfaceLight, height: 1),
-          _buildInfoTile(icon: Icons.business_outlined, label: 'COURT', value: 'District Court — Room 4'),
+          _buildInfoTile(
+            icon: Icons.business_outlined,
+            label: 'COURT',
+            value: 'District Court — Room 4',
+          ),
           const Divider(color: AppColors.surfaceLight, height: 1),
           _buildInfoTile(
             icon: Icons.location_on_outlined,
@@ -131,7 +141,11 @@ class AppointmentDetailsPage extends StatelessWidget {
             subtitle: 'New York, NY 10013',
           ),
           const Divider(color: AppColors.surfaceLight, height: 1),
-          _buildInfoTile(icon: Icons.tag, label: 'CASE NUMBER', value: '#2026-CR-4471'),
+          _buildInfoTile(
+            icon: Icons.tag,
+            label: 'CASE NUMBER',
+            value: '#2026-CR-4471',
+          ),
         ],
       ),
     );
@@ -161,17 +175,31 @@ class AppointmentDetailsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: AppTypography.labelMedium.copyWith(fontSize: 10, color: AppColors.textHint)),
+                Text(
+                  label,
+                  style: AppTypography.labelMedium.copyWith(
+                    fontSize: 10,
+                    color: AppColors.textHint,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(value, style: AppTypography.bodyMedium),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle, style: AppTypography.bodySmall.copyWith(fontSize: 10)),
+                  Text(
+                    subtitle,
+                    style: AppTypography.bodySmall.copyWith(fontSize: 10),
+                  ),
                 ],
               ],
             ),
           ),
-          if (showArrow) const Icon(Icons.chevron_right, size: 16, color: AppColors.textHint),
+          if (showArrow)
+            const Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: AppColors.textHint,
+            ),
         ],
       ),
     );
@@ -185,7 +213,13 @@ class AppointmentDetailsPage extends StatelessWidget {
         children: [
           Text(title, style: AppTypography.h3),
           if (action != null)
-            Text(action, style: AppTypography.labelMedium.copyWith(color: AppColors.primary, fontSize: 12)),
+            Text(
+              action,
+              style: AppTypography.labelMedium.copyWith(
+                color: AppColors.primary,
+                fontSize: 12,
+              ),
+            ),
         ],
       ),
     );
@@ -202,7 +236,10 @@ class AppointmentDetailsPage extends StatelessWidget {
       ),
       child: Text(
         'Pre-trial hearing regarding admissibility of digital evidence. Bring chain of custody documentation and forensic expert\'s affidavit. DA filed motion to suppress — prepare counter-arguments.',
-        style: AppTypography.bodySmall.copyWith(height: 1.5, color: AppColors.textSecondary),
+        style: AppTypography.bodySmall.copyWith(
+          height: 1.5,
+          color: AppColors.textSecondary,
+        ),
       ),
     );
   }
@@ -228,11 +265,19 @@ class AppointmentDetailsPage extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.m),
       child: Row(
         children: [
-          const Icon(Icons.notifications_none, size: 18, color: AppColors.primary),
+          const Icon(
+            Icons.notifications_none,
+            size: 18,
+            color: AppColors.primary,
+          ),
           const SizedBox(width: 12),
           Text(text, style: AppTypography.bodyMedium),
           const Spacer(),
-          const Icon(Icons.check_circle_outline, size: 18, color: AppColors.primary),
+          const Icon(
+            Icons.check_circle_outline,
+            size: 18,
+            color: AppColors.primary,
+          ),
         ],
       ),
     );
@@ -265,7 +310,11 @@ class AppointmentDetailsPage extends StatelessWidget {
               color: AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.description_outlined, size: 20, color: AppColors.primary),
+            child: const Icon(
+              Icons.description_outlined,
+              size: 20,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -273,11 +322,18 @@ class AppointmentDetailsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, style: AppTypography.labelMedium),
-                Text(info, style: AppTypography.bodySmall.copyWith(fontSize: 10)),
+                Text(
+                  info,
+                  style: AppTypography.bodySmall.copyWith(fontSize: 10),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.file_download_outlined, size: 20, color: AppColors.textSecondary),
+          const Icon(
+            Icons.file_download_outlined,
+            size: 20,
+            color: AppColors.textSecondary,
+          ),
         ],
       ),
     );
@@ -296,9 +352,19 @@ class AppointmentDetailsPage extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.phone_outlined, size: 18, color: AppColors.primary),
+                const Icon(
+                  Icons.phone_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 8),
-                Text(context.tr('call'), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                Text(
+                  context.tr('call'),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -314,9 +380,19 @@ class AppointmentDetailsPage extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.location_on_outlined, size: 18, color: AppColors.textPrimary),
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: AppColors.textPrimary,
+                ),
                 const SizedBox(width: 8),
-                Text(context.tr('address'), style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                Text(
+                  context.tr('address'),
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),

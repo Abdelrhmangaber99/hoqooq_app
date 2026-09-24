@@ -27,7 +27,6 @@ void main() {
           mfaEnabled: false,
           createdAt: DateTime(2026, 1, 1),
           updatedAt: DateTime(2026, 1, 1),
-          roles: const [],
           tenant: const TenantRef(id: 't1', name: 'Current Firm'),
         ),
         'token',
@@ -45,44 +44,47 @@ void main() {
   }
 
   group('getUsers', () {
-    test('GETs /users, parses the full shape, and keeps current-tenant users', () async {
-      when(() => dio.get('/users')).thenAnswer(
-        (_) async => okResponse('/users', [
-          {
-            'id': 'u1',
-            'email': 'lawyer@firm.com',
-            'fullName': 'Jane Doe',
-            'isSuperAdmin': false,
-            'status': 'ACTIVE',
-            'mfaEnabled': false,
-            'createdAt': '2026-01-01T00:00:00.000Z',
-            'updatedAt': '2026-01-01T00:00:00.000Z',
-            'roles': <Map<String, dynamic>>[],
-            'tenant': {'id': 't1', 'name': 'Reynolds & Associates'},
-          },
-          {
-            'id': 'foreign-user',
-            'email': 'foreign@other-firm.com',
-            'fullName': 'Foreign User',
-            'isSuperAdmin': false,
-            'status': 'ACTIVE',
-            'mfaEnabled': false,
-            'createdAt': '2026-01-01T00:00:00.000Z',
-            'updatedAt': '2026-01-01T00:00:00.000Z',
-            'roles': <Map<String, dynamic>>[],
-            'tenant': {'id': 't2', 'name': 'Other Firm'},
-          },
-        ]),
-      );
+    test(
+      'GETs /users, parses the full shape, and keeps current-tenant users',
+      () async {
+        when(() => dio.get('/users')).thenAnswer(
+          (_) async => okResponse('/users', [
+            {
+              'id': 'u1',
+              'email': 'lawyer@firm.com',
+              'fullName': 'Jane Doe',
+              'isSuperAdmin': false,
+              'status': 'ACTIVE',
+              'mfaEnabled': false,
+              'createdAt': '2026-01-01T00:00:00.000Z',
+              'updatedAt': '2026-01-01T00:00:00.000Z',
+              'roles': <Map<String, dynamic>>[],
+              'tenant': {'id': 't1', 'name': 'Reynolds & Associates'},
+            },
+            {
+              'id': 'foreign-user',
+              'email': 'foreign@other-firm.com',
+              'fullName': 'Foreign User',
+              'isSuperAdmin': false,
+              'status': 'ACTIVE',
+              'mfaEnabled': false,
+              'createdAt': '2026-01-01T00:00:00.000Z',
+              'updatedAt': '2026-01-01T00:00:00.000Z',
+              'roles': <Map<String, dynamic>>[],
+              'tenant': {'id': 't2', 'name': 'Other Firm'},
+            },
+          ]),
+        );
 
-      final result = await repository.getUsers();
+        final result = await repository.getUsers();
 
-      verify(() => dio.get('/users')).called(1);
-      result.fold((_) => fail('expected Right'), (users) {
-        expect(users, hasLength(1));
-        expect(users.first.fullName, 'Jane Doe');
-      });
-    });
+        verify(() => dio.get('/users')).called(1);
+        result.fold((_) => fail('expected Right'), (users) {
+          expect(users, hasLength(1));
+          expect(users.first.fullName, 'Jane Doe');
+        });
+      },
+    );
 
     test('maps a 401 to UnauthorizedFailure', () async {
       when(() => dio.get('/users')).thenThrow(

@@ -12,7 +12,7 @@ part 'case_summary.g.dart';
 /// Not the full `LegalCase` — `HearingsService`/`TasksService`/
 /// `DocumentsService`/`FinanceService` only request `relations: ['case', ...]`,
 /// which loads `Case`'s own columns but does NOT cascade to `Case`'s own
-/// relations (`client`, `defaultCourt`, `team`, etc.) — those stay
+/// relations (`client`, `team`, etc.) — those stay
 /// unpopulated even though `LegalCase` marks `client`/`team` as required.
 /// Reusing `LegalCase` here would throw on real data for the same reason
 /// the M2 regression did.
@@ -25,13 +25,12 @@ abstract class CaseSummary with _$CaseSummary {
     @JsonKey(unknownEnumValue: CaseStatus.unknown) required CaseStatus status,
     required String clientId,
     required String caseTypeId,
-    String? defaultCourtId,
+    String? courtName,
     @JsonKey(unknownEnumValue: CasePriority.unknown)
     required CasePriority priority,
     DateTime? openingDate,
     DateTime? closingDate,
     String? outcomeSummary,
-    double? agreedFee,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _CaseSummary;

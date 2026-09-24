@@ -87,12 +87,14 @@ extension TimelineItemPatterns on TimelineItem {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TimelineEventItem value)?  event,TResult Function( TimelineHearingItem value)?  hearing,TResult Function( TimelineTaskItem value)?  task,TResult Function( TimelineUnknownItem value)?  unknown,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TimelineEventItem value)?  event,TResult Function( TimelineHearingItem value)?  hearing,TResult Function( TimelineServiceItem value)?  service,TResult Function( TimelineMeetingItem value)?  meeting,TResult Function( TimelineTaskItem value)?  task,TResult Function( TimelineUnknownItem value)?  unknown,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case TimelineEventItem() when event != null:
 return event(_that);case TimelineHearingItem() when hearing != null:
-return hearing(_that);case TimelineTaskItem() when task != null:
+return hearing(_that);case TimelineServiceItem() when service != null:
+return service(_that);case TimelineMeetingItem() when meeting != null:
+return meeting(_that);case TimelineTaskItem() when task != null:
 return task(_that);case TimelineUnknownItem() when unknown != null:
 return unknown(_that);case _:
   return orElse();
@@ -112,12 +114,14 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TimelineEventItem value)  event,required TResult Function( TimelineHearingItem value)  hearing,required TResult Function( TimelineTaskItem value)  task,required TResult Function( TimelineUnknownItem value)  unknown,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TimelineEventItem value)  event,required TResult Function( TimelineHearingItem value)  hearing,required TResult Function( TimelineServiceItem value)  service,required TResult Function( TimelineMeetingItem value)  meeting,required TResult Function( TimelineTaskItem value)  task,required TResult Function( TimelineUnknownItem value)  unknown,}){
 final _that = this;
 switch (_that) {
 case TimelineEventItem():
 return event(_that);case TimelineHearingItem():
-return hearing(_that);case TimelineTaskItem():
+return hearing(_that);case TimelineServiceItem():
+return service(_that);case TimelineMeetingItem():
+return meeting(_that);case TimelineTaskItem():
 return task(_that);case TimelineUnknownItem():
 return unknown(_that);}
 }
@@ -133,12 +137,14 @@ return unknown(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TimelineEventItem value)?  event,TResult? Function( TimelineHearingItem value)?  hearing,TResult? Function( TimelineTaskItem value)?  task,TResult? Function( TimelineUnknownItem value)?  unknown,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TimelineEventItem value)?  event,TResult? Function( TimelineHearingItem value)?  hearing,TResult? Function( TimelineServiceItem value)?  service,TResult? Function( TimelineMeetingItem value)?  meeting,TResult? Function( TimelineTaskItem value)?  task,TResult? Function( TimelineUnknownItem value)?  unknown,}){
 final _that = this;
 switch (_that) {
 case TimelineEventItem() when event != null:
 return event(_that);case TimelineHearingItem() when hearing != null:
-return hearing(_that);case TimelineTaskItem() when task != null:
+return hearing(_that);case TimelineServiceItem() when service != null:
+return service(_that);case TimelineMeetingItem() when meeting != null:
+return meeting(_that);case TimelineTaskItem() when task != null:
 return task(_that);case TimelineUnknownItem() when unknown != null:
 return unknown(_that);case _:
   return null;
@@ -157,12 +163,14 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String title,  DateTime date,  DateTime? endDate, @JsonKey(unknownEnumValue: CalendarEventType.unknown)  CalendarEventType eventType,  String? referenceId)?  event,TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: HearingStatus.unknown)  HearingStatus status,  CaseSummary? caseSummary)?  hearing,TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority,  CaseSummary? caseSummary)?  task,TResult Function( String id,  String? title)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String title,  DateTime date,  DateTime? endDate, @JsonKey(unknownEnumValue: CalendarEventType.unknown)  CalendarEventType eventType,  String? referenceId)?  event,TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: HearingStatus.unknown)  HearingStatus status,  CaseSummary? caseSummary,  String? caseId)?  hearing,TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: ServiceStatus.unknown)  ServiceStatus status,  String? caseId)?  service,TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: MeetingStatus.unknown)  MeetingStatus status,  String? caseId)?  meeting,TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority,  CaseSummary? caseSummary,  String? caseId)?  task,TResult Function( String id,  String? title)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TimelineEventItem() when event != null:
 return event(_that.id,_that.title,_that.date,_that.endDate,_that.eventType,_that.referenceId);case TimelineHearingItem() when hearing != null:
-return hearing(_that.id,_that.title,_that.date,_that.status,_that.caseSummary);case TimelineTaskItem() when task != null:
-return task(_that.id,_that.title,_that.date,_that.status,_that.priority,_that.caseSummary);case TimelineUnknownItem() when unknown != null:
+return hearing(_that.id,_that.title,_that.date,_that.status,_that.caseSummary,_that.caseId);case TimelineServiceItem() when service != null:
+return service(_that.id,_that.title,_that.date,_that.status,_that.caseId);case TimelineMeetingItem() when meeting != null:
+return meeting(_that.id,_that.title,_that.date,_that.status,_that.caseId);case TimelineTaskItem() when task != null:
+return task(_that.id,_that.title,_that.date,_that.status,_that.priority,_that.caseSummary,_that.caseId);case TimelineUnknownItem() when unknown != null:
 return unknown(_that.id,_that.title);case _:
   return orElse();
 
@@ -181,12 +189,14 @@ return unknown(_that.id,_that.title);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String title,  DateTime date,  DateTime? endDate, @JsonKey(unknownEnumValue: CalendarEventType.unknown)  CalendarEventType eventType,  String? referenceId)  event,required TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: HearingStatus.unknown)  HearingStatus status,  CaseSummary? caseSummary)  hearing,required TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority,  CaseSummary? caseSummary)  task,required TResult Function( String id,  String? title)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String title,  DateTime date,  DateTime? endDate, @JsonKey(unknownEnumValue: CalendarEventType.unknown)  CalendarEventType eventType,  String? referenceId)  event,required TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: HearingStatus.unknown)  HearingStatus status,  CaseSummary? caseSummary,  String? caseId)  hearing,required TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: ServiceStatus.unknown)  ServiceStatus status,  String? caseId)  service,required TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: MeetingStatus.unknown)  MeetingStatus status,  String? caseId)  meeting,required TResult Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority,  CaseSummary? caseSummary,  String? caseId)  task,required TResult Function( String id,  String? title)  unknown,}) {final _that = this;
 switch (_that) {
 case TimelineEventItem():
 return event(_that.id,_that.title,_that.date,_that.endDate,_that.eventType,_that.referenceId);case TimelineHearingItem():
-return hearing(_that.id,_that.title,_that.date,_that.status,_that.caseSummary);case TimelineTaskItem():
-return task(_that.id,_that.title,_that.date,_that.status,_that.priority,_that.caseSummary);case TimelineUnknownItem():
+return hearing(_that.id,_that.title,_that.date,_that.status,_that.caseSummary,_that.caseId);case TimelineServiceItem():
+return service(_that.id,_that.title,_that.date,_that.status,_that.caseId);case TimelineMeetingItem():
+return meeting(_that.id,_that.title,_that.date,_that.status,_that.caseId);case TimelineTaskItem():
+return task(_that.id,_that.title,_that.date,_that.status,_that.priority,_that.caseSummary,_that.caseId);case TimelineUnknownItem():
 return unknown(_that.id,_that.title);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -201,12 +211,14 @@ return unknown(_that.id,_that.title);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String title,  DateTime date,  DateTime? endDate, @JsonKey(unknownEnumValue: CalendarEventType.unknown)  CalendarEventType eventType,  String? referenceId)?  event,TResult? Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: HearingStatus.unknown)  HearingStatus status,  CaseSummary? caseSummary)?  hearing,TResult? Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority,  CaseSummary? caseSummary)?  task,TResult? Function( String id,  String? title)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String title,  DateTime date,  DateTime? endDate, @JsonKey(unknownEnumValue: CalendarEventType.unknown)  CalendarEventType eventType,  String? referenceId)?  event,TResult? Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: HearingStatus.unknown)  HearingStatus status,  CaseSummary? caseSummary,  String? caseId)?  hearing,TResult? Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: ServiceStatus.unknown)  ServiceStatus status,  String? caseId)?  service,TResult? Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: MeetingStatus.unknown)  MeetingStatus status,  String? caseId)?  meeting,TResult? Function( String id,  String title,  DateTime? date, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority,  CaseSummary? caseSummary,  String? caseId)?  task,TResult? Function( String id,  String? title)?  unknown,}) {final _that = this;
 switch (_that) {
 case TimelineEventItem() when event != null:
 return event(_that.id,_that.title,_that.date,_that.endDate,_that.eventType,_that.referenceId);case TimelineHearingItem() when hearing != null:
-return hearing(_that.id,_that.title,_that.date,_that.status,_that.caseSummary);case TimelineTaskItem() when task != null:
-return task(_that.id,_that.title,_that.date,_that.status,_that.priority,_that.caseSummary);case TimelineUnknownItem() when unknown != null:
+return hearing(_that.id,_that.title,_that.date,_that.status,_that.caseSummary,_that.caseId);case TimelineServiceItem() when service != null:
+return service(_that.id,_that.title,_that.date,_that.status,_that.caseId);case TimelineMeetingItem() when meeting != null:
+return meeting(_that.id,_that.title,_that.date,_that.status,_that.caseId);case TimelineTaskItem() when task != null:
+return task(_that.id,_that.title,_that.date,_that.status,_that.priority,_that.caseSummary,_that.caseId);case TimelineUnknownItem() when unknown != null:
 return unknown(_that.id,_that.title);case _:
   return null;
 
@@ -295,7 +307,7 @@ as String?,
 
 
 class TimelineHearingItem implements TimelineItem {
-  const TimelineHearingItem({required this.id, required this.title, this.date, @JsonKey(unknownEnumValue: HearingStatus.unknown) required this.status, this.caseSummary});
+  const TimelineHearingItem({required this.id, required this.title, this.date, @JsonKey(unknownEnumValue: HearingStatus.unknown) required this.status, this.caseSummary, this.caseId});
   
 
 @override final  String id;
@@ -303,6 +315,7 @@ class TimelineHearingItem implements TimelineItem {
  final  DateTime? date;
 @JsonKey(unknownEnumValue: HearingStatus.unknown) final  HearingStatus status;
  final  CaseSummary? caseSummary;
+ final  String? caseId;
 
 /// Create a copy of TimelineItem
 /// with the given fields replaced by the non-null parameter values.
@@ -314,16 +327,16 @@ $TimelineHearingItemCopyWith<TimelineHearingItem> get copyWith => _$TimelineHear
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineHearingItem&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.date, date) || other.date == date)&&(identical(other.status, status) || other.status == status)&&(identical(other.caseSummary, caseSummary) || other.caseSummary == caseSummary));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineHearingItem&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.date, date) || other.date == date)&&(identical(other.status, status) || other.status == status)&&(identical(other.caseSummary, caseSummary) || other.caseSummary == caseSummary)&&(identical(other.caseId, caseId) || other.caseId == caseId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,title,date,status,caseSummary);
+int get hashCode => Object.hash(runtimeType,id,title,date,status,caseSummary,caseId);
 
 @override
 String toString() {
-  return 'TimelineItem.hearing(id: $id, title: $title, date: $date, status: $status, caseSummary: $caseSummary)';
+  return 'TimelineItem.hearing(id: $id, title: $title, date: $date, status: $status, caseSummary: $caseSummary, caseId: $caseId)';
 }
 
 
@@ -334,7 +347,7 @@ abstract mixin class $TimelineHearingItemCopyWith<$Res> implements $TimelineItem
   factory $TimelineHearingItemCopyWith(TimelineHearingItem value, $Res Function(TimelineHearingItem) _then) = _$TimelineHearingItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, DateTime? date,@JsonKey(unknownEnumValue: HearingStatus.unknown) HearingStatus status, CaseSummary? caseSummary
+ String id, String title, DateTime? date,@JsonKey(unknownEnumValue: HearingStatus.unknown) HearingStatus status, CaseSummary? caseSummary, String? caseId
 });
 
 
@@ -351,14 +364,15 @@ class _$TimelineHearingItemCopyWithImpl<$Res>
 
 /// Create a copy of TimelineItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? date = freezed,Object? status = null,Object? caseSummary = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? date = freezed,Object? status = null,Object? caseSummary = freezed,Object? caseId = freezed,}) {
   return _then(TimelineHearingItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,date: freezed == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as DateTime?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as HearingStatus,caseSummary: freezed == caseSummary ? _self.caseSummary : caseSummary // ignore: cast_nullable_to_non_nullable
-as CaseSummary?,
+as CaseSummary?,caseId: freezed == caseId ? _self.caseId : caseId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -380,8 +394,156 @@ $CaseSummaryCopyWith<$Res>? get caseSummary {
 /// @nodoc
 
 
+class TimelineServiceItem implements TimelineItem {
+  const TimelineServiceItem({required this.id, required this.title, this.date, @JsonKey(unknownEnumValue: ServiceStatus.unknown) required this.status, this.caseId});
+  
+
+@override final  String id;
+@override final  String title;
+ final  DateTime? date;
+@JsonKey(unknownEnumValue: ServiceStatus.unknown) final  ServiceStatus status;
+ final  String? caseId;
+
+/// Create a copy of TimelineItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TimelineServiceItemCopyWith<TimelineServiceItem> get copyWith => _$TimelineServiceItemCopyWithImpl<TimelineServiceItem>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineServiceItem&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.date, date) || other.date == date)&&(identical(other.status, status) || other.status == status)&&(identical(other.caseId, caseId) || other.caseId == caseId));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,title,date,status,caseId);
+
+@override
+String toString() {
+  return 'TimelineItem.service(id: $id, title: $title, date: $date, status: $status, caseId: $caseId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TimelineServiceItemCopyWith<$Res> implements $TimelineItemCopyWith<$Res> {
+  factory $TimelineServiceItemCopyWith(TimelineServiceItem value, $Res Function(TimelineServiceItem) _then) = _$TimelineServiceItemCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String title, DateTime? date,@JsonKey(unknownEnumValue: ServiceStatus.unknown) ServiceStatus status, String? caseId
+});
+
+
+
+
+}
+/// @nodoc
+class _$TimelineServiceItemCopyWithImpl<$Res>
+    implements $TimelineServiceItemCopyWith<$Res> {
+  _$TimelineServiceItemCopyWithImpl(this._self, this._then);
+
+  final TimelineServiceItem _self;
+  final $Res Function(TimelineServiceItem) _then;
+
+/// Create a copy of TimelineItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? date = freezed,Object? status = null,Object? caseId = freezed,}) {
+  return _then(TimelineServiceItem(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,date: freezed == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as DateTime?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as ServiceStatus,caseId: freezed == caseId ? _self.caseId : caseId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TimelineMeetingItem implements TimelineItem {
+  const TimelineMeetingItem({required this.id, required this.title, this.date, @JsonKey(unknownEnumValue: MeetingStatus.unknown) required this.status, this.caseId});
+  
+
+@override final  String id;
+@override final  String title;
+ final  DateTime? date;
+@JsonKey(unknownEnumValue: MeetingStatus.unknown) final  MeetingStatus status;
+ final  String? caseId;
+
+/// Create a copy of TimelineItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TimelineMeetingItemCopyWith<TimelineMeetingItem> get copyWith => _$TimelineMeetingItemCopyWithImpl<TimelineMeetingItem>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineMeetingItem&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.date, date) || other.date == date)&&(identical(other.status, status) || other.status == status)&&(identical(other.caseId, caseId) || other.caseId == caseId));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,title,date,status,caseId);
+
+@override
+String toString() {
+  return 'TimelineItem.meeting(id: $id, title: $title, date: $date, status: $status, caseId: $caseId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TimelineMeetingItemCopyWith<$Res> implements $TimelineItemCopyWith<$Res> {
+  factory $TimelineMeetingItemCopyWith(TimelineMeetingItem value, $Res Function(TimelineMeetingItem) _then) = _$TimelineMeetingItemCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String title, DateTime? date,@JsonKey(unknownEnumValue: MeetingStatus.unknown) MeetingStatus status, String? caseId
+});
+
+
+
+
+}
+/// @nodoc
+class _$TimelineMeetingItemCopyWithImpl<$Res>
+    implements $TimelineMeetingItemCopyWith<$Res> {
+  _$TimelineMeetingItemCopyWithImpl(this._self, this._then);
+
+  final TimelineMeetingItem _self;
+  final $Res Function(TimelineMeetingItem) _then;
+
+/// Create a copy of TimelineItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? date = freezed,Object? status = null,Object? caseId = freezed,}) {
+  return _then(TimelineMeetingItem(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,date: freezed == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as DateTime?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as MeetingStatus,caseId: freezed == caseId ? _self.caseId : caseId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class TimelineTaskItem implements TimelineItem {
-  const TimelineTaskItem({required this.id, required this.title, this.date, @JsonKey(unknownEnumValue: TaskStatus.unknown) required this.status, @JsonKey(unknownEnumValue: TaskPriority.unknown) required this.priority, this.caseSummary});
+  const TimelineTaskItem({required this.id, required this.title, this.date, @JsonKey(unknownEnumValue: TaskStatus.unknown) required this.status, @JsonKey(unknownEnumValue: TaskPriority.unknown) required this.priority, this.caseSummary, this.caseId});
   
 
 @override final  String id;
@@ -390,6 +552,7 @@ class TimelineTaskItem implements TimelineItem {
 @JsonKey(unknownEnumValue: TaskStatus.unknown) final  TaskStatus status;
 @JsonKey(unknownEnumValue: TaskPriority.unknown) final  TaskPriority priority;
  final  CaseSummary? caseSummary;
+ final  String? caseId;
 
 /// Create a copy of TimelineItem
 /// with the given fields replaced by the non-null parameter values.
@@ -401,16 +564,16 @@ $TimelineTaskItemCopyWith<TimelineTaskItem> get copyWith => _$TimelineTaskItemCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineTaskItem&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.date, date) || other.date == date)&&(identical(other.status, status) || other.status == status)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.caseSummary, caseSummary) || other.caseSummary == caseSummary));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimelineTaskItem&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.date, date) || other.date == date)&&(identical(other.status, status) || other.status == status)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.caseSummary, caseSummary) || other.caseSummary == caseSummary)&&(identical(other.caseId, caseId) || other.caseId == caseId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,title,date,status,priority,caseSummary);
+int get hashCode => Object.hash(runtimeType,id,title,date,status,priority,caseSummary,caseId);
 
 @override
 String toString() {
-  return 'TimelineItem.task(id: $id, title: $title, date: $date, status: $status, priority: $priority, caseSummary: $caseSummary)';
+  return 'TimelineItem.task(id: $id, title: $title, date: $date, status: $status, priority: $priority, caseSummary: $caseSummary, caseId: $caseId)';
 }
 
 
@@ -421,7 +584,7 @@ abstract mixin class $TimelineTaskItemCopyWith<$Res> implements $TimelineItemCop
   factory $TimelineTaskItemCopyWith(TimelineTaskItem value, $Res Function(TimelineTaskItem) _then) = _$TimelineTaskItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, DateTime? date,@JsonKey(unknownEnumValue: TaskStatus.unknown) TaskStatus status,@JsonKey(unknownEnumValue: TaskPriority.unknown) TaskPriority priority, CaseSummary? caseSummary
+ String id, String title, DateTime? date,@JsonKey(unknownEnumValue: TaskStatus.unknown) TaskStatus status,@JsonKey(unknownEnumValue: TaskPriority.unknown) TaskPriority priority, CaseSummary? caseSummary, String? caseId
 });
 
 
@@ -438,7 +601,7 @@ class _$TimelineTaskItemCopyWithImpl<$Res>
 
 /// Create a copy of TimelineItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? date = freezed,Object? status = null,Object? priority = null,Object? caseSummary = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? date = freezed,Object? status = null,Object? priority = null,Object? caseSummary = freezed,Object? caseId = freezed,}) {
   return _then(TimelineTaskItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -446,7 +609,8 @@ as String,date: freezed == date ? _self.date : date // ignore: cast_nullable_to_
 as DateTime?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskStatus,priority: null == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as TaskPriority,caseSummary: freezed == caseSummary ? _self.caseSummary : caseSummary // ignore: cast_nullable_to_non_nullable
-as CaseSummary?,
+as CaseSummary?,caseId: freezed == caseId ? _self.caseId : caseId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

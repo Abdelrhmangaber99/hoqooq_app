@@ -1,69 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'app_colors.dart';
 
 class AppTypography {
   AppTypography._();
 
-  static const String _serifFont = 'PlayfairDisplay';
-  static const String _sansFont = 'Inter';
+  static const String displayFont = 'Amiri';
+  static const String sansFont = 'IBM Plex Sans Arabic';
+  static const String monoFont = 'IBM Plex Mono';
 
-  // Headings (Serif)
-  static const TextStyle h1 = TextStyle(
-    fontFamily: _serifFont,
-    fontSize: 32,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get h1 => GoogleFonts.amiri(
+        fontSize: 30,
+        fontWeight: FontWeight.w700,
+        color: AppColors.ink800,
+      );
 
-  static const TextStyle h2 = TextStyle(
-    fontFamily: _serifFont,
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get h2 => GoogleFonts.amiri(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.ink800,
+      );
 
-  static const TextStyle h3 = TextStyle(
-    fontFamily: _serifFont,
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get h3 => GoogleFonts.ibmPlexSansArabic(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        color: AppColors.ink800,
+      );
 
-  // Body (Sans-serif)
-  static const TextStyle bodyLarge = TextStyle(
-    fontFamily: _sansFont,
-    fontSize: 16,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get bodyLarge => GoogleFonts.ibmPlexSansArabic(
+        fontSize: 15,
+        color: AppColors.ink700,
+      );
 
-  static const TextStyle bodyMedium = TextStyle(
-    fontFamily: _sansFont,
-    fontSize: 14,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get bodyMedium => GoogleFonts.ibmPlexSansArabic(
+        fontSize: 13,
+        color: AppColors.ink700,
+      );
 
-  static const TextStyle bodySmall = TextStyle(
-    fontFamily: _sansFont,
-    fontSize: 12,
-    fontWeight: FontWeight.normal,
-    color: AppColors.textSecondary,
-  );
+  static TextStyle get bodySmall => GoogleFonts.ibmPlexSansArabic(
+        fontSize: 11.5,
+        color: AppColors.ink400,
+      );
 
-  // Labels & Captions
-  static const TextStyle labelLarge = TextStyle(
-    fontFamily: _sansFont,
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    letterSpacing: 1.2,
-  );
+  static TextStyle get labelLarge => GoogleFonts.ibmPlexSansArabic(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.ink700,
+      );
 
-  static const TextStyle labelMedium = TextStyle(
-    fontFamily: _sansFont,
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
-  );
+  static TextStyle get labelMedium => GoogleFonts.ibmPlexSansArabic(
+        fontSize: 11.5,
+        fontWeight: FontWeight.w500,
+        color: AppColors.ink500,
+      );
+
+  static TextStyle get mono => GoogleFonts.ibmPlexMono(
+        fontSize: 13,
+        color: AppColors.ink700,
+      );
 }

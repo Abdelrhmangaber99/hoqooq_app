@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LegalCase {
 
- String get id; String get tenantId; String get caseNumber;@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus get status; String get clientId; String get caseTypeId;@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority get priority; DateTime get createdAt; DateTime get updatedAt; Client get client; CaseTypeLookup? get caseType; String? get defaultCourtId; Court? get defaultCourt; DateTime? get openingDate; DateTime? get closingDate; String? get outcomeSummary; double? get agreedFee; List<CaseTeamMember> get team;
+ String get id; String get tenantId; String get caseNumber;@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus get status; String get caseTypeId;@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority get priority; DateTime get createdAt; DateTime get updatedAt; CaseClientSnapshot? get clientSnapshot; List<CaseOpponentSnapshot>? get opponentSnapshots; CaseTypeLookup? get caseType; String? get title; String? get courtCaseNumber; int? get courtCaseYear; String? get governorateId; String? get circuitId; String? get ownerFirmAdminId; String? get primaryLawyerId; String? get description; String? get courtName; DateTime? get openingDate; DateTime? get closingDate; String? get outcomeSummary; List<CaseTeamMember> get team;@JsonKey(fromJson: _timelineFromJson, includeToJson: false) List<CaseTimelineEvent>? get timelineEvents;
 /// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $LegalCaseCopyWith<LegalCase> get copyWith => _$LegalCaseCopyWithImpl<LegalCase>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LegalCase&&(identical(other.id, id) || other.id == id)&&(identical(other.tenantId, tenantId) || other.tenantId == tenantId)&&(identical(other.caseNumber, caseNumber) || other.caseNumber == caseNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.caseTypeId, caseTypeId) || other.caseTypeId == caseTypeId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.client, client) || other.client == client)&&(identical(other.caseType, caseType) || other.caseType == caseType)&&(identical(other.defaultCourtId, defaultCourtId) || other.defaultCourtId == defaultCourtId)&&(identical(other.defaultCourt, defaultCourt) || other.defaultCourt == defaultCourt)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.agreedFee, agreedFee) || other.agreedFee == agreedFee)&&const DeepCollectionEquality().equals(other.team, team));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LegalCase&&(identical(other.id, id) || other.id == id)&&(identical(other.tenantId, tenantId) || other.tenantId == tenantId)&&(identical(other.caseNumber, caseNumber) || other.caseNumber == caseNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.caseTypeId, caseTypeId) || other.caseTypeId == caseTypeId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.clientSnapshot, clientSnapshot) || other.clientSnapshot == clientSnapshot)&&const DeepCollectionEquality().equals(other.opponentSnapshots, opponentSnapshots)&&(identical(other.caseType, caseType) || other.caseType == caseType)&&(identical(other.title, title) || other.title == title)&&(identical(other.courtCaseNumber, courtCaseNumber) || other.courtCaseNumber == courtCaseNumber)&&(identical(other.courtCaseYear, courtCaseYear) || other.courtCaseYear == courtCaseYear)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.circuitId, circuitId) || other.circuitId == circuitId)&&(identical(other.ownerFirmAdminId, ownerFirmAdminId) || other.ownerFirmAdminId == ownerFirmAdminId)&&(identical(other.primaryLawyerId, primaryLawyerId) || other.primaryLawyerId == primaryLawyerId)&&(identical(other.description, description) || other.description == description)&&(identical(other.courtName, courtName) || other.courtName == courtName)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&const DeepCollectionEquality().equals(other.team, team)&&const DeepCollectionEquality().equals(other.timelineEvents, timelineEvents));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,tenantId,caseNumber,status,clientId,caseTypeId,priority,createdAt,updatedAt,client,caseType,defaultCourtId,defaultCourt,openingDate,closingDate,outcomeSummary,agreedFee,const DeepCollectionEquality().hash(team));
+int get hashCode => Object.hashAll([runtimeType,id,tenantId,caseNumber,status,caseTypeId,priority,createdAt,updatedAt,clientSnapshot,const DeepCollectionEquality().hash(opponentSnapshots),caseType,title,courtCaseNumber,courtCaseYear,governorateId,circuitId,ownerFirmAdminId,primaryLawyerId,description,courtName,openingDate,closingDate,outcomeSummary,const DeepCollectionEquality().hash(team),const DeepCollectionEquality().hash(timelineEvents)]);
 
 @override
 String toString() {
-  return 'LegalCase(id: $id, tenantId: $tenantId, caseNumber: $caseNumber, status: $status, clientId: $clientId, caseTypeId: $caseTypeId, priority: $priority, createdAt: $createdAt, updatedAt: $updatedAt, client: $client, caseType: $caseType, defaultCourtId: $defaultCourtId, defaultCourt: $defaultCourt, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, agreedFee: $agreedFee, team: $team)';
+  return 'LegalCase(id: $id, tenantId: $tenantId, caseNumber: $caseNumber, status: $status, caseTypeId: $caseTypeId, priority: $priority, createdAt: $createdAt, updatedAt: $updatedAt, clientSnapshot: $clientSnapshot, opponentSnapshots: $opponentSnapshots, caseType: $caseType, title: $title, courtCaseNumber: $courtCaseNumber, courtCaseYear: $courtCaseYear, governorateId: $governorateId, circuitId: $circuitId, ownerFirmAdminId: $ownerFirmAdminId, primaryLawyerId: $primaryLawyerId, description: $description, courtName: $courtName, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, team: $team, timelineEvents: $timelineEvents)';
 }
 
 
@@ -48,11 +48,11 @@ abstract mixin class $LegalCaseCopyWith<$Res>  {
   factory $LegalCaseCopyWith(LegalCase value, $Res Function(LegalCase) _then) = _$LegalCaseCopyWithImpl;
 @useResult
 $Res call({
- String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime createdAt, DateTime updatedAt, Client client, CaseTypeLookup? caseType, String? defaultCourtId, Court? defaultCourt, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, double? agreedFee, List<CaseTeamMember> team
+ String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String caseTypeId,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime createdAt, DateTime updatedAt, CaseClientSnapshot? clientSnapshot, List<CaseOpponentSnapshot>? opponentSnapshots, CaseTypeLookup? caseType, String? title, String? courtCaseNumber, int? courtCaseYear, String? governorateId, String? circuitId, String? ownerFirmAdminId, String? primaryLawyerId, String? description, String? courtName, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, List<CaseTeamMember> team,@JsonKey(fromJson: _timelineFromJson, includeToJson: false) List<CaseTimelineEvent>? timelineEvents
 });
 
 
-$ClientCopyWith<$Res> get client;$CaseTypeLookupCopyWith<$Res>? get caseType;$CourtCopyWith<$Res>? get defaultCourt;
+$CaseTypeLookupCopyWith<$Res>? get caseType;
 
 }
 /// @nodoc
@@ -65,39 +65,37 @@ class _$LegalCaseCopyWithImpl<$Res>
 
 /// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? priority = null,Object? createdAt = null,Object? updatedAt = null,Object? client = null,Object? caseType = freezed,Object? defaultCourtId = freezed,Object? defaultCourt = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? team = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? caseTypeId = null,Object? priority = null,Object? createdAt = null,Object? updatedAt = null,Object? clientSnapshot = freezed,Object? opponentSnapshots = freezed,Object? caseType = freezed,Object? title = freezed,Object? courtCaseNumber = freezed,Object? courtCaseYear = freezed,Object? governorateId = freezed,Object? circuitId = freezed,Object? ownerFirmAdminId = freezed,Object? primaryLawyerId = freezed,Object? description = freezed,Object? courtName = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? team = null,Object? timelineEvents = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,tenantId: null == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
 as String,caseNumber: null == caseNumber ? _self.caseNumber : caseNumber // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as CaseStatus,clientId: null == clientId ? _self.clientId : clientId // ignore: cast_nullable_to_non_nullable
-as String,caseTypeId: null == caseTypeId ? _self.caseTypeId : caseTypeId // ignore: cast_nullable_to_non_nullable
+as CaseStatus,caseTypeId: null == caseTypeId ? _self.caseTypeId : caseTypeId // ignore: cast_nullable_to_non_nullable
 as String,priority: null == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as CasePriority,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,client: null == client ? _self.client : client // ignore: cast_nullable_to_non_nullable
-as Client,caseType: freezed == caseType ? _self.caseType : caseType // ignore: cast_nullable_to_non_nullable
-as CaseTypeLookup?,defaultCourtId: freezed == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
-as String?,defaultCourt: freezed == defaultCourt ? _self.defaultCourt : defaultCourt // ignore: cast_nullable_to_non_nullable
-as Court?,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
+as DateTime,clientSnapshot: freezed == clientSnapshot ? _self.clientSnapshot : clientSnapshot // ignore: cast_nullable_to_non_nullable
+as CaseClientSnapshot?,opponentSnapshots: freezed == opponentSnapshots ? _self.opponentSnapshots : opponentSnapshots // ignore: cast_nullable_to_non_nullable
+as List<CaseOpponentSnapshot>?,caseType: freezed == caseType ? _self.caseType : caseType // ignore: cast_nullable_to_non_nullable
+as CaseTypeLookup?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,courtCaseNumber: freezed == courtCaseNumber ? _self.courtCaseNumber : courtCaseNumber // ignore: cast_nullable_to_non_nullable
+as String?,courtCaseYear: freezed == courtCaseYear ? _self.courtCaseYear : courtCaseYear // ignore: cast_nullable_to_non_nullable
+as int?,governorateId: freezed == governorateId ? _self.governorateId : governorateId // ignore: cast_nullable_to_non_nullable
+as String?,circuitId: freezed == circuitId ? _self.circuitId : circuitId // ignore: cast_nullable_to_non_nullable
+as String?,ownerFirmAdminId: freezed == ownerFirmAdminId ? _self.ownerFirmAdminId : ownerFirmAdminId // ignore: cast_nullable_to_non_nullable
+as String?,primaryLawyerId: freezed == primaryLawyerId ? _self.primaryLawyerId : primaryLawyerId // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,courtName: freezed == courtName ? _self.courtName : courtName // ignore: cast_nullable_to_non_nullable
+as String?,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,closingDate: freezed == closingDate ? _self.closingDate : closingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,outcomeSummary: freezed == outcomeSummary ? _self.outcomeSummary : outcomeSummary // ignore: cast_nullable_to_non_nullable
-as String?,agreedFee: freezed == agreedFee ? _self.agreedFee : agreedFee // ignore: cast_nullable_to_non_nullable
-as double?,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
-as List<CaseTeamMember>,
+as String?,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
+as List<CaseTeamMember>,timelineEvents: freezed == timelineEvents ? _self.timelineEvents : timelineEvents // ignore: cast_nullable_to_non_nullable
+as List<CaseTimelineEvent>?,
   ));
 }
 /// Create a copy of LegalCase
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ClientCopyWith<$Res> get client {
-  
-  return $ClientCopyWith<$Res>(_self.client, (value) {
-    return _then(_self.copyWith(client: value));
-  });
-}/// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -108,18 +106,6 @@ $CaseTypeLookupCopyWith<$Res>? get caseType {
 
   return $CaseTypeLookupCopyWith<$Res>(_self.caseType!, (value) {
     return _then(_self.copyWith(caseType: value));
-  });
-}/// Create a copy of LegalCase
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$CourtCopyWith<$Res>? get defaultCourt {
-    if (_self.defaultCourt == null) {
-    return null;
-  }
-
-  return $CourtCopyWith<$Res>(_self.defaultCourt!, (value) {
-    return _then(_self.copyWith(defaultCourt: value));
   });
 }
 }
@@ -203,10 +189,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  CaseTypeLookup? caseType,  String? defaultCourtId,  Court? defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  CaseClientSnapshot? clientSnapshot,  List<CaseOpponentSnapshot>? opponentSnapshots,  CaseTypeLookup? caseType,  String? title,  String? courtCaseNumber,  int? courtCaseYear,  String? governorateId,  String? circuitId,  String? ownerFirmAdminId,  String? primaryLawyerId,  String? description,  String? courtName,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  List<CaseTeamMember> team, @JsonKey(fromJson: _timelineFromJson, includeToJson: false)  List<CaseTimelineEvent>? timelineEvents)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LegalCase() when $default != null:
-return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.client,_that.caseType,_that.defaultCourtId,_that.defaultCourt,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.team);case _:
+return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.clientSnapshot,_that.opponentSnapshots,_that.caseType,_that.title,_that.courtCaseNumber,_that.courtCaseYear,_that.governorateId,_that.circuitId,_that.ownerFirmAdminId,_that.primaryLawyerId,_that.description,_that.courtName,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.team,_that.timelineEvents);case _:
   return orElse();
 
 }
@@ -224,10 +210,10 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  CaseTypeLookup? caseType,  String? defaultCourtId,  Court? defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  CaseClientSnapshot? clientSnapshot,  List<CaseOpponentSnapshot>? opponentSnapshots,  CaseTypeLookup? caseType,  String? title,  String? courtCaseNumber,  int? courtCaseYear,  String? governorateId,  String? circuitId,  String? ownerFirmAdminId,  String? primaryLawyerId,  String? description,  String? courtName,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  List<CaseTeamMember> team, @JsonKey(fromJson: _timelineFromJson, includeToJson: false)  List<CaseTimelineEvent>? timelineEvents)  $default,) {final _that = this;
 switch (_that) {
 case _LegalCase():
-return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.client,_that.caseType,_that.defaultCourtId,_that.defaultCourt,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.team);case _:
+return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.clientSnapshot,_that.opponentSnapshots,_that.caseType,_that.title,_that.courtCaseNumber,_that.courtCaseYear,_that.governorateId,_that.circuitId,_that.ownerFirmAdminId,_that.primaryLawyerId,_that.description,_that.courtName,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.team,_that.timelineEvents);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -244,10 +230,10 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  Client client,  CaseTypeLookup? caseType,  String? defaultCourtId,  Court? defaultCourt,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  double? agreedFee,  List<CaseTeamMember> team)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime createdAt,  DateTime updatedAt,  CaseClientSnapshot? clientSnapshot,  List<CaseOpponentSnapshot>? opponentSnapshots,  CaseTypeLookup? caseType,  String? title,  String? courtCaseNumber,  int? courtCaseYear,  String? governorateId,  String? circuitId,  String? ownerFirmAdminId,  String? primaryLawyerId,  String? description,  String? courtName,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  List<CaseTeamMember> team, @JsonKey(fromJson: _timelineFromJson, includeToJson: false)  List<CaseTimelineEvent>? timelineEvents)?  $default,) {final _that = this;
 switch (_that) {
 case _LegalCase() when $default != null:
-return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.client,_that.caseType,_that.defaultCourtId,_that.defaultCourt,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.agreedFee,_that.team);case _:
+return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.caseTypeId,_that.priority,_that.createdAt,_that.updatedAt,_that.clientSnapshot,_that.opponentSnapshots,_that.caseType,_that.title,_that.courtCaseNumber,_that.courtCaseYear,_that.governorateId,_that.circuitId,_that.ownerFirmAdminId,_that.primaryLawyerId,_that.description,_that.courtName,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.team,_that.timelineEvents);case _:
   return null;
 
 }
@@ -259,31 +245,54 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 @JsonSerializable()
 
 class _LegalCase implements LegalCase {
-  const _LegalCase({required this.id, required this.tenantId, required this.caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown) required this.status, required this.clientId, required this.caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown) required this.priority, required this.createdAt, required this.updatedAt, required this.client, this.caseType, this.defaultCourtId, this.defaultCourt, this.openingDate, this.closingDate, this.outcomeSummary, this.agreedFee, required final  List<CaseTeamMember> team}): _team = team;
+  const _LegalCase({required this.id, required this.tenantId, required this.caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown) required this.status, required this.caseTypeId, @JsonKey(unknownEnumValue: CasePriority.unknown) required this.priority, required this.createdAt, required this.updatedAt, this.clientSnapshot, final  List<CaseOpponentSnapshot>? opponentSnapshots, this.caseType, this.title, this.courtCaseNumber, this.courtCaseYear, this.governorateId, this.circuitId, this.ownerFirmAdminId, this.primaryLawyerId, this.description, this.courtName, this.openingDate, this.closingDate, this.outcomeSummary, required final  List<CaseTeamMember> team, @JsonKey(fromJson: _timelineFromJson, includeToJson: false) final  List<CaseTimelineEvent>? timelineEvents}): _opponentSnapshots = opponentSnapshots,_team = team,_timelineEvents = timelineEvents;
   factory _LegalCase.fromJson(Map<String, dynamic> json) => _$LegalCaseFromJson(json);
 
 @override final  String id;
 @override final  String tenantId;
 @override final  String caseNumber;
 @override@JsonKey(unknownEnumValue: CaseStatus.unknown) final  CaseStatus status;
-@override final  String clientId;
 @override final  String caseTypeId;
 @override@JsonKey(unknownEnumValue: CasePriority.unknown) final  CasePriority priority;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
-@override final  Client client;
+@override final  CaseClientSnapshot? clientSnapshot;
+ final  List<CaseOpponentSnapshot>? _opponentSnapshots;
+@override List<CaseOpponentSnapshot>? get opponentSnapshots {
+  final value = _opponentSnapshots;
+  if (value == null) return null;
+  if (_opponentSnapshots is EqualUnmodifiableListView) return _opponentSnapshots;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 @override final  CaseTypeLookup? caseType;
-@override final  String? defaultCourtId;
-@override final  Court? defaultCourt;
+@override final  String? title;
+@override final  String? courtCaseNumber;
+@override final  int? courtCaseYear;
+@override final  String? governorateId;
+@override final  String? circuitId;
+@override final  String? ownerFirmAdminId;
+@override final  String? primaryLawyerId;
+@override final  String? description;
+@override final  String? courtName;
 @override final  DateTime? openingDate;
 @override final  DateTime? closingDate;
 @override final  String? outcomeSummary;
-@override final  double? agreedFee;
  final  List<CaseTeamMember> _team;
 @override List<CaseTeamMember> get team {
   if (_team is EqualUnmodifiableListView) return _team;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_team);
+}
+
+ final  List<CaseTimelineEvent>? _timelineEvents;
+@override@JsonKey(fromJson: _timelineFromJson, includeToJson: false) List<CaseTimelineEvent>? get timelineEvents {
+  final value = _timelineEvents;
+  if (value == null) return null;
+  if (_timelineEvents is EqualUnmodifiableListView) return _timelineEvents;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
 }
 
 
@@ -300,16 +309,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LegalCase&&(identical(other.id, id) || other.id == id)&&(identical(other.tenantId, tenantId) || other.tenantId == tenantId)&&(identical(other.caseNumber, caseNumber) || other.caseNumber == caseNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.caseTypeId, caseTypeId) || other.caseTypeId == caseTypeId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.client, client) || other.client == client)&&(identical(other.caseType, caseType) || other.caseType == caseType)&&(identical(other.defaultCourtId, defaultCourtId) || other.defaultCourtId == defaultCourtId)&&(identical(other.defaultCourt, defaultCourt) || other.defaultCourt == defaultCourt)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.agreedFee, agreedFee) || other.agreedFee == agreedFee)&&const DeepCollectionEquality().equals(other._team, _team));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LegalCase&&(identical(other.id, id) || other.id == id)&&(identical(other.tenantId, tenantId) || other.tenantId == tenantId)&&(identical(other.caseNumber, caseNumber) || other.caseNumber == caseNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.caseTypeId, caseTypeId) || other.caseTypeId == caseTypeId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.clientSnapshot, clientSnapshot) || other.clientSnapshot == clientSnapshot)&&const DeepCollectionEquality().equals(other._opponentSnapshots, _opponentSnapshots)&&(identical(other.caseType, caseType) || other.caseType == caseType)&&(identical(other.title, title) || other.title == title)&&(identical(other.courtCaseNumber, courtCaseNumber) || other.courtCaseNumber == courtCaseNumber)&&(identical(other.courtCaseYear, courtCaseYear) || other.courtCaseYear == courtCaseYear)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.circuitId, circuitId) || other.circuitId == circuitId)&&(identical(other.ownerFirmAdminId, ownerFirmAdminId) || other.ownerFirmAdminId == ownerFirmAdminId)&&(identical(other.primaryLawyerId, primaryLawyerId) || other.primaryLawyerId == primaryLawyerId)&&(identical(other.description, description) || other.description == description)&&(identical(other.courtName, courtName) || other.courtName == courtName)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&const DeepCollectionEquality().equals(other._team, _team)&&const DeepCollectionEquality().equals(other._timelineEvents, _timelineEvents));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,tenantId,caseNumber,status,clientId,caseTypeId,priority,createdAt,updatedAt,client,caseType,defaultCourtId,defaultCourt,openingDate,closingDate,outcomeSummary,agreedFee,const DeepCollectionEquality().hash(_team));
+int get hashCode => Object.hashAll([runtimeType,id,tenantId,caseNumber,status,caseTypeId,priority,createdAt,updatedAt,clientSnapshot,const DeepCollectionEquality().hash(_opponentSnapshots),caseType,title,courtCaseNumber,courtCaseYear,governorateId,circuitId,ownerFirmAdminId,primaryLawyerId,description,courtName,openingDate,closingDate,outcomeSummary,const DeepCollectionEquality().hash(_team),const DeepCollectionEquality().hash(_timelineEvents)]);
 
 @override
 String toString() {
-  return 'LegalCase(id: $id, tenantId: $tenantId, caseNumber: $caseNumber, status: $status, clientId: $clientId, caseTypeId: $caseTypeId, priority: $priority, createdAt: $createdAt, updatedAt: $updatedAt, client: $client, caseType: $caseType, defaultCourtId: $defaultCourtId, defaultCourt: $defaultCourt, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, agreedFee: $agreedFee, team: $team)';
+  return 'LegalCase(id: $id, tenantId: $tenantId, caseNumber: $caseNumber, status: $status, caseTypeId: $caseTypeId, priority: $priority, createdAt: $createdAt, updatedAt: $updatedAt, clientSnapshot: $clientSnapshot, opponentSnapshots: $opponentSnapshots, caseType: $caseType, title: $title, courtCaseNumber: $courtCaseNumber, courtCaseYear: $courtCaseYear, governorateId: $governorateId, circuitId: $circuitId, ownerFirmAdminId: $ownerFirmAdminId, primaryLawyerId: $primaryLawyerId, description: $description, courtName: $courtName, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, team: $team, timelineEvents: $timelineEvents)';
 }
 
 
@@ -320,11 +329,11 @@ abstract mixin class _$LegalCaseCopyWith<$Res> implements $LegalCaseCopyWith<$Re
   factory _$LegalCaseCopyWith(_LegalCase value, $Res Function(_LegalCase) _then) = __$LegalCaseCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime createdAt, DateTime updatedAt, Client client, CaseTypeLookup? caseType, String? defaultCourtId, Court? defaultCourt, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, double? agreedFee, List<CaseTeamMember> team
+ String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String caseTypeId,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime createdAt, DateTime updatedAt, CaseClientSnapshot? clientSnapshot, List<CaseOpponentSnapshot>? opponentSnapshots, CaseTypeLookup? caseType, String? title, String? courtCaseNumber, int? courtCaseYear, String? governorateId, String? circuitId, String? ownerFirmAdminId, String? primaryLawyerId, String? description, String? courtName, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, List<CaseTeamMember> team,@JsonKey(fromJson: _timelineFromJson, includeToJson: false) List<CaseTimelineEvent>? timelineEvents
 });
 
 
-@override $ClientCopyWith<$Res> get client;@override $CaseTypeLookupCopyWith<$Res>? get caseType;@override $CourtCopyWith<$Res>? get defaultCourt;
+@override $CaseTypeLookupCopyWith<$Res>? get caseType;
 
 }
 /// @nodoc
@@ -337,40 +346,38 @@ class __$LegalCaseCopyWithImpl<$Res>
 
 /// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? priority = null,Object? createdAt = null,Object? updatedAt = null,Object? client = null,Object? caseType = freezed,Object? defaultCourtId = freezed,Object? defaultCourt = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? agreedFee = freezed,Object? team = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? caseTypeId = null,Object? priority = null,Object? createdAt = null,Object? updatedAt = null,Object? clientSnapshot = freezed,Object? opponentSnapshots = freezed,Object? caseType = freezed,Object? title = freezed,Object? courtCaseNumber = freezed,Object? courtCaseYear = freezed,Object? governorateId = freezed,Object? circuitId = freezed,Object? ownerFirmAdminId = freezed,Object? primaryLawyerId = freezed,Object? description = freezed,Object? courtName = freezed,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? team = null,Object? timelineEvents = freezed,}) {
   return _then(_LegalCase(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,tenantId: null == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
 as String,caseNumber: null == caseNumber ? _self.caseNumber : caseNumber // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as CaseStatus,clientId: null == clientId ? _self.clientId : clientId // ignore: cast_nullable_to_non_nullable
-as String,caseTypeId: null == caseTypeId ? _self.caseTypeId : caseTypeId // ignore: cast_nullable_to_non_nullable
+as CaseStatus,caseTypeId: null == caseTypeId ? _self.caseTypeId : caseTypeId // ignore: cast_nullable_to_non_nullable
 as String,priority: null == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as CasePriority,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,client: null == client ? _self.client : client // ignore: cast_nullable_to_non_nullable
-as Client,caseType: freezed == caseType ? _self.caseType : caseType // ignore: cast_nullable_to_non_nullable
-as CaseTypeLookup?,defaultCourtId: freezed == defaultCourtId ? _self.defaultCourtId : defaultCourtId // ignore: cast_nullable_to_non_nullable
-as String?,defaultCourt: freezed == defaultCourt ? _self.defaultCourt : defaultCourt // ignore: cast_nullable_to_non_nullable
-as Court?,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
+as DateTime,clientSnapshot: freezed == clientSnapshot ? _self.clientSnapshot : clientSnapshot // ignore: cast_nullable_to_non_nullable
+as CaseClientSnapshot?,opponentSnapshots: freezed == opponentSnapshots ? _self._opponentSnapshots : opponentSnapshots // ignore: cast_nullable_to_non_nullable
+as List<CaseOpponentSnapshot>?,caseType: freezed == caseType ? _self.caseType : caseType // ignore: cast_nullable_to_non_nullable
+as CaseTypeLookup?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,courtCaseNumber: freezed == courtCaseNumber ? _self.courtCaseNumber : courtCaseNumber // ignore: cast_nullable_to_non_nullable
+as String?,courtCaseYear: freezed == courtCaseYear ? _self.courtCaseYear : courtCaseYear // ignore: cast_nullable_to_non_nullable
+as int?,governorateId: freezed == governorateId ? _self.governorateId : governorateId // ignore: cast_nullable_to_non_nullable
+as String?,circuitId: freezed == circuitId ? _self.circuitId : circuitId // ignore: cast_nullable_to_non_nullable
+as String?,ownerFirmAdminId: freezed == ownerFirmAdminId ? _self.ownerFirmAdminId : ownerFirmAdminId // ignore: cast_nullable_to_non_nullable
+as String?,primaryLawyerId: freezed == primaryLawyerId ? _self.primaryLawyerId : primaryLawyerId // ignore: cast_nullable_to_non_nullable
+as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,courtName: freezed == courtName ? _self.courtName : courtName // ignore: cast_nullable_to_non_nullable
+as String?,openingDate: freezed == openingDate ? _self.openingDate : openingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,closingDate: freezed == closingDate ? _self.closingDate : closingDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,outcomeSummary: freezed == outcomeSummary ? _self.outcomeSummary : outcomeSummary // ignore: cast_nullable_to_non_nullable
-as String?,agreedFee: freezed == agreedFee ? _self.agreedFee : agreedFee // ignore: cast_nullable_to_non_nullable
-as double?,team: null == team ? _self._team : team // ignore: cast_nullable_to_non_nullable
-as List<CaseTeamMember>,
+as String?,team: null == team ? _self._team : team // ignore: cast_nullable_to_non_nullable
+as List<CaseTeamMember>,timelineEvents: freezed == timelineEvents ? _self._timelineEvents : timelineEvents // ignore: cast_nullable_to_non_nullable
+as List<CaseTimelineEvent>?,
   ));
 }
 
 /// Create a copy of LegalCase
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ClientCopyWith<$Res> get client {
-  
-  return $ClientCopyWith<$Res>(_self.client, (value) {
-    return _then(_self.copyWith(client: value));
-  });
-}/// Create a copy of LegalCase
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -381,18 +388,6 @@ $CaseTypeLookupCopyWith<$Res>? get caseType {
 
   return $CaseTypeLookupCopyWith<$Res>(_self.caseType!, (value) {
     return _then(_self.copyWith(caseType: value));
-  });
-}/// Create a copy of LegalCase
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$CourtCopyWith<$Res>? get defaultCourt {
-    if (_self.defaultCourt == null) {
-    return null;
-  }
-
-  return $CourtCopyWith<$Res>(_self.defaultCourt!, (value) {
-    return _then(_self.copyWith(defaultCourt: value));
   });
 }
 }

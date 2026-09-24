@@ -33,6 +33,9 @@ abstract class TaskItem with _$TaskItem {
     @JsonKey(unknownEnumValue: TaskStatus.unknown) required TaskStatus status,
     DateTime? dueDate,
     DateTime? completedAt,
+    String? linkedEntityType,
+    String? linkedEntityId,
+    String? completionNote,
     required DateTime createdAt,
     required DateTime updatedAt,
   }) = _TaskItem;

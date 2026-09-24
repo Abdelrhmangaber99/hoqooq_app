@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
@@ -125,13 +127,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     final refreshToken = await _tokenStorage.readRefreshToken();
-    if (refreshToken != null) {
-      // Best-effort: a user-initiated logout must succeed locally even if
-      // this network call fails.
-      await _authRepository.logout(refreshToken: refreshToken);
-    }
+    // End the local session before contacting the server. Logout must always
+    // reach the login route, even when the access token has expired, the
+    // device is offline, or the server logout endpoint fails.
     await _tokenStorage.clear();
     _sessionCubit.unauthenticated();
     emit(AuthUnauthenticated());
+
+    if (refreshToken != null) {
+      // Revocation is best-effort and must not delay navigation. The refresh
+      // token is captured before local storage is cleared.
+      unawaited(_authRepository.logout(refreshToken: refreshToken));
+    }
   }
 }

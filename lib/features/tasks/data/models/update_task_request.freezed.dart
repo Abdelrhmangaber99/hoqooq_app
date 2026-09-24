@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$UpdateTaskRequest {
 
-@JsonKey(includeIfNull: false) String? get caseId;@JsonKey(includeIfNull: false) String? get assignedById;@JsonKey(includeIfNull: false) String? get assignedToId;@JsonKey(includeIfNull: false) String? get title;@JsonKey(includeIfNull: false) String? get description;@JsonKey(includeIfNull: false) TaskPriority? get priority;@JsonKey(includeIfNull: false) TaskStatus? get status;@JsonKey(includeIfNull: false) DateTime? get dueDate;
+@JsonKey(includeIfNull: false) TaskStatus? get status;
 /// Create a copy of UpdateTaskRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $UpdateTaskRequestCopyWith<UpdateTaskRequest> get copyWith => _$UpdateTaskReques
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpdateTaskRequest&&(identical(other.caseId, caseId) || other.caseId == caseId)&&(identical(other.assignedById, assignedById) || other.assignedById == assignedById)&&(identical(other.assignedToId, assignedToId) || other.assignedToId == assignedToId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.status, status) || other.status == status)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UpdateTaskRequest&&(identical(other.status, status) || other.status == status));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,caseId,assignedById,assignedToId,title,description,priority,status,dueDate);
+int get hashCode => Object.hash(runtimeType,status);
 
 @override
 String toString() {
-  return 'UpdateTaskRequest(caseId: $caseId, assignedById: $assignedById, assignedToId: $assignedToId, title: $title, description: $description, priority: $priority, status: $status, dueDate: $dueDate)';
+  return 'UpdateTaskRequest(status: $status)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $UpdateTaskRequestCopyWith<$Res>  {
   factory $UpdateTaskRequestCopyWith(UpdateTaskRequest value, $Res Function(UpdateTaskRequest) _then) = _$UpdateTaskRequestCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(includeIfNull: false) String? caseId,@JsonKey(includeIfNull: false) String? assignedById,@JsonKey(includeIfNull: false) String? assignedToId,@JsonKey(includeIfNull: false) String? title,@JsonKey(includeIfNull: false) String? description,@JsonKey(includeIfNull: false) TaskPriority? priority,@JsonKey(includeIfNull: false) TaskStatus? status,@JsonKey(includeIfNull: false) DateTime? dueDate
+@JsonKey(includeIfNull: false) TaskStatus? status
 });
 
 
@@ -65,17 +65,10 @@ class _$UpdateTaskRequestCopyWithImpl<$Res>
 
 /// Create a copy of UpdateTaskRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? caseId = freezed,Object? assignedById = freezed,Object? assignedToId = freezed,Object? title = freezed,Object? description = freezed,Object? priority = freezed,Object? status = freezed,Object? dueDate = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = freezed,}) {
   return _then(_self.copyWith(
-caseId: freezed == caseId ? _self.caseId : caseId // ignore: cast_nullable_to_non_nullable
-as String?,assignedById: freezed == assignedById ? _self.assignedById : assignedById // ignore: cast_nullable_to_non_nullable
-as String?,assignedToId: freezed == assignedToId ? _self.assignedToId : assignedToId // ignore: cast_nullable_to_non_nullable
-as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
-as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,priority: freezed == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
-as TaskPriority?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as TaskStatus?,dueDate: freezed == dueDate ? _self.dueDate : dueDate // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as TaskStatus?,
   ));
 }
 
@@ -160,10 +153,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  String? caseId, @JsonKey(includeIfNull: false)  String? assignedById, @JsonKey(includeIfNull: false)  String? assignedToId, @JsonKey(includeIfNull: false)  String? title, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  TaskPriority? priority, @JsonKey(includeIfNull: false)  TaskStatus? status, @JsonKey(includeIfNull: false)  DateTime? dueDate)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  TaskStatus? status)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UpdateTaskRequest() when $default != null:
-return $default(_that.caseId,_that.assignedById,_that.assignedToId,_that.title,_that.description,_that.priority,_that.status,_that.dueDate);case _:
+return $default(_that.status);case _:
   return orElse();
 
 }
@@ -181,10 +174,10 @@ return $default(_that.caseId,_that.assignedById,_that.assignedToId,_that.title,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  String? caseId, @JsonKey(includeIfNull: false)  String? assignedById, @JsonKey(includeIfNull: false)  String? assignedToId, @JsonKey(includeIfNull: false)  String? title, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  TaskPriority? priority, @JsonKey(includeIfNull: false)  TaskStatus? status, @JsonKey(includeIfNull: false)  DateTime? dueDate)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(includeIfNull: false)  TaskStatus? status)  $default,) {final _that = this;
 switch (_that) {
 case _UpdateTaskRequest():
-return $default(_that.caseId,_that.assignedById,_that.assignedToId,_that.title,_that.description,_that.priority,_that.status,_that.dueDate);case _:
+return $default(_that.status);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +194,10 @@ return $default(_that.caseId,_that.assignedById,_that.assignedToId,_that.title,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  String? caseId, @JsonKey(includeIfNull: false)  String? assignedById, @JsonKey(includeIfNull: false)  String? assignedToId, @JsonKey(includeIfNull: false)  String? title, @JsonKey(includeIfNull: false)  String? description, @JsonKey(includeIfNull: false)  TaskPriority? priority, @JsonKey(includeIfNull: false)  TaskStatus? status, @JsonKey(includeIfNull: false)  DateTime? dueDate)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(includeIfNull: false)  TaskStatus? status)?  $default,) {final _that = this;
 switch (_that) {
 case _UpdateTaskRequest() when $default != null:
-return $default(_that.caseId,_that.assignedById,_that.assignedToId,_that.title,_that.description,_that.priority,_that.status,_that.dueDate);case _:
+return $default(_that.status);case _:
   return null;
 
 }
@@ -216,17 +209,10 @@ return $default(_that.caseId,_that.assignedById,_that.assignedToId,_that.title,_
 @JsonSerializable()
 
 class _UpdateTaskRequest implements UpdateTaskRequest {
-  const _UpdateTaskRequest({@JsonKey(includeIfNull: false) this.caseId, @JsonKey(includeIfNull: false) this.assignedById, @JsonKey(includeIfNull: false) this.assignedToId, @JsonKey(includeIfNull: false) this.title, @JsonKey(includeIfNull: false) this.description, @JsonKey(includeIfNull: false) this.priority, @JsonKey(includeIfNull: false) this.status, @JsonKey(includeIfNull: false) this.dueDate});
+  const _UpdateTaskRequest({@JsonKey(includeIfNull: false) this.status});
   factory _UpdateTaskRequest.fromJson(Map<String, dynamic> json) => _$UpdateTaskRequestFromJson(json);
 
-@override@JsonKey(includeIfNull: false) final  String? caseId;
-@override@JsonKey(includeIfNull: false) final  String? assignedById;
-@override@JsonKey(includeIfNull: false) final  String? assignedToId;
-@override@JsonKey(includeIfNull: false) final  String? title;
-@override@JsonKey(includeIfNull: false) final  String? description;
-@override@JsonKey(includeIfNull: false) final  TaskPriority? priority;
 @override@JsonKey(includeIfNull: false) final  TaskStatus? status;
-@override@JsonKey(includeIfNull: false) final  DateTime? dueDate;
 
 /// Create a copy of UpdateTaskRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +227,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpdateTaskRequest&&(identical(other.caseId, caseId) || other.caseId == caseId)&&(identical(other.assignedById, assignedById) || other.assignedById == assignedById)&&(identical(other.assignedToId, assignedToId) || other.assignedToId == assignedToId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.status, status) || other.status == status)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UpdateTaskRequest&&(identical(other.status, status) || other.status == status));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,caseId,assignedById,assignedToId,title,description,priority,status,dueDate);
+int get hashCode => Object.hash(runtimeType,status);
 
 @override
 String toString() {
-  return 'UpdateTaskRequest(caseId: $caseId, assignedById: $assignedById, assignedToId: $assignedToId, title: $title, description: $description, priority: $priority, status: $status, dueDate: $dueDate)';
+  return 'UpdateTaskRequest(status: $status)';
 }
 
 
@@ -261,7 +247,7 @@ abstract mixin class _$UpdateTaskRequestCopyWith<$Res> implements $UpdateTaskReq
   factory _$UpdateTaskRequestCopyWith(_UpdateTaskRequest value, $Res Function(_UpdateTaskRequest) _then) = __$UpdateTaskRequestCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(includeIfNull: false) String? caseId,@JsonKey(includeIfNull: false) String? assignedById,@JsonKey(includeIfNull: false) String? assignedToId,@JsonKey(includeIfNull: false) String? title,@JsonKey(includeIfNull: false) String? description,@JsonKey(includeIfNull: false) TaskPriority? priority,@JsonKey(includeIfNull: false) TaskStatus? status,@JsonKey(includeIfNull: false) DateTime? dueDate
+@JsonKey(includeIfNull: false) TaskStatus? status
 });
 
 
@@ -278,17 +264,10 @@ class __$UpdateTaskRequestCopyWithImpl<$Res>
 
 /// Create a copy of UpdateTaskRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? caseId = freezed,Object? assignedById = freezed,Object? assignedToId = freezed,Object? title = freezed,Object? description = freezed,Object? priority = freezed,Object? status = freezed,Object? dueDate = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = freezed,}) {
   return _then(_UpdateTaskRequest(
-caseId: freezed == caseId ? _self.caseId : caseId // ignore: cast_nullable_to_non_nullable
-as String?,assignedById: freezed == assignedById ? _self.assignedById : assignedById // ignore: cast_nullable_to_non_nullable
-as String?,assignedToId: freezed == assignedToId ? _self.assignedToId : assignedToId // ignore: cast_nullable_to_non_nullable
-as String?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
-as String?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,priority: freezed == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
-as TaskPriority?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as TaskStatus?,dueDate: freezed == dueDate ? _self.dueDate : dueDate // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as TaskStatus?,
   ));
 }
 

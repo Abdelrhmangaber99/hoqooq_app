@@ -25,16 +25,11 @@ void main() {
   }
 
   group('getLookups', () {
-    test('GETs /lookups?kind=CASE_TYPE and parses the full shape', () async {
-      when(
-        () =>
-            dio.get('/lookups', queryParameters: any(named: 'queryParameters')),
-      ).thenAnswer(
-        (_) async => okResponse('/lookups', [
+    test('GETs global case types from the judicial reference route', () async {
+      when(() => dio.get('/reference/case-types')).thenAnswer(
+        (_) async => okResponse('/reference/case-types', [
           {
             'id': 'lk1',
-            'tenantId': 't1',
-            'kind': 'CASE_TYPE',
             'labelEn': 'Civil',
             'labelAr': 'مدني',
             'isActive': true,
@@ -46,9 +41,7 @@ void main() {
 
       final result = await repository.getLookups(kind: LookupKind.caseType);
 
-      verify(
-        () => dio.get('/lookups', queryParameters: {'kind': 'CASE_TYPE'}),
-      ).called(1);
+      verify(() => dio.get('/reference/case-types')).called(1);
       result.fold((_) => fail('expected Right'), (lookups) {
         expect(lookups, hasLength(1));
         expect(lookups.first.kind, LookupKind.caseType);
@@ -89,11 +82,118 @@ void main() {
         ]),
       );
 
-      final result = await repository.getLookups(kind: LookupKind.caseType);
+      final result = await repository.getLookups(kind: LookupKind.hearingType);
 
       result.fold(
         (_) => fail('expected Right'),
         (lookups) => expect(lookups.first.kind, LookupKind.unknown),
+      );
+    });
+
+    test('collapses per-tenant duplicate labels into one option, preferring '
+        'the global row', () async {
+      // The backend's `tenantId: null` filter is dropped by this TypeORM
+      // version, so every tenant's copy of a kind comes back alongside
+      // the global row — the same Hearing Type repeated N times.
+      when(
+        () =>
+            dio.get('/lookups', queryParameters: any(named: 'queryParameters')),
+      ).thenAnswer(
+        (_) async => okResponse('/lookups', [
+          {
+            'id': 'tenant-a',
+            'tenantId': 'tenant-a',
+            'kind': 'HEARING_TYPE',
+            'labelEn': 'First Hearing',
+            'labelAr': 'جلسة أولى',
+            'isActive': true,
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+          },
+          {
+            'id': 'tenant-b',
+            'tenantId': 'tenant-b',
+            'kind': 'HEARING_TYPE',
+            'labelEn': 'First Hearing',
+            'labelAr': 'جلسة أولى',
+            'isActive': true,
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+          },
+          {
+            'id': 'global',
+            'tenantId': null,
+            'kind': 'HEARING_TYPE',
+            'labelEn': 'First Hearing',
+            'labelAr': 'جلسة أولى',
+            'isActive': true,
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+          },
+          {
+            'id': 'global-appeal',
+            'tenantId': null,
+            'kind': 'HEARING_TYPE',
+            'labelEn': 'Appeal',
+            'labelAr': 'استئناف',
+            'isActive': true,
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+          },
+        ]),
+      );
+
+      final result = await repository.getLookups(kind: LookupKind.hearingType);
+
+      result.fold((_) => fail('expected Right'), (lookups) {
+        expect(lookups, hasLength(2));
+        expect(
+          lookups.map((l) => l.labelEn),
+          containsAll(<String>['First Hearing', 'Appeal']),
+        );
+        // The global row wins, so the picker submits a row the endpoint
+        // was actually documented to return.
+        expect(
+          lookups.firstWhere((l) => l.labelEn == 'First Hearing').id,
+          'global',
+        );
+      });
+    });
+
+    test('keeps options whose labels differ', () async {
+      when(
+        () =>
+            dio.get('/lookups', queryParameters: any(named: 'queryParameters')),
+      ).thenAnswer(
+        (_) async => okResponse('/lookups', [
+          {
+            'id': 'g1',
+            'tenantId': null,
+            'kind': 'HEARING_TYPE',
+            'labelEn': 'Pleading',
+            'labelAr': 'مرافعة',
+            'isActive': true,
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+          },
+          {
+            'id': 't1',
+            'tenantId': 'tenant-a',
+            'kind': 'HEARING_TYPE',
+            'labelEn': 'Firm-specific Pleading',
+            'labelAr': 'مرافعة خاصة',
+            'isActive': true,
+            'createdAt': '2026-01-01T00:00:00.000Z',
+            'updatedAt': '2026-01-01T00:00:00.000Z',
+          },
+        ]),
+      );
+
+      final result = await repository.getLookups(kind: LookupKind.hearingType);
+
+      result.fold(
+        (_) => fail('expected Right'),
+        (lookups) => expect(lookups, hasLength(2)),
       );
     });
 
@@ -112,7 +212,7 @@ void main() {
         ),
       );
 
-      final result = await repository.getLookups(kind: LookupKind.caseType);
+      final result = await repository.getLookups(kind: LookupKind.hearingType);
 
       result.fold(
         (failure) => expect(failure, isA<UnauthorizedFailure>()),

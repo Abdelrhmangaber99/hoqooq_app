@@ -18,7 +18,6 @@ abstract class ICalendarRepository {
     DateTime? startDate,
     DateTime? endDate,
     String? caseId,
-    String? userId,
   });
 
   ApiResult<CalendarEventEntity> createEvent(CreateEventRequest request);

@@ -53,7 +53,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
   ) async {
     emit(CalendarLoading());
     final monthStart = DateTime(_selectedDate.year, _selectedDate.month, 1);
-    final monthEnd = DateTime(_selectedDate.year, _selectedDate.month + 1, 0);
+    final monthEnd = DateTime(
+      _selectedDate.year,
+      _selectedDate.month + 1,
+      1,
+    ).subtract(const Duration(microseconds: 1));
     final result = await _calendarRepository.getTimeline(
       startDate: monthStart,
       endDate: monthEnd,

@@ -6,17 +6,22 @@ import 'core/localization/app_localizations.dart';
 import 'core/localization/locale_bloc.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_bloc.dart';
 import 'di/injection.dart';
 import 'features/authentication/presentation/bloc/auth_bloc.dart';
+import 'features/authentication/presentation/bloc/session_cubit.dart';
+import 'features/profile/presentation/bloc/profile_cubit.dart';
+import 'features/subscriptions/presentation/bloc/subscription_cubit.dart';
 import 'l10n/app_localizations.dart' as gen_l10n;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Persistence
   await Hive.initFlutter();
   await Hive.openBox('settings');
-  
+  await Hive.openBox('court_cache');
+
   // Initialize Dependency Injection
   configureDependencies();
 
@@ -30,16 +35,22 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => getIt<LocaleBloc>()),
-        BlocProvider(create: (context) => getIt<AuthBloc>()),
+        BlocProvider(create: (_) => getIt<LocaleBloc>()),
+        BlocProvider(create: (_) => getIt<ThemeBloc>()),
+        BlocProvider(create: (_) => getIt<AuthBloc>()),
+        BlocProvider(create: (_) => getIt<SessionCubit>()),
+        BlocProvider(create: (_) => getIt<ProfileCubit>()),
+        BlocProvider(create: (_) => getIt<SubscriptionCubit>()..fetchSubscription()),
       ],
-      child: BlocBuilder<LocaleBloc, LocaleState>(
-        builder: (context, state) {
-          return MaterialApp.router(
+      child: BlocBuilder<ThemeBloc, ThemeState>(
+        builder: (context, themeState) => BlocBuilder<LocaleBloc, LocaleState>(
+          builder: (context, localeState) => MaterialApp.router(
             title: 'Hoqooq',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.darkTheme,
-            locale: state.locale,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeState.themeMode,
+            locale: localeState.locale,
             routerConfig: AppRouter.router,
             localizationsDelegates: const [
               AppLocalizations.delegate,
@@ -52,8 +63,8 @@ class MyApp extends StatelessWidget {
               Locale('en'), // English
               Locale('ar'), // Arabic
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }

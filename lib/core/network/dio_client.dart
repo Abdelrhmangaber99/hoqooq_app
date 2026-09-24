@@ -5,16 +5,11 @@ import 'api_config.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/envelope_interceptor.dart';
 import 'interceptors/refresh_interceptor.dart';
-import 'interceptors/subscription_interceptor.dart';
 
 @module
 abstract class NetworkModule {
   @lazySingleton
-  Dio dio(
-    AuthInterceptor authInterceptor,
-    RefreshInterceptor refreshInterceptor,
-    SubscriptionInterceptor subscriptionInterceptor,
-  ) {
+  Dio dio(AuthInterceptor authInterceptor, RefreshInterceptor refreshInterceptor) {
     final dio = Dio(
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,
@@ -29,7 +24,6 @@ abstract class NetworkModule {
 
     dio.interceptors.add(authInterceptor);
     dio.interceptors.add(refreshInterceptor);
-    dio.interceptors.add(subscriptionInterceptor);
     dio.interceptors.add(EnvelopeInterceptor());
     dio.interceptors.add(
       // Method/URL/status-code logging only — deliberately never headers or

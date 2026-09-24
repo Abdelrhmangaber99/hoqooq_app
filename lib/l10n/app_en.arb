@@ -11,5 +11,10 @@
   "networkErrorMessage": "No internet connection. Please check your network and try again.",
   "@networkErrorMessage": {
     "description": "Shown when a request fails due to no connectivity."
-  }
+  },
+  "finance": "Finance",
+  "settings": "Settings",
+  "subscription": "Subscription & Billing",
+  "firmInfo": "Firm Information",
+  "changePassword": "Change Password"
 }

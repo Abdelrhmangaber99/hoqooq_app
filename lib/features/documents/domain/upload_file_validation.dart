@@ -1,22 +1,7 @@
-/// Architecture-review finding #10 (upload half): the real backend's
-/// `FileInterceptor('file')` (`Hoqooq-main /src/modules/documents/
-/// controllers/documents.controller.ts`) has no `limits`/`fileFilter`
-/// configured — there is no documented server-side cap on size or type.
-/// This is a client-side-only guardrail against picking something the
-/// upload flow was never meant to handle (a multi-GB video, an
-/// executable), not a business rule — the backend remains the actual
-/// authority on what it accepts.
+/// Mirrors the current server contract: PDF/JPEG/PNG only, maximum 20 MB.
 const int kMaxUploadSizeBytes = 20 * 1024 * 1024;
 
-const List<String> kAllowedUploadExtensions = [
-  'pdf',
-  'doc',
-  'docx',
-  'jpg',
-  'jpeg',
-  'png',
-  'heic',
-];
+const List<String> kAllowedUploadExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
 
 enum UploadValidationError { unsupportedType, tooLarge }
 

@@ -2,16 +2,13 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
+import 'package:hqooq/features/cases/domain/entities/case_party_snapshot.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
-import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
 import 'package:hqooq/features/cases/domain/repository/i_case_repository.dart';
 import 'package:hqooq/features/cases/domain/usecases/get_cases_use_case.dart';
 import 'package:hqooq/features/cases/presentation/bloc/cases_bloc.dart';
-import 'package:hqooq/features/clients/domain/entities/client.dart';
-import 'package:hqooq/features/clients/domain/entities/client_status.dart';
-import 'package:hqooq/features/clients/domain/entities/client_type.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCaseRepository extends Mock implements ICaseRepository {}
@@ -19,19 +16,11 @@ class MockCaseRepository extends Mock implements ICaseRepository {}
 void main() {
   late MockCaseRepository repository;
 
-  final court = Court(
-    id: 'co1',
-    name: 'District Court',
-    type: 'FIRST_INSTANCE',
-    isActive: true,
-    createdAt: DateTime(2026, 1, 1),
-    updatedAt: DateTime(2026, 1, 1),
-  );
-
   LegalCase buildCase({
     required String id,
     required String caseNumber,
     required String clientFullName,
+    String courtName = 'District Court',
     CaseStatus status = CaseStatus.active,
   }) {
     return LegalCase(
@@ -39,26 +28,16 @@ void main() {
       tenantId: 't1',
       caseNumber: caseNumber,
       status: status,
-      clientId: 'cl-$id',
       caseTypeId: 'ct1',
       priority: CasePriority.normal,
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
-      client: Client(
+      clientSnapshot: CaseClientSnapshot(
         id: 'cl-$id',
-        tenantId: 't1',
-        clientCode: 'CLI-$id',
-        type: ClientType.individual,
-        fullName: clientFullName,
-        status: ClientStatus.active,
-        createdAt: DateTime(2026, 1, 1),
-        updatedAt: DateTime(2026, 1, 1),
-        emails: const [],
-        phones: const [],
-        addresses: const [],
+        clientType: 'INDIVIDUAL',
+        name: clientFullName,
       ),
-      defaultCourtId: court.id,
-      defaultCourt: court,
+      courtName: courtName,
       team: const [],
     );
   }
@@ -79,8 +58,13 @@ void main() {
     id: 'c2',
     caseNumber: 'CASE-2026-00002',
     clientFullName: 'Patricia Morrison',
+    courtName: 'Alexandria Court of Appeal',
     status: CaseStatus.draft,
   );
+  final statusCounts = {
+    for (final status in CaseStatus.values)
+      status: [caseA, caseB].where((item) => item.status == status).length,
+  };
 
   blocTest<CasesBloc, CasesState>(
     'emits [Loading, Loaded] with all cases on a successful fetch',
@@ -93,7 +77,7 @@ void main() {
     act: (bloc) => bloc.add(FetchCasesRequested()),
     expect: () => [
       isA<CasesLoading>(),
-      CasesLoaded([caseA, caseB]),
+      CasesLoaded([caseA, caseB], totalCount: 2, statusCounts: statusCounts),
     ],
   );
 
@@ -124,8 +108,13 @@ void main() {
     },
     expect: () => [
       isA<CasesLoading>(),
-      CasesLoaded([caseA, caseB]),
-      CasesLoaded([caseB], statusFilter: CaseStatus.draft),
+      CasesLoaded([caseA, caseB], totalCount: 2, statusCounts: statusCounts),
+      CasesLoaded(
+        [caseB],
+        statusFilter: CaseStatus.draft,
+        totalCount: 2,
+        statusCounts: statusCounts,
+      ),
     ],
   );
 
@@ -144,8 +133,38 @@ void main() {
     },
     expect: () => [
       isA<CasesLoading>(),
-      CasesLoaded([caseA, caseB]),
-      CasesLoaded([caseB], searchQuery: 'morrison'),
+      CasesLoaded([caseA, caseB], totalCount: 2, statusCounts: statusCounts),
+      CasesLoaded(
+        [caseB],
+        searchQuery: 'morrison',
+        totalCount: 2,
+        statusCounts: statusCounts,
+      ),
+    ],
+  );
+
+  blocTest<CasesBloc, CasesState>(
+    'filters by the stored Google Court name client-side',
+    build: () {
+      when(
+        () => repository.getCases(),
+      ).thenAnswer((_) async => Right([caseA, caseB]));
+      return buildBloc();
+    },
+    act: (bloc) async {
+      bloc.add(FetchCasesRequested());
+      await Future.delayed(Duration.zero);
+      bloc.add(const CasesSearchChanged('alexandria court'));
+    },
+    expect: () => [
+      isA<CasesLoading>(),
+      CasesLoaded([caseA, caseB], totalCount: 2, statusCounts: statusCounts),
+      CasesLoaded(
+        [caseB],
+        searchQuery: 'alexandria court',
+        totalCount: 2,
+        statusCounts: statusCounts,
+      ),
     ],
   );
 }

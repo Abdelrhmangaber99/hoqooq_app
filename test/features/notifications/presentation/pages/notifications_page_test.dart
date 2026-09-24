@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/di/injection.dart';
 import 'package:hqooq/features/notifications/domain/entities/app_notification.dart';
+import 'package:hqooq/features/notifications/domain/entities/daily_activity_item.dart';
 import 'package:hqooq/features/notifications/domain/entities/notification_type.dart';
 import 'package:hqooq/features/notifications/presentation/bloc/notifications_bloc.dart';
 import 'package:hqooq/features/notifications/presentation/pages/notifications_page.dart';
@@ -130,6 +131,30 @@ void main() {
     expect(find.text('Upcoming hearing'), findsOneWidget);
     expect(find.text('Hernandez v. State at 9:00 AM'), findsOneWidget);
     expect(find.text('Mark all read'), findsOneWidget);
+  });
+
+  testWidgets('renders the authorization-scoped daily schedule', (
+    tester,
+  ) async {
+    final daily = DailyActivityItem(
+      id: 's1',
+      type: DailyActivityType.service,
+      caseId: 'c1',
+      dueAt: DateTime(2026, 1, 1, 10),
+      status: 'SCHEDULED',
+    );
+    whenListen(
+      bloc,
+      const Stream<NotificationsState>.empty(),
+      initialState: NotificationsLoaded(const [], dailyActivities: [daily]),
+    );
+
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text("Today's Schedule"), findsOneWidget);
+    expect(find.text('Service of process'), findsOneWidget);
+    expect(find.text('SCHEDULED'), findsOneWidget);
   });
 
   testWidgets('tapping a notification dispatches mark-as-read', (tester) async {

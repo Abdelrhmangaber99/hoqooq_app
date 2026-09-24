@@ -114,4 +114,22 @@ class AuthRepository implements IAuthRepository {
       return Left(mapDioError(e));
     }
   }
+
+  @override
+  ApiResult<User> updateProfile({
+    String? fullName,
+    String? phone,
+    String? avatarUrl,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (fullName != null) data['fullName'] = fullName;
+      if (phone != null) data['phone'] = phone;
+      if (avatarUrl != null) data['avatarUrl'] = avatarUrl;
+      final response = await _dio.patch('/users/me', data: data);
+      return Right(User.fromJson(response.data as Map<String, dynamic>));
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
 }

@@ -15,4 +15,6 @@ abstract class ITaskRepository {
   ApiResult<List<TaskItem>> getTasks();
   ApiResult<TaskItem> createTask(CreateTaskRequest request);
   ApiResult<TaskItem> updateTask(String id, UpdateTaskRequest request);
+  ApiResult<TaskItem> completeTask(String id, String completionNote);
+  ApiResult<void> cancelTask(String id);
 }

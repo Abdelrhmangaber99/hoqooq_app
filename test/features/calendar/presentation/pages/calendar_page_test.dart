@@ -5,13 +5,22 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/di/injection.dart';
+import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
+import 'package:hqooq/features/authentication/domain/entities/user.dart';
+import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
 import 'package:hqooq/features/calendar/domain/entities/calendar_event_type.dart';
 import 'package:hqooq/features/calendar/domain/entities/timeline_item.dart';
 import 'package:hqooq/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:hqooq/features/calendar/presentation/pages/calendar_page.dart';
+import 'package:hqooq/features/tasks/domain/entities/task_priority.dart';
+import 'package:hqooq/features/tasks/domain/entities/task_status.dart';
+import 'package:mocktail/mocktail.dart';
 
 class MockCalendarBloc extends MockBloc<CalendarEvent, CalendarState>
     implements CalendarBloc {}
+
+class MockSessionCubit extends MockCubit<SessionState>
+    implements SessionCubit {}
 
 /// Preloaded synchronously — see case_details_page_test.dart / CLAUDE.md for
 /// why the real JSON delegate's async load is flaky across multiple
@@ -34,6 +43,28 @@ class _PreloadedAppLocalizationsDelegate
 void main() {
   late AppLocalizations preloadedEn;
   late MockCalendarBloc bloc;
+  late MockSessionCubit sessionCubit;
+
+  final user = User(
+    id: 'u1',
+    email: 'employee@firm.com',
+    fullName: 'Employee',
+    isSuperAdmin: false,
+    status: 'ACTIVE',
+    mfaEnabled: false,
+    createdAt: DateTime(2026, 1, 1),
+    updatedAt: DateTime(2026, 1, 1),
+    accountType: 'EMPLOYEE',
+    permissions: const [
+      'calendar.read',
+      'calendar.manage',
+      'hearing.view',
+      'service.view',
+      'meeting.view',
+      'task.view',
+    ],
+    tenant: const TenantRef(id: 'tenant-1', name: 'Firm'),
+  );
 
   final selectedDate = DateTime(2026, 7, 16);
   final item = TimelineItem.event(
@@ -51,7 +82,12 @@ void main() {
   setUp(() async {
     await getIt.reset();
     bloc = MockCalendarBloc();
+    sessionCubit = MockSessionCubit();
     getIt.registerFactory<CalendarBloc>(() => bloc);
+    getIt.registerSingleton<SessionCubit>(sessionCubit);
+    when(
+      () => sessionCubit.state,
+    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: false));
   });
 
   tearDown(() async {
@@ -140,6 +176,37 @@ void main() {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
+    expect(find.text('No events for this day'), findsOneWidget);
+  });
+
+  testWidgets('hides activity sources lacking their base permission', (
+    tester,
+  ) async {
+    setPhoneViewport(tester);
+    final restrictedUser = user.copyWith(
+      permissions: const ['calendar.read', 'calendar.manage'],
+    );
+    when(
+      () => sessionCubit.state,
+    ).thenReturn(SessionAuthenticated(restrictedUser, isFirmAdmin: false));
+    final task = TimelineItem.task(
+      id: 'task-1',
+      title: 'Restricted task',
+      date: selectedDate,
+      status: TaskStatus.newTask,
+      priority: TaskPriority.normal,
+      caseId: 'case-1',
+    );
+    whenListen(
+      bloc,
+      const Stream<CalendarState>.empty(),
+      initialState: CalendarLoaded([task], selectedDate),
+    );
+
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Restricted task'), findsNothing);
     expect(find.text('No events for this day'), findsOneWidget);
   });
 

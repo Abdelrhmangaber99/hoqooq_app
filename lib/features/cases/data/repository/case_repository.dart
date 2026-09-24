@@ -4,8 +4,8 @@ import 'package:injectable/injectable.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../../core/network/dio_error_mapper.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
-import '../../domain/entities/case_team_member.dart';
 import '../../domain/entities/legal_case.dart';
+import '../../domain/entities/case_status.dart';
 import '../../domain/repository/i_case_repository.dart';
 import '../models/assign_case_request.dart';
 import '../models/create_case_request.dart';
@@ -22,10 +22,9 @@ import '../models/update_case_request.dart';
 /// required for the request to pass validation.
 @LazySingleton(as: ICaseRepository)
 class CaseRepository implements ICaseRepository {
-  CaseRepository(this._dio, this._sessionCubit);
+  CaseRepository(this._dio, SessionCubit _);
 
   final Dio _dio;
-  final SessionCubit _sessionCubit;
 
   @override
   ApiResult<List<LegalCase>> getCases() async {
@@ -55,14 +54,7 @@ class CaseRepository implements ICaseRepository {
   @override
   ApiResult<LegalCase> createCase(CreateCaseRequest request) async {
     try {
-      final sessionState = _sessionCubit.state;
-      final tenantId = sessionState is SessionAuthenticated
-          ? sessionState.user.tenant?.id
-          : null;
-      final body = {
-        ...request.toJson(),
-        if (tenantId != null) 'tenantId': tenantId,
-      };
+      final body = _withoutNulls(request.toJson());
       final response = await _dio.post('/cases', data: body);
       return Right(LegalCase.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
@@ -73,7 +65,8 @@ class CaseRepository implements ICaseRepository {
   @override
   ApiResult<LegalCase> updateCase(String id, UpdateCaseRequest request) async {
     try {
-      final response = await _dio.patch('/cases/$id', data: request.toJson());
+      final body = request.toJson();
+      final response = await _dio.patch('/cases/$id', data: body);
       return Right(LegalCase.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
@@ -81,20 +74,47 @@ class CaseRepository implements ICaseRepository {
   }
 
   @override
-  ApiResult<CaseTeamMember> assignTeamMember(
-    String caseId,
-    AssignCaseRequest request,
-  ) async {
+  ApiResult<LegalCase> changeCaseStatus(String id, CaseStatus status) async {
     try {
-      final response = await _dio.post(
-        '/cases/$caseId/assignments',
-        data: request.toJson(),
+      final response = await _dio.patch(
+        '/cases/$id/status',
+        data: {'status': status.name.toUpperCase()},
       );
-      return Right(
-        CaseTeamMember.fromJson(response.data as Map<String, dynamic>),
-      );
+      return Right(LegalCase.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
     }
   }
+
+  @override
+  ApiResult<void> setCaseAccess(
+    String caseId,
+    AssignCaseRequest request,
+  ) async {
+    try {
+      await _dio.put(
+        '/cases/$caseId/access-grants/${request.userId}',
+        data: request.toJson(),
+      );
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+
+  @override
+  ApiResult<void> revokeCaseAccess(String caseId, String userId) async {
+    try {
+      await _dio.delete('/cases/$caseId/access-grants/$userId');
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+}
+
+Map<String, dynamic> _withoutNulls(Map<String, dynamic> value) {
+  final result = Map<String, dynamic>.from(value);
+  result.removeWhere((_, item) => item == null);
+  return result;
 }

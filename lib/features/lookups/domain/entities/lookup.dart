@@ -18,7 +18,7 @@ abstract class Lookup with _$Lookup {
 
   const factory Lookup({
     required String id,
-    required String tenantId,
+    String? tenantId,
     @JsonKey(unknownEnumValue: LookupKind.unknown) required LookupKind kind,
     required String labelEn,
     required String labelAr,

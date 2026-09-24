@@ -16,8 +16,6 @@ import 'package:hqooq/core/network/dio_client.dart' as _i893;
 import 'package:hqooq/core/network/interceptors/auth_interceptor.dart' as _i404;
 import 'package:hqooq/core/network/interceptors/refresh_interceptor.dart'
     as _i722;
-import 'package:hqooq/core/network/interceptors/subscription_interceptor.dart'
-    as _i724;
 import 'package:hqooq/core/storage/token_storage.dart' as _i23;
 import 'package:hqooq/core/theme/theme_bloc.dart' as _i926;
 import 'package:hqooq/features/authentication/data/repository/auth_repository.dart'
@@ -48,8 +46,6 @@ import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart'
     as _i995;
 import 'package:hqooq/features/cases/presentation/bloc/case_documents_bloc.dart'
     as _i194;
-import 'package:hqooq/features/cases/presentation/bloc/case_financial_summary_bloc.dart'
-    as _i1066;
 import 'package:hqooq/features/cases/presentation/bloc/case_form_bloc.dart'
     as _i728;
 import 'package:hqooq/features/cases/presentation/bloc/case_hearings_bloc.dart'
@@ -58,18 +54,6 @@ import 'package:hqooq/features/cases/presentation/bloc/case_team_assignment_bloc
     as _i743;
 import 'package:hqooq/features/cases/presentation/bloc/cases_bloc.dart'
     as _i546;
-import 'package:hqooq/features/clients/data/repository/client_repository.dart'
-    as _i351;
-import 'package:hqooq/features/clients/domain/repository/i_client_repository.dart'
-    as _i794;
-import 'package:hqooq/features/clients/domain/usecases/get_clients_use_case.dart'
-    as _i723;
-import 'package:hqooq/features/clients/presentation/bloc/client_details_bloc.dart'
-    as _i283;
-import 'package:hqooq/features/clients/presentation/bloc/client_form_bloc.dart'
-    as _i730;
-import 'package:hqooq/features/clients/presentation/bloc/clients_bloc.dart'
-    as _i165;
 import 'package:hqooq/features/courts/data/repository/court_repository.dart'
     as _i150;
 import 'package:hqooq/features/courts/domain/repository/i_court_repository.dart'
@@ -90,16 +74,10 @@ import 'package:hqooq/features/finance/data/repository/finance_repository.dart'
     as _i810;
 import 'package:hqooq/features/finance/domain/repository/i_finance_repository.dart'
     as _i729;
-import 'package:hqooq/features/finance/presentation/bloc/cases_financial_summary_bloc.dart'
-    as _i600;
-import 'package:hqooq/features/finance/presentation/bloc/financial_analytics_bloc.dart'
-    as _i313;
-import 'package:hqooq/features/finance/presentation/bloc/invoice_details_bloc.dart'
-    as _i484;
-import 'package:hqooq/features/finance/presentation/bloc/invoice_form_bloc.dart'
-    as _i286;
-import 'package:hqooq/features/finance/presentation/bloc/invoices_bloc.dart'
-    as _i188;
+import 'package:hqooq/features/finance/presentation/bloc/case_ledger_bloc.dart'
+    as _i167;
+import 'package:hqooq/features/finance/presentation/bloc/finance_summary_bloc.dart'
+    as _i1068;
 import 'package:hqooq/features/finance/presentation/bloc/payment_form_bloc.dart'
     as _i113;
 import 'package:hqooq/features/hearings/data/repository/hearing_repository.dart'
@@ -112,22 +90,42 @@ import 'package:hqooq/features/lookups/data/repository/lookup_repository.dart'
     as _i792;
 import 'package:hqooq/features/lookups/domain/repository/i_lookup_repository.dart'
     as _i359;
+import 'package:hqooq/features/meetings/data/repository/meeting_repository.dart'
+    as _i39;
+import 'package:hqooq/features/meetings/domain/repository/i_meeting_repository.dart'
+    as _i280;
+import 'package:hqooq/features/meetings/presentation/bloc/case_meetings_bloc.dart'
+    as _i635;
+import 'package:hqooq/features/meetings/presentation/bloc/meeting_form_bloc.dart'
+    as _i647;
 import 'package:hqooq/features/notifications/data/repository/notification_repository.dart'
     as _i581;
 import 'package:hqooq/features/notifications/domain/repository/i_notification_repository.dart'
     as _i170;
 import 'package:hqooq/features/notifications/presentation/bloc/notifications_bloc.dart'
     as _i983;
-import 'package:hqooq/features/subscriptions/data/repository/subscription_repository.dart'
-    as _i836;
-import 'package:hqooq/features/subscriptions/domain/repository/i_subscription_repository.dart'
-    as _i943;
-import 'package:hqooq/features/subscriptions/presentation/bloc/subscription_reactivation_bloc.dart'
-    as _i800;
+import 'package:hqooq/features/profile/presentation/bloc/profile_cubit.dart'
+    as _i622;
+import 'package:hqooq/features/service_of_process/data/repository/service_process_repository.dart'
+    as _i134;
+import 'package:hqooq/features/service_of_process/domain/repository/i_service_process_repository.dart'
+    as _i1030;
+import 'package:hqooq/features/service_of_process/presentation/bloc/case_service_process_bloc.dart'
+    as _i893;
+import 'package:hqooq/features/service_of_process/presentation/bloc/service_process_completion_bloc.dart'
+    as _i127;
+import 'package:hqooq/features/service_of_process/presentation/bloc/service_process_form_bloc.dart'
+    as _i495;
+import 'package:hqooq/features/settings/presentation/bloc/settings_cubit.dart'
+    as _i785;
+import 'package:hqooq/features/subscriptions/presentation/bloc/subscription_cubit.dart'
+    as _i726;
 import 'package:hqooq/features/tasks/data/repository/task_repository.dart'
     as _i23;
 import 'package:hqooq/features/tasks/domain/repository/i_task_repository.dart'
     as _i949;
+import 'package:hqooq/features/tasks/presentation/bloc/case_tasks_bloc.dart'
+    as _i791;
 import 'package:hqooq/features/tasks/presentation/bloc/task_form_bloc.dart'
     as _i521;
 import 'package:hqooq/features/users/data/repository/user_repository.dart'
@@ -151,9 +149,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i404.AuthInterceptor>(
       () => _i404.AuthInterceptor(gh<_i81.SessionCubit>()),
     );
-    gh.factory<_i724.SubscriptionInterceptor>(
-      () => _i724.SubscriptionInterceptor(gh<_i81.SessionCubit>()),
-    );
     gh.factory<_i722.RefreshInterceptor>(
       () => _i722.RefreshInterceptor(
         gh<_i23.TokenStorage>(),
@@ -164,65 +159,31 @@ extension GetItInjectableX on _i174.GetIt {
       () => networkModule.dio(
         gh<_i404.AuthInterceptor>(),
         gh<_i722.RefreshInterceptor>(),
-        gh<_i724.SubscriptionInterceptor>(),
       ),
     );
-    gh.lazySingleton<_i543.ICourtRepository>(
-      () => _i150.CourtRepository(gh<_i361.Dio>()),
-    );
-    gh.lazySingleton<_i729.IFinanceRepository>(
-      () => _i810.FinanceRepository(gh<_i361.Dio>()),
-    );
-    gh.lazySingleton<_i598.IAuthRepository>(
-      () => _i494.AuthRepository(gh<_i361.Dio>()),
-    );
-    gh.lazySingleton<_i196.LoginUseCase>(
-      () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
+    gh.lazySingleton<_i141.IUserRepository>(
+      () => _i867.UserRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
     );
     gh.lazySingleton<_i320.ICaseRepository>(
       () => _i981.CaseRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
     );
-    gh.lazySingleton<_i613.GetCasesUseCase>(
-      () => _i613.GetCasesUseCase(gh<_i320.ICaseRepository>()),
-    );
-    gh.factory<_i546.CasesBloc>(
-      () => _i546.CasesBloc(gh<_i613.GetCasesUseCase>()),
-    );
-    gh.lazySingleton<_i794.IClientRepository>(
-      () => _i351.ClientRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
-    );
-    gh.factory<_i730.ClientFormBloc>(
-      () => _i730.ClientFormBloc(gh<_i794.IClientRepository>()),
-    );
-    gh.factory<_i286.InvoiceFormBloc>(
-      () => _i286.InvoiceFormBloc(
-        gh<_i729.IFinanceRepository>(),
-        gh<_i794.IClientRepository>(),
-        gh<_i320.ICaseRepository>(),
-      ),
+    gh.factory<_i622.ProfileCubit>(
+      () => _i622.ProfileCubit(gh<_i926.ThemeBloc>(), gh<_i40.LocaleBloc>()),
     );
     gh.factory<_i995.CaseDetailsBloc>(
       () => _i995.CaseDetailsBloc(gh<_i320.ICaseRepository>()),
     );
-    gh.factory<_i1026.AuthBloc>(
-      () => _i1026.AuthBloc(
-        gh<_i196.LoginUseCase>(),
-        gh<_i598.IAuthRepository>(),
-        gh<_i81.SessionCubit>(),
-        gh<_i23.TokenStorage>(),
-      ),
-    );
     gh.lazySingleton<_i495.ICalendarRepository>(
       () => _i225.CalendarRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i1030.IServiceProcessRepository>(
+      () => _i134.ServiceProcessRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i170.INotificationRepository>(
       () => _i581.NotificationRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i949.ITaskRepository>(
       () => _i23.TaskRepository(gh<_i361.Dio>()),
-    );
-    gh.lazySingleton<_i943.ISubscriptionRepository>(
-      () => _i836.SubscriptionRepository(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i359.ILookupRepository>(
       () => _i792.LookupRepository(gh<_i361.Dio>()),
@@ -242,40 +203,21 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i51.DocumentUploadBloc>(
       () => _i51.DocumentUploadBloc(gh<_i622.IDocumentRepository>()),
     );
-    gh.factory<_i800.SubscriptionReactivationBloc>(
-      () => _i800.SubscriptionReactivationBloc(
-        gh<_i943.ISubscriptionRepository>(),
-      ),
-    );
     gh.factory<_i983.NotificationsBloc>(
       () => _i983.NotificationsBloc(gh<_i170.INotificationRepository>()),
     );
-    gh.lazySingleton<_i723.GetClientsUseCase>(
-      () => _i723.GetClientsUseCase(gh<_i794.IClientRepository>()),
+    gh.lazySingleton<_i280.IMeetingRepository>(
+      () => _i39.MeetingRepository(gh<_i361.Dio>()),
     );
-    gh.factory<_i1066.CaseFinancialSummaryBloc>(
-      () => _i1066.CaseFinancialSummaryBloc(gh<_i729.IFinanceRepository>()),
-    );
-    gh.factory<_i600.CasesFinancialSummaryBloc>(
-      () => _i600.CasesFinancialSummaryBloc(gh<_i729.IFinanceRepository>()),
-    );
-    gh.factory<_i313.FinancialAnalyticsBloc>(
-      () => _i313.FinancialAnalyticsBloc(gh<_i729.IFinanceRepository>()),
-    );
-    gh.factory<_i484.InvoiceDetailsBloc>(
-      () => _i484.InvoiceDetailsBloc(gh<_i729.IFinanceRepository>()),
-    );
-    gh.factory<_i188.InvoicesBloc>(
-      () => _i188.InvoicesBloc(gh<_i729.IFinanceRepository>()),
-    );
-    gh.factory<_i113.PaymentFormBloc>(
-      () => _i113.PaymentFormBloc(gh<_i729.IFinanceRepository>()),
-    );
-    gh.factory<_i283.ClientDetailsBloc>(
-      () => _i283.ClientDetailsBloc(
-        gh<_i794.IClientRepository>(),
+    gh.factory<_i743.CaseTeamAssignmentBloc>(
+      () => _i743.CaseTeamAssignmentBloc(
         gh<_i320.ICaseRepository>(),
+        gh<_i141.IUserRepository>(),
       ),
+    );
+    gh.factory<_i893.CaseServiceProcessBloc>(
+      () =>
+          _i893.CaseServiceProcessBloc(gh<_i1030.IServiceProcessRepository>()),
     );
     gh.lazySingleton<_i1072.IDashboardRepository>(
       () => _i773.DashboardRepository(gh<_i361.Dio>()),
@@ -283,11 +225,24 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i844.IHearingRepository>(
       () => _i506.HearingRepository(gh<_i361.Dio>()),
     );
-    gh.lazySingleton<_i141.IUserRepository>(
-      () => _i867.UserRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
+    gh.factory<_i127.ServiceProcessCompletionBloc>(
+      () => _i127.ServiceProcessCompletionBloc(
+        gh<_i622.IDocumentRepository>(),
+        gh<_i1030.IServiceProcessRepository>(),
+        gh<_i359.ILookupRepository>(),
+      ),
     );
-    gh.factory<_i165.ClientsBloc>(
-      () => _i165.ClientsBloc(gh<_i723.GetClientsUseCase>()),
+    gh.lazySingleton<_i543.ICourtRepository>(
+      () => _i150.CourtRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i729.IFinanceRepository>(
+      () => _i810.FinanceRepository(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i726.SubscriptionCubit>(
+      () => _i726.SubscriptionCubit(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i598.IAuthRepository>(
+      () => _i494.AuthRepository(gh<_i361.Dio>()),
     );
     gh.factory<_i521.TaskFormBloc>(
       () => _i521.TaskFormBloc(
@@ -295,6 +250,24 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i141.IUserRepository>(),
         gh<_i320.ICaseRepository>(),
       ),
+    );
+    gh.lazySingleton<_i196.LoginUseCase>(
+      () => _i196.LoginUseCase(gh<_i598.IAuthRepository>()),
+    );
+    gh.factory<_i635.CaseMeetingsBloc>(
+      () => _i635.CaseMeetingsBloc(gh<_i280.IMeetingRepository>()),
+    );
+    gh.factory<_i647.MeetingFormBloc>(
+      () => _i647.MeetingFormBloc(gh<_i280.IMeetingRepository>()),
+    );
+    gh.lazySingleton<_i613.GetCasesUseCase>(
+      () => _i613.GetCasesUseCase(gh<_i320.ICaseRepository>()),
+    );
+    gh.factory<_i546.CasesBloc>(
+      () => _i546.CasesBloc(gh<_i613.GetCasesUseCase>()),
+    );
+    gh.factory<_i791.CaseTasksBloc>(
+      () => _i791.CaseTasksBloc(gh<_i949.ITaskRepository>()),
     );
     gh.factory<_i421.HearingFormBloc>(
       () => _i421.HearingFormBloc(
@@ -308,23 +281,47 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i320.ICaseRepository>(),
         gh<_i543.ICourtRepository>(),
         gh<_i141.IUserRepository>(),
-        gh<_i794.IClientRepository>(),
+        gh<_i359.ILookupRepository>(),
+      ),
+    );
+    gh.factory<_i167.CaseLedgerBloc>(
+      () => _i167.CaseLedgerBloc(gh<_i729.IFinanceRepository>()),
+    );
+    gh.factory<_i1068.FinanceSummaryBloc>(
+      () => _i1068.FinanceSummaryBloc(gh<_i729.IFinanceRepository>()),
+    );
+    gh.factory<_i113.PaymentFormBloc>(
+      () => _i113.PaymentFormBloc(gh<_i729.IFinanceRepository>()),
+    );
+    gh.factory<_i785.SettingsCubit>(
+      () => _i785.SettingsCubit(
+        gh<_i598.IAuthRepository>(),
+        gh<_i81.SessionCubit>(),
+      ),
+    );
+    gh.factory<_i1026.AuthBloc>(
+      () => _i1026.AuthBloc(
+        gh<_i196.LoginUseCase>(),
+        gh<_i598.IAuthRepository>(),
+        gh<_i81.SessionCubit>(),
+        gh<_i23.TokenStorage>(),
+      ),
+    );
+    gh.factory<_i495.ServiceProcessFormBloc>(
+      () => _i495.ServiceProcessFormBloc(
+        gh<_i1030.IServiceProcessRepository>(),
+        gh<_i543.ICourtRepository>(),
         gh<_i359.ILookupRepository>(),
       ),
     );
     gh.factory<_i389.CaseHearingsBloc>(
       () => _i389.CaseHearingsBloc(gh<_i844.IHearingRepository>()),
     );
-    gh.factory<_i743.CaseTeamAssignmentBloc>(
-      () => _i743.CaseTeamAssignmentBloc(
-        gh<_i320.ICaseRepository>(),
-        gh<_i141.IUserRepository>(),
-      ),
-    );
     gh.factory<_i548.DashboardBloc>(
       () => _i548.DashboardBloc(
         gh<_i1072.IDashboardRepository>(),
-        gh<_i949.ITaskRepository>(),
+        gh<_i844.IHearingRepository>(),
+        gh<_i729.IFinanceRepository>(),
         gh<_i81.SessionCubit>(),
       ),
     );

@@ -30,7 +30,7 @@ void main() {
   }
 
   group('getTimeline', () {
-    test('GETs /calendar/timeline and parses a CALENDAR_EVENT item', () async {
+    test('GETs /calendar/timeline and parses a CUSTOM item', () async {
       when(
         () => dio.get(
           '/calendar/timeline',
@@ -40,11 +40,9 @@ void main() {
         (_) async => okResponse('/calendar/timeline', [
           {
             'id': 'e1',
-            'itemType': 'CALENDAR_EVENT',
+            'type': 'CUSTOM',
             'title': 'Team sync',
-            'date': '2026-02-01T09:00:00.000Z',
-            'eventType': 'CUSTOM',
-            'referenceId': null,
+            'startsAt': '2026-02-01T09:00:00.000Z',
           },
         ]),
       );
@@ -63,7 +61,7 @@ void main() {
       });
     });
 
-    test('parses a HEARING item with a nested case', () async {
+    test('parses a Case-bound HEARING item', () async {
       when(
         () => dio.get(
           '/calendar/timeline',
@@ -73,21 +71,10 @@ void main() {
         (_) async => okResponse('/calendar/timeline', [
           {
             'id': 'h1',
-            'itemType': 'HEARING',
-            'title': 'Hearing for Case CASE-2026-00001',
-            'date': '2026-02-01T09:00:00.000Z',
+            'type': 'HEARING',
+            'caseId': 'c1',
+            'startsAt': '2026-02-01T09:00:00.000Z',
             'status': 'SCHEDULED',
-            'case': {
-              'id': 'c1',
-              'tenantId': 't1',
-              'caseNumber': 'CASE-2026-00001',
-              'status': 'ACTIVE',
-              'clientId': 'cl1',
-              'caseTypeId': 'ct1',
-              'priority': 'HIGH',
-              'createdAt': '2026-01-01T00:00:00.000Z',
-              'updatedAt': '2026-01-01T00:00:00.000Z',
-            },
           },
         ]),
       );
@@ -97,7 +84,7 @@ void main() {
       result.fold((_) => fail('expected Right'), (items) {
         final item = items.first as TimelineHearingItem;
         expect(item.status, HearingStatus.scheduled);
-        expect(item.caseSummary?.caseNumber, 'CASE-2026-00001');
+        expect(item.caseId, 'c1');
       });
     });
 
@@ -113,12 +100,12 @@ void main() {
           (_) async => okResponse('/calendar/timeline', [
             {
               'id': 't1',
-              'itemType': 'TASK',
+              'type': 'TASK',
               'title': 'File motion',
-              'date': '2026-02-01T00:00:00.000Z',
+              'startsAt': '2026-02-01T00:00:00.000Z',
+              'caseId': 'c1',
               'status': 'SOMETHING_NEW',
               'priority': 'HIGH',
-              'case': null,
             },
           ]),
         );
@@ -130,40 +117,70 @@ void main() {
           expect(item.status, TaskStatus.unknown);
           expect(item.priority, TaskPriority.high);
           expect(item.caseSummary, isNull);
+          expect(item.caseId, 'c1');
         });
       },
     );
 
-    test(
-      'passes startDate/endDate/caseId/userId as query parameters',
-      () async {
-        when(
-          () => dio.get(
-            '/calendar/timeline',
-            queryParameters: any(named: 'queryParameters'),
-          ),
-        ).thenAnswer((_) async => okResponse('/calendar/timeline', []));
+    test('parses Service and Meeting activity sources', () async {
+      when(
+        () => dio.get(
+          '/calendar/timeline',
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).thenAnswer(
+        (_) async => okResponse('/calendar/timeline', [
+          {
+            'id': 's1',
+            'type': 'SERVICE',
+            'caseId': 'c1',
+            'startsAt': '2026-02-01T08:00:00.000Z',
+            'status': 'SCHEDULED',
+          },
+          {
+            'id': 'm1',
+            'type': 'MEETING',
+            'caseId': 'c1',
+            'title': 'Client preparation',
+            'startsAt': '2026-02-01T10:00:00.000Z',
+            'status': 'RESCHEDULED',
+          },
+        ]),
+      );
 
-        await repository.getTimeline(
-          startDate: DateTime.utc(2026, 2, 1),
-          endDate: DateTime.utc(2026, 2, 28),
-          caseId: 'c1',
-          userId: 'u1',
-        );
+      final result = await repository.getTimeline();
 
-        verify(
-          () => dio.get(
-            '/calendar/timeline',
-            queryParameters: {
-              'startDate': DateTime.utc(2026, 2, 1).toIso8601String(),
-              'endDate': DateTime.utc(2026, 2, 28).toIso8601String(),
-              'caseId': 'c1',
-              'userId': 'u1',
-            },
-          ),
-        ).called(1);
-      },
-    );
+      result.fold((_) => fail('expected Right'), (items) {
+        expect(items.first, isA<TimelineServiceItem>());
+        expect(items.last, isA<TimelineMeetingItem>());
+      });
+    });
+
+    test('passes startDate/endDate/caseId as query parameters', () async {
+      when(
+        () => dio.get(
+          '/calendar/timeline',
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).thenAnswer((_) async => okResponse('/calendar/timeline', []));
+
+      await repository.getTimeline(
+        startDate: DateTime.utc(2026, 2, 1),
+        endDate: DateTime.utc(2026, 2, 28),
+        caseId: 'c1',
+      );
+
+      verify(
+        () => dio.get(
+          '/calendar/timeline',
+          queryParameters: {
+            'startDate': DateTime.utc(2026, 2, 1).toIso8601String(),
+            'endDate': DateTime.utc(2026, 2, 28).toIso8601String(),
+            'caseId': 'c1',
+          },
+        ),
+      ).called(1);
+    });
 
     test('maps a connection error to NetworkFailure', () async {
       when(
@@ -204,7 +221,6 @@ void main() {
       );
 
       final request = CreateEventRequest(
-        userId: 'u1',
         title: 'Team sync',
         startsAt: DateTime.utc(2026, 2, 1, 9),
         isAllDay: false,
@@ -215,9 +231,9 @@ void main() {
         () => dio.post('/calendar', data: captureAny(named: 'data')),
       ).captured;
       final body = captured.single as Map<String, dynamic>;
-      expect(body['userId'], 'u1');
+      expect(body.containsKey('userId'), isFalse);
       expect(body['title'], 'Team sync');
-      expect(body['eventType'], 'CUSTOM');
+      expect(body.containsKey('eventType'), isFalse);
       expect(body['isAllDay'], false);
       result.fold(
         (_) => fail('expected Right'),
@@ -239,7 +255,6 @@ void main() {
       );
 
       final request = CreateEventRequest(
-        userId: 'u1',
         title: 'Team sync',
         startsAt: DateTime.utc(2026, 2, 1, 9),
       );

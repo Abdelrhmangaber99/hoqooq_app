@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$User {
 
- String get id; String get email; String get fullName; bool get isSuperAdmin; String get status; bool get mfaEnabled; DateTime get createdAt; DateTime get updatedAt; String? get avatarUrl; DateTime? get lastLoginAt; List<Role> get roles; TenantRef? get tenant;
+ String get id; String get email; String get fullName; bool get isSuperAdmin; String get status; bool get mfaEnabled; DateTime get createdAt; DateTime get updatedAt; String? get avatarUrl; DateTime? get lastLoginAt; String? get accountType; String? get jobClassification; List<String> get permissions; TenantRef? get tenant;
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $UserCopyWith<User> get copyWith => _$UserCopyWithImpl<User>(this as User, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is User&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.isSuperAdmin, isSuperAdmin) || other.isSuperAdmin == isSuperAdmin)&&(identical(other.status, status) || other.status == status)&&(identical(other.mfaEnabled, mfaEnabled) || other.mfaEnabled == mfaEnabled)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&const DeepCollectionEquality().equals(other.roles, roles)&&(identical(other.tenant, tenant) || other.tenant == tenant));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is User&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.isSuperAdmin, isSuperAdmin) || other.isSuperAdmin == isSuperAdmin)&&(identical(other.status, status) || other.status == status)&&(identical(other.mfaEnabled, mfaEnabled) || other.mfaEnabled == mfaEnabled)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.accountType, accountType) || other.accountType == accountType)&&(identical(other.jobClassification, jobClassification) || other.jobClassification == jobClassification)&&const DeepCollectionEquality().equals(other.permissions, permissions)&&(identical(other.tenant, tenant) || other.tenant == tenant));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,email,fullName,isSuperAdmin,status,mfaEnabled,createdAt,updatedAt,avatarUrl,lastLoginAt,const DeepCollectionEquality().hash(roles),tenant);
+int get hashCode => Object.hash(runtimeType,id,email,fullName,isSuperAdmin,status,mfaEnabled,createdAt,updatedAt,avatarUrl,lastLoginAt,accountType,jobClassification,const DeepCollectionEquality().hash(permissions),tenant);
 
 @override
 String toString() {
-  return 'User(id: $id, email: $email, fullName: $fullName, isSuperAdmin: $isSuperAdmin, status: $status, mfaEnabled: $mfaEnabled, createdAt: $createdAt, updatedAt: $updatedAt, avatarUrl: $avatarUrl, lastLoginAt: $lastLoginAt, roles: $roles, tenant: $tenant)';
+  return 'User(id: $id, email: $email, fullName: $fullName, isSuperAdmin: $isSuperAdmin, status: $status, mfaEnabled: $mfaEnabled, createdAt: $createdAt, updatedAt: $updatedAt, avatarUrl: $avatarUrl, lastLoginAt: $lastLoginAt, accountType: $accountType, jobClassification: $jobClassification, permissions: $permissions, tenant: $tenant)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $UserCopyWith<$Res>  {
   factory $UserCopyWith(User value, $Res Function(User) _then) = _$UserCopyWithImpl;
 @useResult
 $Res call({
- String id, String email, String fullName, bool isSuperAdmin, String status, bool mfaEnabled, DateTime createdAt, DateTime updatedAt, String? avatarUrl, DateTime? lastLoginAt, List<Role> roles, TenantRef? tenant
+ String id, String email, String fullName, bool isSuperAdmin, String status, bool mfaEnabled, DateTime createdAt, DateTime updatedAt, String? avatarUrl, DateTime? lastLoginAt, String? accountType, String? jobClassification, List<String> permissions, TenantRef? tenant
 });
 
 
@@ -65,7 +65,7 @@ class _$UserCopyWithImpl<$Res>
 
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? fullName = null,Object? isSuperAdmin = null,Object? status = null,Object? mfaEnabled = null,Object? createdAt = null,Object? updatedAt = null,Object? avatarUrl = freezed,Object? lastLoginAt = freezed,Object? roles = null,Object? tenant = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? fullName = null,Object? isSuperAdmin = null,Object? status = null,Object? mfaEnabled = null,Object? createdAt = null,Object? updatedAt = null,Object? avatarUrl = freezed,Object? lastLoginAt = freezed,Object? accountType = freezed,Object? jobClassification = freezed,Object? permissions = null,Object? tenant = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -77,8 +77,10 @@ as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: ca
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String?,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,roles: null == roles ? _self.roles : roles // ignore: cast_nullable_to_non_nullable
-as List<Role>,tenant: freezed == tenant ? _self.tenant : tenant // ignore: cast_nullable_to_non_nullable
+as DateTime?,accountType: freezed == accountType ? _self.accountType : accountType // ignore: cast_nullable_to_non_nullable
+as String?,jobClassification: freezed == jobClassification ? _self.jobClassification : jobClassification // ignore: cast_nullable_to_non_nullable
+as String?,permissions: null == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
+as List<String>,tenant: freezed == tenant ? _self.tenant : tenant // ignore: cast_nullable_to_non_nullable
 as TenantRef?,
   ));
 }
@@ -176,10 +178,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef? tenant)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  String? accountType,  String? jobClassification,  List<String> permissions,  TenantRef? tenant)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _User() when $default != null:
-return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.roles,_that.tenant);case _:
+return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.accountType,_that.jobClassification,_that.permissions,_that.tenant);case _:
   return orElse();
 
 }
@@ -197,10 +199,10 @@ return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.sta
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef? tenant)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  String? accountType,  String? jobClassification,  List<String> permissions,  TenantRef? tenant)  $default,) {final _that = this;
 switch (_that) {
 case _User():
-return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.roles,_that.tenant);case _:
+return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.accountType,_that.jobClassification,_that.permissions,_that.tenant);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -217,10 +219,10 @@ return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.sta
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  List<Role> roles,  TenantRef? tenant)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String fullName,  bool isSuperAdmin,  String status,  bool mfaEnabled,  DateTime createdAt,  DateTime updatedAt,  String? avatarUrl,  DateTime? lastLoginAt,  String? accountType,  String? jobClassification,  List<String> permissions,  TenantRef? tenant)?  $default,) {final _that = this;
 switch (_that) {
 case _User() when $default != null:
-return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.roles,_that.tenant);case _:
+return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.status,_that.mfaEnabled,_that.createdAt,_that.updatedAt,_that.avatarUrl,_that.lastLoginAt,_that.accountType,_that.jobClassification,_that.permissions,_that.tenant);case _:
   return null;
 
 }
@@ -232,7 +234,7 @@ return $default(_that.id,_that.email,_that.fullName,_that.isSuperAdmin,_that.sta
 @JsonSerializable()
 
 class _User extends User {
-  const _User({required this.id, required this.email, required this.fullName, required this.isSuperAdmin, required this.status, required this.mfaEnabled, required this.createdAt, required this.updatedAt, this.avatarUrl, this.lastLoginAt, required final  List<Role> roles, this.tenant}): _roles = roles,super._();
+  const _User({required this.id, required this.email, required this.fullName, required this.isSuperAdmin, required this.status, required this.mfaEnabled, required this.createdAt, required this.updatedAt, this.avatarUrl, this.lastLoginAt, this.accountType, this.jobClassification, final  List<String> permissions = const <String>[], this.tenant}): _permissions = permissions,super._();
   factory _User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
 @override final  String id;
@@ -245,11 +247,13 @@ class _User extends User {
 @override final  DateTime updatedAt;
 @override final  String? avatarUrl;
 @override final  DateTime? lastLoginAt;
- final  List<Role> _roles;
-@override List<Role> get roles {
-  if (_roles is EqualUnmodifiableListView) return _roles;
+@override final  String? accountType;
+@override final  String? jobClassification;
+ final  List<String> _permissions;
+@override@JsonKey() List<String> get permissions {
+  if (_permissions is EqualUnmodifiableListView) return _permissions;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_roles);
+  return EqualUnmodifiableListView(_permissions);
 }
 
 @override final  TenantRef? tenant;
@@ -267,16 +271,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _User&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.isSuperAdmin, isSuperAdmin) || other.isSuperAdmin == isSuperAdmin)&&(identical(other.status, status) || other.status == status)&&(identical(other.mfaEnabled, mfaEnabled) || other.mfaEnabled == mfaEnabled)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&const DeepCollectionEquality().equals(other._roles, _roles)&&(identical(other.tenant, tenant) || other.tenant == tenant));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _User&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.fullName, fullName) || other.fullName == fullName)&&(identical(other.isSuperAdmin, isSuperAdmin) || other.isSuperAdmin == isSuperAdmin)&&(identical(other.status, status) || other.status == status)&&(identical(other.mfaEnabled, mfaEnabled) || other.mfaEnabled == mfaEnabled)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.accountType, accountType) || other.accountType == accountType)&&(identical(other.jobClassification, jobClassification) || other.jobClassification == jobClassification)&&const DeepCollectionEquality().equals(other._permissions, _permissions)&&(identical(other.tenant, tenant) || other.tenant == tenant));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,email,fullName,isSuperAdmin,status,mfaEnabled,createdAt,updatedAt,avatarUrl,lastLoginAt,const DeepCollectionEquality().hash(_roles),tenant);
+int get hashCode => Object.hash(runtimeType,id,email,fullName,isSuperAdmin,status,mfaEnabled,createdAt,updatedAt,avatarUrl,lastLoginAt,accountType,jobClassification,const DeepCollectionEquality().hash(_permissions),tenant);
 
 @override
 String toString() {
-  return 'User(id: $id, email: $email, fullName: $fullName, isSuperAdmin: $isSuperAdmin, status: $status, mfaEnabled: $mfaEnabled, createdAt: $createdAt, updatedAt: $updatedAt, avatarUrl: $avatarUrl, lastLoginAt: $lastLoginAt, roles: $roles, tenant: $tenant)';
+  return 'User(id: $id, email: $email, fullName: $fullName, isSuperAdmin: $isSuperAdmin, status: $status, mfaEnabled: $mfaEnabled, createdAt: $createdAt, updatedAt: $updatedAt, avatarUrl: $avatarUrl, lastLoginAt: $lastLoginAt, accountType: $accountType, jobClassification: $jobClassification, permissions: $permissions, tenant: $tenant)';
 }
 
 
@@ -287,7 +291,7 @@ abstract mixin class _$UserCopyWith<$Res> implements $UserCopyWith<$Res> {
   factory _$UserCopyWith(_User value, $Res Function(_User) _then) = __$UserCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String email, String fullName, bool isSuperAdmin, String status, bool mfaEnabled, DateTime createdAt, DateTime updatedAt, String? avatarUrl, DateTime? lastLoginAt, List<Role> roles, TenantRef? tenant
+ String id, String email, String fullName, bool isSuperAdmin, String status, bool mfaEnabled, DateTime createdAt, DateTime updatedAt, String? avatarUrl, DateTime? lastLoginAt, String? accountType, String? jobClassification, List<String> permissions, TenantRef? tenant
 });
 
 
@@ -304,7 +308,7 @@ class __$UserCopyWithImpl<$Res>
 
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? fullName = null,Object? isSuperAdmin = null,Object? status = null,Object? mfaEnabled = null,Object? createdAt = null,Object? updatedAt = null,Object? avatarUrl = freezed,Object? lastLoginAt = freezed,Object? roles = null,Object? tenant = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? fullName = null,Object? isSuperAdmin = null,Object? status = null,Object? mfaEnabled = null,Object? createdAt = null,Object? updatedAt = null,Object? avatarUrl = freezed,Object? lastLoginAt = freezed,Object? accountType = freezed,Object? jobClassification = freezed,Object? permissions = null,Object? tenant = freezed,}) {
   return _then(_User(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -316,8 +320,10 @@ as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: ca
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String?,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,roles: null == roles ? _self._roles : roles // ignore: cast_nullable_to_non_nullable
-as List<Role>,tenant: freezed == tenant ? _self.tenant : tenant // ignore: cast_nullable_to_non_nullable
+as DateTime?,accountType: freezed == accountType ? _self.accountType : accountType // ignore: cast_nullable_to_non_nullable
+as String?,jobClassification: freezed == jobClassification ? _self.jobClassification : jobClassification // ignore: cast_nullable_to_non_nullable
+as String?,permissions: null == permissions ? _self._permissions : permissions // ignore: cast_nullable_to_non_nullable
+as List<String>,tenant: freezed == tenant ? _self.tenant : tenant // ignore: cast_nullable_to_non_nullable
 as TenantRef?,
   ));
 }

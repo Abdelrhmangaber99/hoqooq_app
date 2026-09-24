@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../theme/app_radius.dart';
 
 class AppTextField extends StatelessWidget {
   final String label;
@@ -13,6 +13,15 @@ class AppTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
   final bool obscureText;
+  final bool readOnly;
+  final int maxLines;
+
+  /// Optional input formatters forwarded to the underlying
+  /// [TextFormField] (e.g. amount fields restricting to digits).
+  final List<TextInputFormatter>? inputFormatters;
+
+  /// Optional focus node forwarded to the underlying [TextFormField].
+  final FocusNode? focusNode;
 
   const AppTextField({
     super.key,
@@ -25,51 +34,42 @@ class AppTextField extends StatelessWidget {
     this.suffixIcon,
     this.validator,
     this.obscureText = false,
+    this.readOnly = false,
+    this.maxLines = 1,
+    this.inputFormatters,
+    this.focusNode,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label.toUpperCase(),
           style: AppTypography.labelMedium.copyWith(
-            color: AppColors.textSecondary,
+            color: colors.onSurfaceVariant,
             letterSpacing: 1.1,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
           obscureText: obscureText,
+          readOnly: readOnly,
           keyboardType: keyboardType,
           validator: validator,
-          style: AppTypography.bodyMedium,
+          inputFormatters: inputFormatters,
+          maxLines: obscureText ? 1 : maxLines,
+          style: AppTypography.bodyMedium.copyWith(color: colors.onSurface),
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: prefixIcon != null 
-                ? Icon(prefixIcon, color: AppColors.primary, size: 20) 
-                : null,
             suffixIcon: suffixIcon,
-            filled: true,
-            fillColor: AppColors.surface,
-            border: const OutlineInputBorder(
-              borderRadius: AppRadius.medium,
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: const OutlineInputBorder(
-              borderRadius: AppRadius.medium,
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: AppRadius.medium,
-              borderSide: BorderSide(color: AppColors.primary, width: 0.5),
-            ),
-            errorBorder: const OutlineInputBorder(
-              borderRadius: AppRadius.medium,
-              borderSide: BorderSide(color: AppColors.error, width: 0.5),
-            ),
+            prefixIcon: prefixIcon != null
+                ? Icon(prefixIcon, color: AppColors.ink300, size: 19)
+                : null,
           ),
         ),
       ],

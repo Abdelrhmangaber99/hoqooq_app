@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/errors/failures.dart';
 import 'package:hqooq/core/storage/token_storage.dart';
 import 'package:hqooq/features/authentication/data/models/auth_response.dart';
-import 'package:hqooq/features/authentication/domain/entities/role.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/domain/repository/i_auth_repository.dart';
@@ -36,16 +35,10 @@ void main() {
     mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    roles: const [],
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
   );
 
-  final firmAdminUser = user.copyWith(
-    id: 'u2',
-    roles: const [
-      Role(id: 'r1', code: 'FIRM_ADMIN', scope: 'TENANT', permissions: []),
-    ],
-  );
+  final firmAdminUser = user.copyWith(id: 'u2', accountType: 'FIRM_ADMIN');
 
   const authResponse = AuthResponse(
     accessToken: 'access-123',

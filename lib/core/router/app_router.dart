@@ -7,6 +7,8 @@ import '../../di/injection.dart';
 import '../../features/authentication/presentation/bloc/session_cubit.dart';
 import '../../features/authentication/presentation/pages/splash_page.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
+import '../../features/authentication/presentation/pages/forgot_password_page.dart';
+import '../../features/authentication/presentation/pages/reset_password_page.dart';
 import '../localization/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -19,23 +21,29 @@ import '../../features/cases/domain/entities/legal_case.dart';
 import '../../features/cases/presentation/pages/case_form_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
 import '../../features/cases/presentation/pages/case_details_page.dart';
-import '../../features/finance/domain/entities/invoice.dart';
-import '../../features/finance/presentation/pages/cases_financial_summary_page.dart';
-import '../../features/finance/presentation/pages/financial_analytics_page.dart';
-import '../../features/finance/presentation/pages/invoice_details_page.dart';
-import '../../features/finance/presentation/pages/invoice_form_page.dart';
-import '../../features/finance/presentation/pages/invoices_page.dart';
 import '../../features/hearings/domain/entities/hearing.dart';
 import '../../features/hearings/presentation/pages/hearing_form_page.dart';
-import '../../features/clients/domain/entities/client.dart';
-import '../../features/clients/presentation/pages/client_form_page.dart';
-import '../../features/clients/presentation/pages/clients_page.dart';
-import '../../features/clients/presentation/pages/client_profile_page.dart';
+import '../../features/hearings/presentation/pages/hearings_page.dart';
+import '../../features/service_of_process/domain/entities/service_process.dart';
+import '../../features/service_of_process/presentation/pages/service_process_form_page.dart';
+import '../../features/service_of_process/presentation/pages/service_process_completion_page.dart';
+import '../../features/meetings/domain/entities/client_meeting.dart';
+import '../../features/meetings/presentation/pages/meeting_form_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
-import '../../features/subscriptions/presentation/pages/subscription_inactive_page.dart';
+import '../../features/platform_admin/presentation/pages/firms_page.dart';
+import '../../features/platform_admin/presentation/pages/provision_firm_page.dart';
+import '../../features/platform_admin/presentation/pages/firm_details_page.dart';
+import '../../features/employees/presentation/pages/employees_page.dart';
+import '../../features/employees/presentation/pages/employee_edit_page.dart';
+import '../../features/platform_admin/presentation/pages/create_user_page.dart';
 import '../../features/tasks/domain/entities/task_item.dart';
 import '../../features/tasks/presentation/pages/task_form_page.dart';
+import '../../features/tasks/presentation/pages/tasks_page.dart';
+
+import '../../features/finance/presentation/pages/finance_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/subscriptions/presentation/pages/subscription_info_page.dart';
 import '../../shared/presentation/pages/main_layout.dart';
 
 class AppRouter {
@@ -43,16 +51,36 @@ class AppRouter {
 
   static const String splash = '/';
   static const String login = '/login';
+
+  /// Password recovery (public, signed-out routes) — mirrors the reference
+  /// web app's `/forgot-password` and `/reset-password`.
+  static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
   static const String home = '/home';
   static const String calendar = '/calendar';
+  static const String calendarNew = '/calendar/new';
+  static const String hearings = '/hearings';
+  static const String tasks = '/tasks';
+  static const String tasksNew = '/tasks/new';
   static const String cases = '/cases';
-  static const String clients = '/clients';
   static const String finance = '/finance';
+  static const String settings = '/settings';
+  static const String subscription = '/subscription';
   static const String alerts = '/alerts';
   static const String profile = '/profile';
-  static const String subscriptionInactive = '/subscription-inactive';
+  static const String employees = '/employees';
+  static const String createEmployee = '/employees/new';
+  static String editEmployee(String employeeId) =>
+      '/employees/$employeeId/edit';
+  static String employeePermissions(String employeeId) =>
+      '/employees/$employeeId/permissions';
+  static const String firms = '/firms';
+  static const String provisionFirm = '/firms/provision';
+
+  static final rootNavigatorKey = GlobalKey<NavigatorState>();
 
   static final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: splash,
     redirect: RouteGuards.authGuard,
     refreshListenable: GoRouterRefreshStream(getIt<SessionCubit>().stream),
@@ -62,12 +90,35 @@ class AppRouter {
       GoRoute(path: splash, builder: (context, state) => const SplashPage()),
       GoRoute(path: login, builder: (context, state) => const LoginPage()),
       GoRoute(
-        path: subscriptionInactive,
-        builder: (context, state) => const SubscriptionInactivePage(),
+        path: forgotPassword,
+        builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      // The emailed link carries its one-time token as `?token=...`; an
+      // empty/missing token is handled on the page (invalid-link state),
+      // never posted.
+      GoRoute(
+        path: resetPassword,
+        builder: (context, state) =>
+            ResetPasswordPage(token: state.uri.queryParameters['token'] ?? ''),
       ),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),
         routes: [
+          GoRoute(
+            path: firms,
+            builder: (context, state) => const FirmsPage(),
+            routes: [
+              GoRoute(
+                path: 'provision',
+                builder: (context, state) => const ProvisionFirmPage(),
+              ),
+              GoRoute(
+                path: ':id',
+                builder: (context, state) =>
+                    FirmDetailsPage(firmId: state.pathParameters['id']!),
+              ),
+            ],
+          ),
           GoRoute(
             path: home,
             builder: (context, state) => const DashboardPage(),
@@ -96,6 +147,27 @@ class AppRouter {
             ],
           ),
           GoRoute(
+            path: hearings,
+            builder: (context, state) => const HearingsPage(),
+          ),
+          GoRoute(
+            path: tasks,
+            builder: (context, state) => const TasksPage(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const TaskFormPage(),
+              ),
+              GoRoute(
+                path: ':taskId/edit',
+                redirect: (context, state) =>
+                    typedExtra<TaskItem>(state) == null ? tasks : null,
+                builder: (context, state) =>
+                    TaskFormPage(existingTask: typedExtra<TaskItem>(state)),
+              ),
+            ],
+          ),
+          GoRoute(
             path: cases,
             builder: (context, state) => const CasesPage(),
             routes: [
@@ -120,8 +192,10 @@ class AppRouter {
                   ),
                   GoRoute(
                     path: 'hearings/new',
-                    builder: (context, state) =>
-                        HearingFormPage(caseId: state.pathParameters['id']!),
+                    builder: (context, state) => HearingFormPage(
+                      caseId: state.pathParameters['id']!,
+                      governorateId: state.uri.queryParameters['governorateId'],
+                    ),
                   ),
                   GoRoute(
                     path: 'hearings/:hearingId/edit',
@@ -131,7 +205,69 @@ class AppRouter {
                         : null,
                     builder: (context, state) => HearingFormPage(
                       caseId: state.pathParameters['id']!,
+                      governorateId: state.uri.queryParameters['governorateId'],
                       existingHearing: typedExtra<Hearing>(state),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'service/new',
+                    builder: (context, state) => ServiceProcessFormPage(
+                      caseId: state.pathParameters['id']!,
+                      governorateId: state.uri.queryParameters['governorateId'],
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'service/:serviceId/edit',
+                    redirect: (context, state) =>
+                        typedExtra<ServiceProcess>(state) == null
+                        ? '$cases/${state.pathParameters['id']}'
+                        : null,
+                    builder: (context, state) => ServiceProcessFormPage(
+                      caseId: state.pathParameters['id']!,
+                      governorateId: state.uri.queryParameters['governorateId'],
+                      existing: typedExtra<ServiceProcess>(state),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'service/:serviceId/complete',
+                    redirect: (context, state) =>
+                        typedExtra<ServiceProcess>(state) == null
+                        ? '$cases/${state.pathParameters['id']}'
+                        : null,
+                    builder: (context, state) => ServiceProcessCompletionPage(
+                      process: typedExtra<ServiceProcess>(state)!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'meetings/new',
+                    builder: (context, state) =>
+                        MeetingFormPage(caseId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'meetings/:meetingId/edit',
+                    redirect: (context, state) =>
+                        typedExtra<ClientMeeting>(state) == null
+                        ? '$cases/${state.pathParameters['id']}'
+                        : null,
+                    builder: (context, state) => MeetingFormPage(
+                      caseId: state.pathParameters['id']!,
+                      existing: typedExtra<ClientMeeting>(state),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'tasks/new',
+                    builder: (context, state) =>
+                        TaskFormPage(fixedCaseId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'tasks/:taskId/edit',
+                    redirect: (context, state) =>
+                        typedExtra<TaskItem>(state) == null
+                        ? '$cases/${state.pathParameters['id']}'
+                        : null,
+                    builder: (context, state) => TaskFormPage(
+                      fixedCaseId: state.pathParameters['id']!,
+                      existingTask: typedExtra<TaskItem>(state),
                     ),
                   ),
                 ],
@@ -139,71 +275,37 @@ class AppRouter {
             ],
           ),
           GoRoute(
-            path: clients,
-            builder: (context, state) => const ClientsPage(),
+            path: employees,
+            builder: (context, state) => const EmployeesPage(),
             routes: [
               GoRoute(
                 path: 'new',
-                builder: (context, state) => const ClientFormPage(),
+                builder: (context, state) => const CreateUserPage(),
               ),
               GoRoute(
-                path: ':id',
+                path: ':id/edit',
                 builder: (context, state) =>
-                    ClientProfilePage(clientId: state.pathParameters['id']!),
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    redirect: (context, state) =>
-                        typedExtra<Client>(state) == null
-                        ? '$clients/${state.pathParameters['id']}'
-                        : null,
-                    builder: (context, state) => ClientFormPage(
-                      existingClient: typedExtra<Client>(state),
-                    ),
-                  ),
-                ],
+                    EmployeeEditPage(employeeId: state.pathParameters['id']!),
               ),
             ],
           ),
           GoRoute(
             path: finance,
-            builder: (context, state) => const InvoicesPage(),
-            routes: [
-              GoRoute(
-                path: 'new',
-                builder: (context, state) => const InvoiceFormPage(),
-              ),
-              GoRoute(
-                path: 'analytics',
-                builder: (context, state) => const FinancialAnalyticsPage(),
-              ),
-              GoRoute(
-                path: 'cases-summary',
-                builder: (context, state) => const CasesFinancialSummaryPage(),
-              ),
-              GoRoute(
-                path: ':id',
-                builder: (context, state) =>
-                    InvoiceDetailsPage(invoiceId: state.pathParameters['id']!),
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    redirect: (context, state) =>
-                        typedExtra<Invoice>(state) == null
-                        ? '$finance/${state.pathParameters['id']}'
-                        : null,
-                    builder: (context, state) => InvoiceFormPage(
-                      existingInvoice: typedExtra<Invoice>(state),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            builder: (context, state) => const FinancePage(),
+          ),
+          GoRoute(
+            path: settings,
+            builder: (context, state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: subscription,
+            builder: (context, state) => const SubscriptionInfoPage(),
           ),
           GoRoute(
             path: alerts,
             builder: (context, state) => const NotificationsPage(),
           ),
+
           GoRoute(
             path: profile,
             builder: (context, state) => const ProfilePage(),

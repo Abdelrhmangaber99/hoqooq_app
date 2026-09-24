@@ -16,9 +16,8 @@ part 'task_form_state.dart';
 /// Powers both the Create-Task and Edit-Task screens (reached from
 /// `DashboardPage`'s personal task list). No `Lookup` dependency, unlike
 /// Cases/Hearings creation — loads Users (for `assignedToId`) and Cases
-/// (for the optional `caseId` link) once as reference data; either
-/// degrades to an empty list on failure rather than failing the whole
-/// form (both pickers are optional/have a "none" choice).
+/// (for the required `caseId`) once as reference data; either degrades to an
+/// empty list on failure rather than failing the whole form.
 ///
 /// Does not refetch anything itself on success — explicit refetch is the
 /// caller's job, per the project's standing write-completion convention.
@@ -40,7 +39,7 @@ class TaskFormBloc extends Bloc<TaskFormEvent, TaskFormState> {
     Emitter<TaskFormState> emit,
   ) async {
     emit(TaskFormLoading());
-    final usersResult = await _userRepository.getUsers();
+    final usersResult = await _userRepository.getAssignableUsers();
     final casesResult = await _caseRepository.getCases();
     final users = usersResult.fold((_) => const <User>[], (u) => u);
     final cases = casesResult.fold((_) => const <LegalCase>[], (c) => c);
@@ -53,6 +52,7 @@ class TaskFormBloc extends Bloc<TaskFormEvent, TaskFormState> {
   ) async {
     final current = state;
     if (current is! TaskFormReady) return;
+    if (current.isSubmitting) return;
 
     emit(current.copyWith(isSubmitting: true, submitError: null));
     final result = await _taskRepository.createTask(event.request);
@@ -70,6 +70,7 @@ class TaskFormBloc extends Bloc<TaskFormEvent, TaskFormState> {
   ) async {
     final current = state;
     if (current is! TaskFormReady) return;
+    if (current.isSubmitting) return;
 
     emit(current.copyWith(isSubmitting: true, submitError: null));
     final result = await _taskRepository.updateTask(event.id, event.request);

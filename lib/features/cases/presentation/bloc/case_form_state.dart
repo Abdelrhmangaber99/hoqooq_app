@@ -16,28 +16,44 @@ class CaseFormLoading extends CaseFormState {}
 /// submission status so the same screen can show a spinner/error without
 /// losing the reference data it already has.
 class CaseFormReady extends CaseFormState {
+  final List<Governorate> governorates;
   final List<Court> courts;
+  final List<CourtCircuit> circuits;
   final List<User> users;
-  final List<Client> clients;
-  final List<Lookup> caseTypes;
+  final List<CaseTypeReference> caseTypes;
+  final bool isLoadingCourts;
+  final String? courtLoadError;
   final bool isSubmitting;
   final String? submitError;
 
   const CaseFormReady({
+    this.governorates = const [],
     required this.courts,
-    required this.users,
-    required this.clients,
+    this.circuits = const [],
+    this.users = const [],
     required this.caseTypes,
+    this.isLoadingCourts = false,
+    this.courtLoadError,
     this.isSubmitting = false,
     this.submitError,
   });
 
-  CaseFormReady copyWith({bool? isSubmitting, String? submitError}) {
+  CaseFormReady copyWith({
+    List<Court>? courts,
+    List<CourtCircuit>? circuits,
+    bool? isLoadingCourts,
+    String? courtLoadError,
+    bool? isSubmitting,
+    String? submitError,
+  }) {
     return CaseFormReady(
-      courts: courts,
+      governorates: governorates,
+      courts: courts ?? this.courts,
+      circuits: circuits ?? this.circuits,
       users: users,
-      clients: clients,
       caseTypes: caseTypes,
+      isLoadingCourts: isLoadingCourts ?? this.isLoadingCourts,
+      courtLoadError: courtLoadError,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       submitError: submitError,
     );
@@ -45,10 +61,13 @@ class CaseFormReady extends CaseFormState {
 
   @override
   List<Object?> get props => [
+    governorates,
     courts,
+    circuits,
     users,
-    clients,
     caseTypes,
+    isLoadingCourts,
+    courtLoadError,
     isSubmitting,
     submitError,
   ];

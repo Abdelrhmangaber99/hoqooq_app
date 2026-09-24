@@ -9,6 +9,8 @@ part of 'court.dart';
 _Court _$CourtFromJson(Map<String, dynamic> json) => _Court(
   id: json['id'] as String,
   name: json['name'] as String,
+  nameEn: json['nameEn'] as String?,
+  nameAr: json['nameAr'] as String?,
   type: json['type'] as String,
   isActive: json['isActive'] as bool,
   createdAt: DateTime.parse(json['createdAt'] as String),
@@ -20,6 +22,8 @@ _Court _$CourtFromJson(Map<String, dynamic> json) => _Court(
 Map<String, dynamic> _$CourtToJson(_Court instance) => <String, dynamic>{
   'id': instance.id,
   'name': instance.name,
+  'nameEn': instance.nameEn,
+  'nameAr': instance.nameAr,
   'type': instance.type,
   'isActive': instance.isActive,
   'createdAt': instance.createdAt.toIso8601String(),

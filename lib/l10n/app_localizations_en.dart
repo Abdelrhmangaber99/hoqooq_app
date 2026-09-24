@@ -18,4 +18,19 @@ class GeneratedAppLocalizationsEn extends GeneratedAppLocalizations {
   @override
   String get networkErrorMessage =>
       'No internet connection. Please check your network and try again.';
+
+  @override
+  String get finance => 'Finance';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get subscription => 'Subscription & Billing';
+
+  @override
+  String get firmInfo => 'Firm Information';
+
+  @override
+  String get changePassword => 'Change Password';
 }

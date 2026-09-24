@@ -1,27 +1,31 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:equatable/equatable.dart';
 
-part 'dashboard_metrics.freezed.dart';
-part 'dashboard_metrics.g.dart';
+class DashboardMetrics extends Equatable {
+  const DashboardMetrics({
+    this.totalCases = 0,
+    required this.totalActiveCases,
+    required this.pendingTasks,
+    required this.upcomingHearings,
+  });
 
-/// Wire shape for `GET /reports/dashboard` (Reports module) per
-/// API_CONTRACT.md finding I.
-///
-/// Deliberately **not** `GET /dashboard` (Dashboard module) — confirmed
-/// with the user: that endpoint is the System/Super Admin's platform-wide
-/// view (its service never scopes any count by tenant/user despite
-/// receiving a `userId` param), not a per-tenant metric, and this
-/// tenant-scoped mobile client never calls it. `GET /reports/dashboard` is
-/// narrower (3 metrics, no `recentActivity`, no invoice counts) but
-/// correctly user-scoped — every query joins on `team.userId`/
-/// `assignedToId` to the current user.
-@freezed
-abstract class DashboardMetrics with _$DashboardMetrics {
-  const factory DashboardMetrics({
-    required int totalActiveCases,
-    required int pendingTasks,
-    required int upcomingHearings,
-  }) = _DashboardMetrics;
+  final int totalCases;
+  final int totalActiveCases;
+  final int pendingTasks;
+  final int upcomingHearings;
 
-  factory DashboardMetrics.fromJson(Map<String, dynamic> json) =>
-      _$DashboardMetricsFromJson(json);
+  factory DashboardMetrics.fromJson(Map<String, dynamic> json) {
+    final active = (json['activeCases'] as int?) ??
+        (json['totalActiveCases'] as int?) ??
+        0;
+    return DashboardMetrics(
+      totalCases: (json['totalCases'] as int?) ?? active,
+      totalActiveCases: active,
+      pendingTasks: (json['pendingTasks'] as int?) ?? 0,
+      upcomingHearings: (json['upcomingHearings'] as int?) ?? 0,
+    );
+  }
+
+  @override
+  List<Object?> get props =>
+      [totalCases, totalActiveCases, pendingTasks, upcomingHearings];
 }

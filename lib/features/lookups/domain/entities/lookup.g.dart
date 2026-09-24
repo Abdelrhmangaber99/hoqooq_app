@@ -8,7 +8,7 @@ part of 'lookup.dart';
 
 _Lookup _$LookupFromJson(Map<String, dynamic> json) => _Lookup(
   id: json['id'] as String,
-  tenantId: json['tenantId'] as String,
+  tenantId: json['tenantId'] as String?,
   kind: $enumDecode(
     _$LookupKindEnumMap,
     json['kind'],
@@ -36,6 +36,7 @@ const _$LookupKindEnumMap = {
   LookupKind.caseType: 'CASE_TYPE',
   LookupKind.hearingType: 'HEARING_TYPE',
   LookupKind.documentCategory: 'DOCUMENT_CATEGORY',
+  LookupKind.serviceMethod: 'SERVICE_METHOD',
   LookupKind.expenseCategory: 'EXPENSE_CATEGORY',
   LookupKind.unknown: 'unknown',
 };

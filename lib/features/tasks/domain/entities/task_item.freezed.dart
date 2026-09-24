@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TaskItem {
 
- String get id; String? get caseId;@JsonKey(name: 'case') CaseSummary? get caseSummary; String get assignedById; User? get assignedBy; String get assignedToId; User? get assignedTo; String get title; String? get description;@JsonKey(unknownEnumValue: TaskPriority.unknown) TaskPriority get priority;@JsonKey(unknownEnumValue: TaskStatus.unknown) TaskStatus get status; DateTime? get dueDate; DateTime? get completedAt; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String? get caseId;@JsonKey(name: 'case') CaseSummary? get caseSummary; String get assignedById; User? get assignedBy; String get assignedToId; User? get assignedTo; String get title; String? get description;@JsonKey(unknownEnumValue: TaskPriority.unknown) TaskPriority get priority;@JsonKey(unknownEnumValue: TaskStatus.unknown) TaskStatus get status; DateTime? get dueDate; DateTime? get completedAt; String? get linkedEntityType; String? get linkedEntityId; String? get completionNote; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of TaskItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $TaskItemCopyWith<TaskItem> get copyWith => _$TaskItemCopyWithImpl<TaskItem>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskItem&&(identical(other.id, id) || other.id == id)&&(identical(other.caseId, caseId) || other.caseId == caseId)&&(identical(other.caseSummary, caseSummary) || other.caseSummary == caseSummary)&&(identical(other.assignedById, assignedById) || other.assignedById == assignedById)&&(identical(other.assignedBy, assignedBy) || other.assignedBy == assignedBy)&&(identical(other.assignedToId, assignedToId) || other.assignedToId == assignedToId)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.status, status) || other.status == status)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskItem&&(identical(other.id, id) || other.id == id)&&(identical(other.caseId, caseId) || other.caseId == caseId)&&(identical(other.caseSummary, caseSummary) || other.caseSummary == caseSummary)&&(identical(other.assignedById, assignedById) || other.assignedById == assignedById)&&(identical(other.assignedBy, assignedBy) || other.assignedBy == assignedBy)&&(identical(other.assignedToId, assignedToId) || other.assignedToId == assignedToId)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.status, status) || other.status == status)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.linkedEntityType, linkedEntityType) || other.linkedEntityType == linkedEntityType)&&(identical(other.linkedEntityId, linkedEntityId) || other.linkedEntityId == linkedEntityId)&&(identical(other.completionNote, completionNote) || other.completionNote == completionNote)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,caseId,caseSummary,assignedById,assignedBy,assignedToId,assignedTo,title,description,priority,status,dueDate,completedAt,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,caseId,caseSummary,assignedById,assignedBy,assignedToId,assignedTo,title,description,priority,status,dueDate,completedAt,linkedEntityType,linkedEntityId,completionNote,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'TaskItem(id: $id, caseId: $caseId, caseSummary: $caseSummary, assignedById: $assignedById, assignedBy: $assignedBy, assignedToId: $assignedToId, assignedTo: $assignedTo, title: $title, description: $description, priority: $priority, status: $status, dueDate: $dueDate, completedAt: $completedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'TaskItem(id: $id, caseId: $caseId, caseSummary: $caseSummary, assignedById: $assignedById, assignedBy: $assignedBy, assignedToId: $assignedToId, assignedTo: $assignedTo, title: $title, description: $description, priority: $priority, status: $status, dueDate: $dueDate, completedAt: $completedAt, linkedEntityType: $linkedEntityType, linkedEntityId: $linkedEntityId, completionNote: $completionNote, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $TaskItemCopyWith<$Res>  {
   factory $TaskItemCopyWith(TaskItem value, $Res Function(TaskItem) _then) = _$TaskItemCopyWithImpl;
 @useResult
 $Res call({
- String id, String? caseId,@JsonKey(name: 'case') CaseSummary? caseSummary, String assignedById, User? assignedBy, String assignedToId, User? assignedTo, String title, String? description,@JsonKey(unknownEnumValue: TaskPriority.unknown) TaskPriority priority,@JsonKey(unknownEnumValue: TaskStatus.unknown) TaskStatus status, DateTime? dueDate, DateTime? completedAt, DateTime createdAt, DateTime updatedAt
+ String id, String? caseId,@JsonKey(name: 'case') CaseSummary? caseSummary, String assignedById, User? assignedBy, String assignedToId, User? assignedTo, String title, String? description,@JsonKey(unknownEnumValue: TaskPriority.unknown) TaskPriority priority,@JsonKey(unknownEnumValue: TaskStatus.unknown) TaskStatus status, DateTime? dueDate, DateTime? completedAt, String? linkedEntityType, String? linkedEntityId, String? completionNote, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -65,7 +65,7 @@ class _$TaskItemCopyWithImpl<$Res>
 
 /// Create a copy of TaskItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? caseId = freezed,Object? caseSummary = freezed,Object? assignedById = null,Object? assignedBy = freezed,Object? assignedToId = null,Object? assignedTo = freezed,Object? title = null,Object? description = freezed,Object? priority = null,Object? status = null,Object? dueDate = freezed,Object? completedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? caseId = freezed,Object? caseSummary = freezed,Object? assignedById = null,Object? assignedBy = freezed,Object? assignedToId = null,Object? assignedTo = freezed,Object? title = null,Object? description = freezed,Object? priority = null,Object? status = null,Object? dueDate = freezed,Object? completedAt = freezed,Object? linkedEntityType = freezed,Object? linkedEntityId = freezed,Object? completionNote = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,caseId: freezed == caseId ? _self.caseId : caseId // ignore: cast_nullable_to_non_nullable
@@ -80,7 +80,10 @@ as String?,priority: null == priority ? _self.priority : priority // ignore: cas
 as TaskPriority,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskStatus,dueDate: freezed == dueDate ? _self.dueDate : dueDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,linkedEntityType: freezed == linkedEntityType ? _self.linkedEntityType : linkedEntityType // ignore: cast_nullable_to_non_nullable
+as String?,linkedEntityId: freezed == linkedEntityId ? _self.linkedEntityId : linkedEntityId // ignore: cast_nullable_to_non_nullable
+as String?,completionNote: freezed == completionNote ? _self.completionNote : completionNote // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
@@ -203,10 +206,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? caseId, @JsonKey(name: 'case')  CaseSummary? caseSummary,  String assignedById,  User? assignedBy,  String assignedToId,  User? assignedTo,  String title,  String? description, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status,  DateTime? dueDate,  DateTime? completedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? caseId, @JsonKey(name: 'case')  CaseSummary? caseSummary,  String assignedById,  User? assignedBy,  String assignedToId,  User? assignedTo,  String title,  String? description, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status,  DateTime? dueDate,  DateTime? completedAt,  String? linkedEntityType,  String? linkedEntityId,  String? completionNote,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskItem() when $default != null:
-return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that.assignedBy,_that.assignedToId,_that.assignedTo,_that.title,_that.description,_that.priority,_that.status,_that.dueDate,_that.completedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that.assignedBy,_that.assignedToId,_that.assignedTo,_that.title,_that.description,_that.priority,_that.status,_that.dueDate,_that.completedAt,_that.linkedEntityType,_that.linkedEntityId,_that.completionNote,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -224,10 +227,10 @@ return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? caseId, @JsonKey(name: 'case')  CaseSummary? caseSummary,  String assignedById,  User? assignedBy,  String assignedToId,  User? assignedTo,  String title,  String? description, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status,  DateTime? dueDate,  DateTime? completedAt,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? caseId, @JsonKey(name: 'case')  CaseSummary? caseSummary,  String assignedById,  User? assignedBy,  String assignedToId,  User? assignedTo,  String title,  String? description, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status,  DateTime? dueDate,  DateTime? completedAt,  String? linkedEntityType,  String? linkedEntityId,  String? completionNote,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _TaskItem():
-return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that.assignedBy,_that.assignedToId,_that.assignedTo,_that.title,_that.description,_that.priority,_that.status,_that.dueDate,_that.completedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that.assignedBy,_that.assignedToId,_that.assignedTo,_that.title,_that.description,_that.priority,_that.status,_that.dueDate,_that.completedAt,_that.linkedEntityType,_that.linkedEntityId,_that.completionNote,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -244,10 +247,10 @@ return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? caseId, @JsonKey(name: 'case')  CaseSummary? caseSummary,  String assignedById,  User? assignedBy,  String assignedToId,  User? assignedTo,  String title,  String? description, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status,  DateTime? dueDate,  DateTime? completedAt,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? caseId, @JsonKey(name: 'case')  CaseSummary? caseSummary,  String assignedById,  User? assignedBy,  String assignedToId,  User? assignedTo,  String title,  String? description, @JsonKey(unknownEnumValue: TaskPriority.unknown)  TaskPriority priority, @JsonKey(unknownEnumValue: TaskStatus.unknown)  TaskStatus status,  DateTime? dueDate,  DateTime? completedAt,  String? linkedEntityType,  String? linkedEntityId,  String? completionNote,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _TaskItem() when $default != null:
-return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that.assignedBy,_that.assignedToId,_that.assignedTo,_that.title,_that.description,_that.priority,_that.status,_that.dueDate,_that.completedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that.assignedBy,_that.assignedToId,_that.assignedTo,_that.title,_that.description,_that.priority,_that.status,_that.dueDate,_that.completedAt,_that.linkedEntityType,_that.linkedEntityId,_that.completionNote,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -259,7 +262,7 @@ return $default(_that.id,_that.caseId,_that.caseSummary,_that.assignedById,_that
 @JsonSerializable()
 
 class _TaskItem implements TaskItem {
-  const _TaskItem({required this.id, this.caseId, @JsonKey(name: 'case') this.caseSummary, required this.assignedById, this.assignedBy, required this.assignedToId, this.assignedTo, required this.title, this.description, @JsonKey(unknownEnumValue: TaskPriority.unknown) required this.priority, @JsonKey(unknownEnumValue: TaskStatus.unknown) required this.status, this.dueDate, this.completedAt, required this.createdAt, required this.updatedAt});
+  const _TaskItem({required this.id, this.caseId, @JsonKey(name: 'case') this.caseSummary, required this.assignedById, this.assignedBy, required this.assignedToId, this.assignedTo, required this.title, this.description, @JsonKey(unknownEnumValue: TaskPriority.unknown) required this.priority, @JsonKey(unknownEnumValue: TaskStatus.unknown) required this.status, this.dueDate, this.completedAt, this.linkedEntityType, this.linkedEntityId, this.completionNote, required this.createdAt, required this.updatedAt});
   factory _TaskItem.fromJson(Map<String, dynamic> json) => _$TaskItemFromJson(json);
 
 @override final  String id;
@@ -275,6 +278,9 @@ class _TaskItem implements TaskItem {
 @override@JsonKey(unknownEnumValue: TaskStatus.unknown) final  TaskStatus status;
 @override final  DateTime? dueDate;
 @override final  DateTime? completedAt;
+@override final  String? linkedEntityType;
+@override final  String? linkedEntityId;
+@override final  String? completionNote;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
 
@@ -291,16 +297,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskItem&&(identical(other.id, id) || other.id == id)&&(identical(other.caseId, caseId) || other.caseId == caseId)&&(identical(other.caseSummary, caseSummary) || other.caseSummary == caseSummary)&&(identical(other.assignedById, assignedById) || other.assignedById == assignedById)&&(identical(other.assignedBy, assignedBy) || other.assignedBy == assignedBy)&&(identical(other.assignedToId, assignedToId) || other.assignedToId == assignedToId)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.status, status) || other.status == status)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskItem&&(identical(other.id, id) || other.id == id)&&(identical(other.caseId, caseId) || other.caseId == caseId)&&(identical(other.caseSummary, caseSummary) || other.caseSummary == caseSummary)&&(identical(other.assignedById, assignedById) || other.assignedById == assignedById)&&(identical(other.assignedBy, assignedBy) || other.assignedBy == assignedBy)&&(identical(other.assignedToId, assignedToId) || other.assignedToId == assignedToId)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.status, status) || other.status == status)&&(identical(other.dueDate, dueDate) || other.dueDate == dueDate)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.linkedEntityType, linkedEntityType) || other.linkedEntityType == linkedEntityType)&&(identical(other.linkedEntityId, linkedEntityId) || other.linkedEntityId == linkedEntityId)&&(identical(other.completionNote, completionNote) || other.completionNote == completionNote)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,caseId,caseSummary,assignedById,assignedBy,assignedToId,assignedTo,title,description,priority,status,dueDate,completedAt,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,caseId,caseSummary,assignedById,assignedBy,assignedToId,assignedTo,title,description,priority,status,dueDate,completedAt,linkedEntityType,linkedEntityId,completionNote,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'TaskItem(id: $id, caseId: $caseId, caseSummary: $caseSummary, assignedById: $assignedById, assignedBy: $assignedBy, assignedToId: $assignedToId, assignedTo: $assignedTo, title: $title, description: $description, priority: $priority, status: $status, dueDate: $dueDate, completedAt: $completedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'TaskItem(id: $id, caseId: $caseId, caseSummary: $caseSummary, assignedById: $assignedById, assignedBy: $assignedBy, assignedToId: $assignedToId, assignedTo: $assignedTo, title: $title, description: $description, priority: $priority, status: $status, dueDate: $dueDate, completedAt: $completedAt, linkedEntityType: $linkedEntityType, linkedEntityId: $linkedEntityId, completionNote: $completionNote, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -311,7 +317,7 @@ abstract mixin class _$TaskItemCopyWith<$Res> implements $TaskItemCopyWith<$Res>
   factory _$TaskItemCopyWith(_TaskItem value, $Res Function(_TaskItem) _then) = __$TaskItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? caseId,@JsonKey(name: 'case') CaseSummary? caseSummary, String assignedById, User? assignedBy, String assignedToId, User? assignedTo, String title, String? description,@JsonKey(unknownEnumValue: TaskPriority.unknown) TaskPriority priority,@JsonKey(unknownEnumValue: TaskStatus.unknown) TaskStatus status, DateTime? dueDate, DateTime? completedAt, DateTime createdAt, DateTime updatedAt
+ String id, String? caseId,@JsonKey(name: 'case') CaseSummary? caseSummary, String assignedById, User? assignedBy, String assignedToId, User? assignedTo, String title, String? description,@JsonKey(unknownEnumValue: TaskPriority.unknown) TaskPriority priority,@JsonKey(unknownEnumValue: TaskStatus.unknown) TaskStatus status, DateTime? dueDate, DateTime? completedAt, String? linkedEntityType, String? linkedEntityId, String? completionNote, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -328,7 +334,7 @@ class __$TaskItemCopyWithImpl<$Res>
 
 /// Create a copy of TaskItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? caseId = freezed,Object? caseSummary = freezed,Object? assignedById = null,Object? assignedBy = freezed,Object? assignedToId = null,Object? assignedTo = freezed,Object? title = null,Object? description = freezed,Object? priority = null,Object? status = null,Object? dueDate = freezed,Object? completedAt = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? caseId = freezed,Object? caseSummary = freezed,Object? assignedById = null,Object? assignedBy = freezed,Object? assignedToId = null,Object? assignedTo = freezed,Object? title = null,Object? description = freezed,Object? priority = null,Object? status = null,Object? dueDate = freezed,Object? completedAt = freezed,Object? linkedEntityType = freezed,Object? linkedEntityId = freezed,Object? completionNote = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_TaskItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,caseId: freezed == caseId ? _self.caseId : caseId // ignore: cast_nullable_to_non_nullable
@@ -343,7 +349,10 @@ as String?,priority: null == priority ? _self.priority : priority // ignore: cas
 as TaskPriority,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskStatus,dueDate: freezed == dueDate ? _self.dueDate : dueDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,linkedEntityType: freezed == linkedEntityType ? _self.linkedEntityType : linkedEntityType // ignore: cast_nullable_to_non_nullable
+as String?,linkedEntityId: freezed == linkedEntityId ? _self.linkedEntityId : linkedEntityId // ignore: cast_nullable_to_non_nullable
+as String?,completionNote: freezed == completionNote ? _self.completionNote : completionNote // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));

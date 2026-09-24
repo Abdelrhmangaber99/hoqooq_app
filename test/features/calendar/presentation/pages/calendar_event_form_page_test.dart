@@ -52,7 +52,6 @@ void main() {
     mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    roles: const [],
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
   );
 

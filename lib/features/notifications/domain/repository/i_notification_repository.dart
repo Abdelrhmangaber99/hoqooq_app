@@ -1,5 +1,6 @@
 import '../../../../core/network/api_result.dart';
 import '../entities/app_notification.dart';
+import '../entities/daily_activity_item.dart';
 
 /// Mirrors API_CONTRACT.md finding S (Notifications). `getNotifications`
 /// returns **unread only** — the backend filters `isRead: false`
@@ -9,4 +10,5 @@ import '../entities/app_notification.dart';
 abstract class INotificationRepository {
   ApiResult<List<AppNotification>> getNotifications();
   ApiResult<AppNotification> markAsRead(String id);
+  ApiResult<List<DailyActivityItem>> getDailyFeed(DateTime date);
 }

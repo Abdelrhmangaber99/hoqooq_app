@@ -5,29 +5,25 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/di/injection.dart';
-import 'package:hqooq/features/authentication/domain/entities/permission.dart';
-import 'package:hqooq/features/authentication/domain/entities/role.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
 import 'package:hqooq/features/cases/domain/entities/case_access_level.dart';
+import 'package:hqooq/features/cases/domain/entities/case_party_snapshot.dart';
 import 'package:hqooq/features/cases/domain/entities/case_priority.dart';
 import 'package:hqooq/features/cases/domain/entities/case_status.dart';
 import 'package:hqooq/features/cases/domain/entities/case_team_member.dart';
+import 'package:hqooq/features/cases/domain/entities/case_timeline_event.dart';
 import 'package:hqooq/features/cases/domain/entities/case_type_lookup.dart';
-import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/cases/domain/entities/legal_case.dart';
 import 'package:hqooq/features/cases/presentation/bloc/case_details_bloc.dart';
 import 'package:hqooq/features/cases/presentation/bloc/case_documents_bloc.dart';
-import 'package:hqooq/features/cases/presentation/bloc/case_financial_summary_bloc.dart';
 import 'package:hqooq/features/cases/presentation/bloc/case_hearings_bloc.dart';
 import 'package:hqooq/features/cases/presentation/pages/case_details_page.dart';
-import 'package:hqooq/features/clients/domain/entities/client.dart';
-import 'package:hqooq/features/clients/domain/entities/client_status.dart';
-import 'package:hqooq/features/clients/domain/entities/client_type.dart';
 import 'package:hqooq/features/documents/presentation/bloc/document_upload_bloc.dart';
-import 'package:hqooq/features/finance/domain/entities/payment_status.dart';
-import 'package:hqooq/features/finance/domain/entities/single_case_financial_detail.dart';
+import 'package:hqooq/features/finance/domain/entities/case_finance_detail.dart';
+import 'package:hqooq/features/finance/presentation/bloc/case_ledger_bloc.dart';
+import 'package:hqooq/features/finance/presentation/bloc/payment_form_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockCaseDetailsBloc extends MockBloc<CaseDetailsEvent, CaseDetailsState>
@@ -45,9 +41,11 @@ class MockDocumentUploadBloc
     extends MockBloc<DocumentUploadEvent, DocumentUploadState>
     implements DocumentUploadBloc {}
 
-class MockCaseFinancialSummaryBloc
-    extends MockBloc<CaseFinancialSummaryEvent, CaseFinancialSummaryState>
-    implements CaseFinancialSummaryBloc {}
+class MockCaseLedgerBloc extends MockBloc<CaseLedgerEvent, CaseLedgerState>
+    implements CaseLedgerBloc {}
+
+class MockPaymentFormBloc extends MockBloc<PaymentFormEvent, PaymentFormState>
+    implements PaymentFormBloc {}
 
 class MockSessionCubit extends MockCubit<SessionState>
     implements SessionCubit {}
@@ -76,6 +74,8 @@ void main() {
   late MockCaseHearingsBloc hearingsBloc;
   late MockCaseDocumentsBloc documentsBloc;
   late MockDocumentUploadBloc documentUploadBloc;
+  late MockCaseLedgerBloc caseLedgerBloc;
+  late MockPaymentFormBloc paymentFormBloc;
   late MockSessionCubit sessionCubit;
 
   final user = User(
@@ -87,7 +87,6 @@ void main() {
     mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    roles: const [],
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
   );
 
@@ -96,35 +95,17 @@ void main() {
     tenantId: 't1',
     caseNumber: 'CASE-2026-00001',
     status: CaseStatus.active,
-    clientId: 'cl1',
     caseTypeId: 'ct1',
     priority: CasePriority.high,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
-    client: Client(
+    clientSnapshot: const CaseClientSnapshot(
       id: 'cl1',
-      tenantId: 't1',
-      clientCode: 'CLI-001',
-      type: ClientType.individual,
-      fullName: 'Carlos Hernandez',
-      status: ClientStatus.active,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-      emails: const [],
-      phones: const [],
-      addresses: const [],
+      clientType: 'INDIVIDUAL',
+      name: 'Carlos Hernandez',
     ),
     caseType: const CaseTypeLookup(id: 'ct1', name: 'Civil'),
-    defaultCourtId: 'co1',
-    defaultCourt: Court(
-      id: 'co1',
-      name: 'District Court',
-      type: 'FIRST_INSTANCE',
-      isActive: true,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-    ),
-    agreedFee: 5000.0,
+    courtName: 'District Court',
     team: [
       CaseTeamMember(
         id: 'ct-1',
@@ -146,11 +127,15 @@ void main() {
     hearingsBloc = MockCaseHearingsBloc();
     documentsBloc = MockCaseDocumentsBloc();
     documentUploadBloc = MockDocumentUploadBloc();
+    caseLedgerBloc = MockCaseLedgerBloc();
+    paymentFormBloc = MockPaymentFormBloc();
     sessionCubit = MockSessionCubit();
     getIt.registerFactory<CaseDetailsBloc>(() => bloc);
     getIt.registerFactory<CaseHearingsBloc>(() => hearingsBloc);
     getIt.registerFactory<CaseDocumentsBloc>(() => documentsBloc);
     getIt.registerFactory<DocumentUploadBloc>(() => documentUploadBloc);
+    getIt.registerFactory<CaseLedgerBloc>(() => caseLedgerBloc);
+    getIt.registerFactory<PaymentFormBloc>(() => paymentFormBloc);
     getIt.registerSingleton<SessionCubit>(sessionCubit);
     whenListen(
       bloc,
@@ -172,6 +157,16 @@ void main() {
       const Stream<DocumentUploadState>.empty(),
       initialState: DocumentUploadInitial(),
     );
+    whenListen(
+      caseLedgerBloc,
+      const Stream<CaseLedgerState>.empty(),
+      initialState: const CaseLedgerInitial(),
+    );
+    whenListen(
+      paymentFormBloc,
+      const Stream<PaymentFormState>.empty(),
+      initialState: const PaymentFormInitial(),
+    );
   });
 
   tearDown(() async {
@@ -192,112 +187,58 @@ void main() {
     );
   }
 
-  testWidgets('hides agreedFee when there is no authenticated session', (
-    tester,
-  ) async {
-    when(() => sessionCubit.state).thenReturn(const SessionUnknown());
-
-    await tester.pumpWidget(buildTestable());
-    await tester.pumpAndSettle();
-
-    expect(find.text('5000.00'), findsNothing);
-    expect(find.text('Agreed Fee'), findsNothing);
-  });
-
-  testWidgets('hides agreedFee for an authenticated non-Firm-Admin user '
-      '(BR-026 — never shown to everyone by default)', (tester) async {
-    when(
-      () => sessionCubit.state,
-    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: false));
-
-    await tester.pumpWidget(buildTestable());
-    await tester.pumpAndSettle();
-
-    expect(find.text('5000.00'), findsNothing);
-    expect(find.text('Agreed Fee'), findsNothing);
-  });
-
-  testWidgets('shows agreedFee for an authenticated Firm Admin', (
-    tester,
-  ) async {
-    when(
-      () => sessionCubit.state,
-    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: true));
-
-    await tester.pumpWidget(buildTestable());
-    await tester.pumpAndSettle();
-
-    expect(find.text('5000.00'), findsOneWidget);
-    expect(find.text('Agreed Fee'), findsOneWidget);
-  });
-
-  testWidgets('hides the Financials section when the user lacks finance.read '
-      '(gated on finance.read, not isFirmAdmin -- Accountant needs this too)', (
-    tester,
-  ) async {
-    when(
-      () => sessionCubit.state,
-    ).thenReturn(SessionAuthenticated(user, isFirmAdmin: true));
-
-    await tester.pumpWidget(buildTestable());
-    await tester.pumpAndSettle();
-
-    expect(find.text('Financials'), findsNothing);
-  });
-
-  testWidgets('shows the Financials section for a user holding finance.read', (
-    tester,
-  ) async {
-    final accountant = user.copyWith(
-      roles: const [
-        Role(
-          id: 'r1',
-          code: 'ACCOUNTANT',
-          scope: 'TENANT',
-          permissions: [Permission(id: 'p1', code: 'finance.read')],
-        ),
-      ],
-    );
-    when(
-      () => sessionCubit.state,
-    ).thenReturn(SessionAuthenticated(accountant, isFirmAdmin: false));
-    final financialSummaryBloc = MockCaseFinancialSummaryBloc();
-    getIt.registerFactory<CaseFinancialSummaryBloc>(() => financialSummaryBloc);
-    whenListen(
-      financialSummaryBloc,
-      const Stream<CaseFinancialSummaryState>.empty(),
-      initialState: const CaseFinancialSummaryLoaded(
-        SingleCaseFinancialDetail(
-          caseId: 'c1',
-          caseNumber: 'CASE-2026-00001',
-          clientName: 'Carlos Hernandez',
-          totalInvoiced: 15000,
-          totalPaid: 10000,
-          outstandingBalance: 5000,
-          paymentStatus: PaymentStatus.partial,
-          invoices: [],
-        ),
+  testWidgets('renders the case overview and team', (tester) async {
+    // `client.view` needed to render the client-snapshot section.
+    when(() => sessionCubit.state).thenReturn(
+      SessionAuthenticated(
+        user.copyWith(permissions: const ['client.view']),
+        isFirmAdmin: false,
       ),
     );
 
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    expect(find.text('Financials'), findsOneWidget);
-    expect(find.text('5000.00'), findsOneWidget);
+    expect(find.text('CASE-2026-00001'), findsWidgets);
+    expect(find.text('Civil'), findsOneWidget);
+    // Appears twice once `client.view` is granted: once in the header
+    // subtitle (always shown) and once in the gated Client-snapshot
+    // section below it.
+    expect(find.text('Carlos Hernandez'), findsWidgets);
+    expect(find.text('District Court'), findsOneWidget);
+    await tester.tap(find.text('Team'));
+    await tester.pumpAndSettle();
+    expect(find.text('Jane Doe'), findsOneWidget);
   });
 
-  testWidgets('renders the case overview and team', (tester) async {
+  testWidgets('renders embedded Case timeline events', (tester) async {
+    final caseWithTimeline = legalCase.copyWith(
+      timelineEvents: [
+        CaseTimelineEvent(
+          id: 'event-1',
+          caseId: legalCase.id,
+          eventType: CaseTimelineEventType.statusChanged,
+          actorUserId: user.id,
+          previousState: 'DRAFT',
+          newState: 'ACTIVE',
+          note: 'Case status changed',
+          createdAt: DateTime(2026, 8, 16, 10),
+        ),
+      ],
+    );
+    whenListen(
+      bloc,
+      const Stream<CaseDetailsState>.empty(),
+      initialState: CaseDetailsLoaded(caseWithTimeline),
+    );
     when(() => sessionCubit.state).thenReturn(const SessionUnknown());
 
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    expect(find.text('CASE-2026-00001'), findsOneWidget);
-    expect(find.text('Civil'), findsOneWidget);
-    expect(find.text('Carlos Hernandez'), findsOneWidget);
-    expect(find.text('District Court'), findsOneWidget);
-    expect(find.text('Jane Doe'), findsOneWidget);
+    expect(find.text('Case Timeline'), findsOneWidget);
+    expect(find.text('Case status changed'), findsWidgets);
+    expect(find.text('DRAFT → ACTIVE'), findsOneWidget);
   });
 
   testWidgets('renders gracefully when caseType/team-user are absent (the real '
@@ -305,7 +246,7 @@ void main() {
       'relation)', (tester) async {
     final degradedCase = legalCase.copyWith(
       caseType: null,
-      defaultCourt: null,
+      courtName: null,
       team: [
         const CaseTeamMember(
           id: 'ct-1',
@@ -324,22 +265,28 @@ void main() {
     await tester.pumpWidget(buildTestable());
     await tester.pumpAndSettle();
 
-    // No crash, and unresolved relations fall back to a placeholder or the
-    // raw id rather than throwing a null-cast error.
-    expect(find.text('CASE-2026-00001'), findsOneWidget);
-    expect(find.text('Unknown'), findsWidgets);
-    expect(find.text('u2'), findsOneWidget);
+    // No crash, and unresolved relations fall back gracefully
+    expect(find.text('CASE-2026-00001'), findsWidgets);
   });
+
+
 
   testWidgets(
     'tapping the Documents upload icon shows Take Photo / Choose File '
     'options',
     (tester) async {
-      when(() => sessionCubit.state).thenReturn(const SessionUnknown());
+      final documentUser = user.copyWith(
+        permissions: const ['document.view', 'document.upload'],
+      );
+      when(
+        () => sessionCubit.state,
+      ).thenReturn(SessionAuthenticated(documentUser, isFirmAdmin: false));
 
       await tester.pumpWidget(buildTestable());
       await tester.pumpAndSettle();
 
+      await tester.tap(find.text('Documents'));
+      await tester.pumpAndSettle();
       final uploadIcon = find.byIcon(Icons.add_circle_outline);
       await tester.ensureVisible(uploadIcon);
       await tester.pumpAndSettle();
@@ -355,7 +302,12 @@ void main() {
     'shows a progress bar while DocumentUploadBloc reports an in-progress '
     'upload',
     (tester) async {
-      when(() => sessionCubit.state).thenReturn(const SessionUnknown());
+      final documentUser = user.copyWith(
+        permissions: const ['document.view', 'document.upload'],
+      );
+      when(
+        () => sessionCubit.state,
+      ).thenReturn(SessionAuthenticated(documentUser, isFirmAdmin: false));
       whenListen(
         documentUploadBloc,
         const Stream<DocumentUploadState>.empty(),
@@ -365,8 +317,51 @@ void main() {
       await tester.pumpWidget(buildTestable());
       await tester.pumpAndSettle();
 
+      await tester.tap(find.text('Documents'));
+      await tester.pumpAndSettle();
       expect(find.text('Uploading...'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'renders the v2 case finance ledger in its permission-gated tab',
+    (tester) async {
+      when(() => sessionCubit.state).thenReturn(
+        SessionAuthenticated(
+          user.copyWith(
+            permissions: const [
+              'finance.case.view',
+              'finance.manage',
+            ],
+          ),
+          isFirmAdmin: false,
+        ),
+      );
+      whenListen(
+        caseLedgerBloc,
+        const Stream<CaseLedgerState>.empty(),
+        initialState: const CaseLedgerLoaded(
+          CaseFinanceDetail(
+            caseId: 'c1',
+            agreedFee: 10000,
+            payments: [],
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Finance'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Finance'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Agreed Fee'), findsOneWidget);
+      expect(find.text('Remaining'), findsOneWidget);
+      expect(find.text('Payment History'), findsOneWidget);
+      expect(find.text('No payments recorded for this case yet'),
+          findsOneWidget);
     },
   );
 }

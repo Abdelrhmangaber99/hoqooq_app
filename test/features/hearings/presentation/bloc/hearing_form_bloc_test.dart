@@ -5,6 +5,7 @@ import 'package:hqooq/core/errors/failures.dart';
 import 'package:hqooq/features/cases/domain/entities/court.dart';
 import 'package:hqooq/features/courts/domain/repository/i_court_repository.dart';
 import 'package:hqooq/features/hearings/data/models/create_hearing_request.dart';
+import 'package:hqooq/features/hearings/data/models/complete_hearing_request.dart';
 import 'package:hqooq/features/hearings/data/models/update_hearing_request.dart';
 import 'package:hqooq/features/hearings/domain/entities/hearing.dart';
 import 'package:hqooq/features/hearings/domain/entities/hearing_status.dart';
@@ -58,6 +59,12 @@ void main() {
   );
 
   setUpAll(() {
+    registerFallbackValue(
+      const CompleteHearingRequest(
+        outcomeText:
+            'The hearing concluded after submissions and judgment was reserved.',
+      ),
+    );
     registerFallbackValue(const UpdateHearingRequest());
     registerFallbackValue(
       CreateHearingRequest(
@@ -97,7 +104,7 @@ void main() {
       stubReferenceData(courts: [court], hearingTypes: [hearingType]);
       return buildBloc();
     },
-    act: (bloc) => bloc.add(LoadHearingFormReferenceDataRequested()),
+    act: (bloc) => bloc.add(const LoadHearingFormReferenceDataRequested(null)),
     expect: () => [
       isA<HearingFormLoading>(),
       HearingFormReady(courts: [court], hearingTypes: [hearingType]),
@@ -116,10 +123,15 @@ void main() {
       ).thenAnswer((_) async => const Left(ServerFailure()));
       return buildBloc();
     },
-    act: (bloc) => bloc.add(LoadHearingFormReferenceDataRequested()),
+    act: (bloc) => bloc.add(const LoadHearingFormReferenceDataRequested(null)),
     expect: () => [
       isA<HearingFormLoading>(),
-      const HearingFormReady(courts: [], hearingTypes: []),
+      const HearingFormReady(
+        courts: [],
+        hearingTypes: [],
+        courtLoadError: 'Server error occurred',
+        hearingTypeLoadError: 'Server error occurred',
+      ),
     ],
   );
 
@@ -133,7 +145,7 @@ void main() {
       return buildBloc();
     },
     act: (bloc) async {
-      bloc.add(LoadHearingFormReferenceDataRequested());
+      bloc.add(const LoadHearingFormReferenceDataRequested(null));
       await Future.delayed(Duration.zero);
       bloc.add(
         CreateHearingSubmitted(
@@ -169,12 +181,46 @@ void main() {
       return buildBloc();
     },
     act: (bloc) async {
-      bloc.add(LoadHearingFormReferenceDataRequested());
+      bloc.add(const LoadHearingFormReferenceDataRequested(null));
       await Future.delayed(Duration.zero);
       bloc.add(
         const UpdateHearingSubmitted(
           'h1',
           UpdateHearingRequest(status: HearingStatus.completed),
+        ),
+      );
+    },
+    expect: () => [
+      isA<HearingFormLoading>(),
+      HearingFormReady(courts: [court], hearingTypes: const []),
+      HearingFormReady(
+        courts: [court],
+        hearingTypes: const [],
+        isSubmitting: true,
+      ),
+      HearingFormSuccess(hearing),
+    ],
+  );
+
+  blocTest<HearingFormBloc, HearingFormState>(
+    'uses the dedicated completion endpoint',
+    build: () {
+      stubReferenceData(courts: [court]);
+      when(
+        () => hearingRepository.completeHearing('h1', any()),
+      ).thenAnswer((_) async => Right(hearing));
+      return buildBloc();
+    },
+    act: (bloc) async {
+      bloc.add(const LoadHearingFormReferenceDataRequested(null));
+      await Future.delayed(Duration.zero);
+      bloc.add(
+        const CompleteHearingSubmitted(
+          'h1',
+          CompleteHearingRequest(
+            outcomeText:
+                'The hearing concluded after submissions and judgment was reserved.',
+          ),
         ),
       );
     },

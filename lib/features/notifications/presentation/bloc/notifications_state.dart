@@ -19,12 +19,17 @@ class NotificationsLoading extends NotificationsState {}
 /// submitError`.
 class NotificationsLoaded extends NotificationsState {
   final List<AppNotification> notifications;
+  final List<DailyActivityItem> dailyActivities;
   final String? actionError;
 
-  const NotificationsLoaded(this.notifications, {this.actionError});
+  const NotificationsLoaded(
+    this.notifications, {
+    this.dailyActivities = const [],
+    this.actionError,
+  });
 
   @override
-  List<Object?> get props => [notifications, actionError];
+  List<Object?> get props => [notifications, dailyActivities, actionError];
 }
 
 class NotificationsError extends NotificationsState {

@@ -15,7 +15,6 @@ _LegalCase _$LegalCaseFromJson(Map<String, dynamic> json) => _LegalCase(
     json['status'],
     unknownValue: CaseStatus.unknown,
   ),
-  clientId: json['clientId'] as String,
   caseTypeId: json['caseTypeId'] as String,
   priority: $enumDecode(
     _$CasePriorityEnumMap,
@@ -24,14 +23,26 @@ _LegalCase _$LegalCaseFromJson(Map<String, dynamic> json) => _LegalCase(
   ),
   createdAt: DateTime.parse(json['createdAt'] as String),
   updatedAt: DateTime.parse(json['updatedAt'] as String),
-  client: Client.fromJson(json['client'] as Map<String, dynamic>),
+  clientSnapshot: json['clientSnapshot'] == null
+      ? null
+      : CaseClientSnapshot.fromJson(
+          json['clientSnapshot'] as Map<String, dynamic>,
+        ),
+  opponentSnapshots: (json['opponentSnapshots'] as List<dynamic>?)
+      ?.map((e) => CaseOpponentSnapshot.fromJson(e as Map<String, dynamic>))
+      .toList(),
   caseType: json['caseType'] == null
       ? null
       : CaseTypeLookup.fromJson(json['caseType'] as Map<String, dynamic>),
-  defaultCourtId: json['defaultCourtId'] as String?,
-  defaultCourt: json['defaultCourt'] == null
-      ? null
-      : Court.fromJson(json['defaultCourt'] as Map<String, dynamic>),
+  title: json['title'] as String?,
+  courtCaseNumber: json['courtCaseNumber'] as String?,
+  courtCaseYear: (json['courtCaseYear'] as num?)?.toInt(),
+  governorateId: json['governorateId'] as String?,
+  circuitId: json['circuitId'] as String?,
+  ownerFirmAdminId: json['ownerFirmAdminId'] as String?,
+  primaryLawyerId: json['primaryLawyerId'] as String?,
+  description: json['description'] as String?,
+  courtName: json['courtName'] as String?,
   openingDate: json['openingDate'] == null
       ? null
       : DateTime.parse(json['openingDate'] as String),
@@ -39,10 +50,10 @@ _LegalCase _$LegalCaseFromJson(Map<String, dynamic> json) => _LegalCase(
       ? null
       : DateTime.parse(json['closingDate'] as String),
   outcomeSummary: json['outcomeSummary'] as String?,
-  agreedFee: (json['agreedFee'] as num?)?.toDouble(),
   team: (json['team'] as List<dynamic>)
       .map((e) => CaseTeamMember.fromJson(e as Map<String, dynamic>))
       .toList(),
+  timelineEvents: _timelineFromJson(json['timelineEvents'] as List?),
 );
 
 Map<String, dynamic> _$LegalCaseToJson(_LegalCase instance) =>
@@ -51,19 +62,25 @@ Map<String, dynamic> _$LegalCaseToJson(_LegalCase instance) =>
       'tenantId': instance.tenantId,
       'caseNumber': instance.caseNumber,
       'status': _$CaseStatusEnumMap[instance.status]!,
-      'clientId': instance.clientId,
       'caseTypeId': instance.caseTypeId,
       'priority': _$CasePriorityEnumMap[instance.priority]!,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
-      'client': instance.client,
+      'clientSnapshot': instance.clientSnapshot,
+      'opponentSnapshots': instance.opponentSnapshots,
       'caseType': instance.caseType,
-      'defaultCourtId': instance.defaultCourtId,
-      'defaultCourt': instance.defaultCourt,
+      'title': instance.title,
+      'courtCaseNumber': instance.courtCaseNumber,
+      'courtCaseYear': instance.courtCaseYear,
+      'governorateId': instance.governorateId,
+      'circuitId': instance.circuitId,
+      'ownerFirmAdminId': instance.ownerFirmAdminId,
+      'primaryLawyerId': instance.primaryLawyerId,
+      'description': instance.description,
+      'courtName': instance.courtName,
       'openingDate': instance.openingDate?.toIso8601String(),
       'closingDate': instance.closingDate?.toIso8601String(),
       'outcomeSummary': instance.outcomeSummary,
-      'agreedFee': instance.agreedFee,
       'team': instance.team,
     };
 
