@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/localization/error_messages.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -27,6 +28,10 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The message may be one of the app's own English failure defaults; the
+    // mapper translates it for the active locale and leaves backend-authored
+    // text alone.
+    final text = localizedErrorMessage(context, message);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -40,7 +45,7 @@ class ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.m),
             Text(
-              message,
+              text,
               textAlign: TextAlign.center,
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,

@@ -39,8 +39,9 @@ class _PreloadedAppLocalizationsDelegate
 
   @override
   Future<AppLocalizations> load(Locale locale) {
-    final match =
-        _cache.keys.firstWhere((l) => l.languageCode == locale.languageCode);
+    final match = _cache.keys.firstWhere(
+      (l) => l.languageCode == locale.languageCode,
+    );
     return SynchronousFuture(_cache[match]!);
   }
 
@@ -57,9 +58,7 @@ void main() {
     id: 'u1',
     email: 'user@firm.com',
     fullName: 'Jane Doe',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     tenant: const TenantRef(id: 't1', name: 'Demo Law Firm'),
@@ -116,10 +115,7 @@ void main() {
   Widget buildTestable({Locale locale = const Locale('en')}) {
     final router = GoRouter(
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (_, _) => DashboardPage(),
-        ),
+        GoRoute(path: '/', builder: (_, _) => DashboardPage()),
         GoRoute(
           path: AppRouter.finance,
           builder: (_, _) => const Scaffold(body: Text('FINANCE_HUB')),
@@ -155,33 +151,34 @@ void main() {
 
   group('permission visibility', () {
     testWidgets(
-        '(1) firm-wide finance user (finance.firm.read) sees the finance '
-        'dashboard with all six aggregates', (tester) async {
-      whenListen(
-        bloc,
-        const Stream<DashboardState>.empty(),
-        initialState: loadedState(financeSummary: finance),
-      );
+      '(1) firm-wide finance user (finance.firm.read) sees the finance '
+      'dashboard with all six aggregates',
+      (tester) async {
+        whenListen(
+          bloc,
+          const Stream<DashboardState>.empty(),
+          initialState: loadedState(financeSummary: finance),
+        );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestable());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Finance'), findsOneWidget);
-      expect(find.text('EGP 10,000.00'), findsOneWidget);
-      expect(find.text('EGP 6,000.00'), findsOneWidget);
-      expect(find.text('EGP 4,000.00'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget); // paid cases
-      expect(find.text('1'), findsOneWidget); // partial cases
-      expect(find.text('3'), findsOneWidget); // unpaid cases
-      expect(find.text('Paid Cases'), findsOneWidget);
-      expect(find.text('Partially Paid Cases'), findsOneWidget);
-      expect(find.text('Unpaid Cases'), findsOneWidget);
-      // KPI numbers distinct from finance counts on purpose.
-      expect(find.text('7'), findsOneWidget); // pending tasks
-    });
+        expect(find.text('Finance'), findsOneWidget);
+        expect(find.text('EGP 10,000.00'), findsOneWidget);
+        expect(find.text('EGP 6,000.00'), findsOneWidget);
+        expect(find.text('EGP 4,000.00'), findsOneWidget);
+        expect(find.text('2'), findsOneWidget); // paid cases
+        expect(find.text('1'), findsOneWidget); // partial cases
+        expect(find.text('3'), findsOneWidget); // unpaid cases
+        expect(find.text('Paid Cases'), findsOneWidget);
+        expect(find.text('Partially Paid Cases'), findsOneWidget);
+        expect(find.text('Unpaid Cases'), findsOneWidget);
+        // KPI numbers distinct from finance counts on purpose.
+        expect(find.text('7'), findsOneWidget); // pending tasks
+      },
+    );
 
-    testWidgets(
-        '(2) employee without any finance permission sees no finance '
+    testWidgets('(2) employee without any finance permission sees no finance '
         'section at all', (tester) async {
       when(() => sessionCubit.state).thenReturn(
         SessionAuthenticated(
@@ -206,61 +203,63 @@ void main() {
     });
 
     testWidgets(
-        '(3) an ACCOUNTANT-classified user without finance.firm.read sees no '
-        'firm finance section (job title grants nothing)', (tester) async {
-      when(() => sessionCubit.state).thenReturn(
-        SessionAuthenticated(
-          sessionUser.copyWith(
-            permissions: const [],
-            jobClassification: 'ACCOUNTANT',
+      '(3) an ACCOUNTANT-classified user without finance.firm.read sees no '
+      'firm finance section (job title grants nothing)',
+      (tester) async {
+        when(() => sessionCubit.state).thenReturn(
+          SessionAuthenticated(
+            sessionUser.copyWith(
+              permissions: const [],
+              jobClassification: 'ACCOUNTANT',
+            ),
+            isFirmAdmin: false,
           ),
-          isFirmAdmin: false,
-        ),
-      );
-      whenListen(
-        bloc,
-        const Stream<DashboardState>.empty(),
-        initialState: loadedState(canViewFinance: false),
-      );
+        );
+        whenListen(
+          bloc,
+          const Stream<DashboardState>.empty(),
+          initialState: loadedState(canViewFinance: false),
+        );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestable());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Finance'), findsNothing);
-      expect(find.text('EGP 10,000.00'), findsNothing);
-    });
+        expect(find.text('Finance'), findsNothing);
+        expect(find.text('EGP 10,000.00'), findsNothing);
+      },
+    );
 
     testWidgets(
-        '(4) case-only finance permissions (case.view/payment.record) do not '
-        'unlock firm-wide totals', (tester) async {
-      when(() => sessionCubit.state).thenReturn(
-        SessionAuthenticated(
-          sessionUser.copyWith(
-            permissions: const [
-              'finance.case.view',
-              'finance.payment.record',
-            ],
+      '(4) case-only finance permissions (case.view/payment.record) do not '
+      'unlock firm-wide totals',
+      (tester) async {
+        when(() => sessionCubit.state).thenReturn(
+          SessionAuthenticated(
+            sessionUser.copyWith(
+              permissions: const [
+                'finance.case.view',
+                'finance.payment.record',
+              ],
+            ),
+            isFirmAdmin: false,
           ),
-          isFirmAdmin: false,
-        ),
-      );
-      whenListen(
-        bloc,
-        const Stream<DashboardState>.empty(),
-        initialState: loadedState(canViewFinance: false),
-      );
+        );
+        whenListen(
+          bloc,
+          const Stream<DashboardState>.empty(),
+          initialState: loadedState(canViewFinance: false),
+        );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestable());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Finance'), findsNothing);
-      expect(find.text('EGP 10,000.00'), findsNothing);
-    });
+        expect(find.text('Finance'), findsNothing);
+        expect(find.text('EGP 10,000.00'), findsNothing);
+      },
+    );
 
-    testWidgets(
-        '(14) revoking finance.firm.read mid-session hides the finance '
-        'widgets and the bloc stops serving aggregate data',
-        (tester) async {
+    testWidgets('(14) revoking finance.firm.read mid-session hides the finance '
+        'widgets and the bloc stops serving aggregate data', (tester) async {
       final controller = StreamController<DashboardState>.broadcast();
       addTearDown(controller.close);
 
@@ -289,139 +288,148 @@ void main() {
 
   group('aggregate rendering', () {
     testWidgets(
-        '(5) displayed aggregates are the backend-provided values (source '
-        'records), (6) reversed payments already excluded server-side',
-        (tester) async {
-      whenListen(
-        bloc,
-        const Stream<DashboardState>.empty(),
-        initialState: loadedState(financeSummary: finance),
-      );
+      '(5) displayed aggregates are the backend-provided values (source '
+      'records), (6) reversed payments already excluded server-side',
+      (tester) async {
+        whenListen(
+          bloc,
+          const Stream<DashboardState>.empty(),
+          initialState: loadedState(financeSummary: finance),
+        );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestable());
+        await tester.pumpAndSettle();
 
-      // Exactly the authorized aggregates the backend returned — collected
-      // (6,000) is less than agreed (10,000) because reversed payments were
-      // excluded in the backend computation before reaching the client.
-      expect(find.text('EGP 10,000.00'), findsOneWidget);
-      expect(find.text('EGP 6,000.00'), findsOneWidget);
-      expect(find.text('EGP 4,000.00'), findsOneWidget);
-    });
-
-    testWidgets(
-        '(12) empty firm shows zeroed aggregates, not fabricated financial '
-        'activity', (tester) async {
-      const emptyFinance = FinanceSummary(
-        totalCaseValue: 0,
-        totalCollected: 0,
-        totalOutstanding: 0,
-        paidCases: 0,
-        partialCases: 0,
-        unpaidCases: 0,
-        cases: [],
-      );
-      whenListen(
-        bloc,
-        const Stream<DashboardState>.empty(),
-        initialState: loadedState(financeSummary: emptyFinance),
-      );
-
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
-
-      expect(find.text('EGP 0.00'), findsNWidgets(3));
-      expect(find.text('0'), findsNWidgets(3));
-      expect(find.text('No financial data yet'), findsNothing);
-    });
+        // Exactly the authorized aggregates the backend returned — collected
+        // (6,000) is less than agreed (10,000) because reversed payments were
+        // excluded in the backend computation before reaching the client.
+        expect(find.text('EGP 10,000.00'), findsOneWidget);
+        expect(find.text('EGP 6,000.00'), findsOneWidget);
+        expect(find.text('EGP 4,000.00'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        '(12b) a failed aggregate fetch degrades to the empty state instead '
-        'of inventing zeros', (tester) async {
-      whenListen(
-        bloc,
-        const Stream<DashboardState>.empty(),
-        initialState: loadedState(financeSummary: null),
-      );
+      '(12) empty firm shows zeroed aggregates, not fabricated financial '
+      'activity',
+      (tester) async {
+        const emptyFinance = FinanceSummary(
+          totalCaseValue: 0,
+          totalCollected: 0,
+          totalOutstanding: 0,
+          paidCases: 0,
+          partialCases: 0,
+          unpaidCases: 0,
+          cases: [],
+        );
+        whenListen(
+          bloc,
+          const Stream<DashboardState>.empty(),
+          initialState: loadedState(financeSummary: emptyFinance),
+        );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestable());
+        await tester.pumpAndSettle();
 
-      expect(find.text('No financial data yet'), findsOneWidget);
-      expect(find.text('EGP 0.00'), findsNothing);
-    });
+        expect(find.text('EGP 0.00'), findsNWidgets(3));
+        expect(find.text('0'), findsNWidgets(3));
+        expect(find.text('No financial data yet'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      '(12b) a failed aggregate fetch degrades to the empty state instead '
+      'of inventing zeros',
+      (tester) async {
+        whenListen(
+          bloc,
+          const Stream<DashboardState>.empty(),
+          initialState: loadedState(financeSummary: null),
+        );
+
+        await tester.pumpWidget(buildTestable());
+        await tester.pumpAndSettle();
+
+        expect(find.text('No financial data yet'), findsOneWidget);
+        expect(find.text('EGP 0.00'), findsNothing);
+      },
+    );
   });
 
   group('filters', () {
     testWidgets(
-        '(7) selecting a payment-status chip dispatches a filtered aggregate '
-        'fetch — and the unfiltered chip clears it', (tester) async {
-      whenListen(
-        bloc,
-        const Stream<DashboardState>.empty(),
-        initialState: loadedState(financeSummary: finance),
-      );
+      '(7) selecting a payment-status chip dispatches a filtered aggregate '
+      'fetch — and the unfiltered chip clears it',
+      (tester) async {
+        whenListen(
+          bloc,
+          const Stream<DashboardState>.empty(),
+          initialState: loadedState(financeSummary: finance),
+        );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestable());
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Unpaid'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Unpaid'));
+        await tester.pumpAndSettle();
 
-      verify(
-        () => bloc.add(
-          any(
-            that: isA<RefreshFinanceSummaryRequested>().having(
-              (event) => event.filters,
-              'filters',
-              {'paymentStatus': 'UNPAID'},
+        verify(
+          () => bloc.add(
+            any(
+              that: isA<RefreshFinanceSummaryRequested>().having(
+                (event) => event.filters,
+                'filters',
+                {'paymentStatus': 'UNPAID'},
+              ),
             ),
           ),
-        ),
-      ).called(1);
+        ).called(1);
 
-      await tester.tap(find.text('All'));
-      await tester.pumpAndSettle();
-      verify(
-        () => bloc.add(
-          any(
-            that: isA<RefreshFinanceSummaryRequested>().having(
-              (event) => event.filters,
-              'filters',
-              isEmpty,
+        await tester.tap(find.text('All'));
+        await tester.pumpAndSettle();
+        verify(
+          () => bloc.add(
+            any(
+              that: isA<RefreshFinanceSummaryRequested>().having(
+                (event) => event.filters,
+                'filters',
+                isEmpty,
+              ),
             ),
           ),
-        ),
-      ).called(1);
-    });
+        ).called(1);
+      },
+    );
 
     testWidgets(
-        '(10) filter fetches use the in-place finance-loading state — the '
-        'rest of the dashboard stays mounted (no global reload)',
-        (tester) async {
-      whenListen(
-        bloc,
-        const Stream<DashboardState>.empty(),
-        initialState: DashboardFinanceLoading(
-          loadedState(financeSummary: finance),
-          filters: {'paymentStatus': 'PAID'},
-        ),
-      );
+      '(10) filter fetches use the in-place finance-loading state — the '
+      'rest of the dashboard stays mounted (no global reload)',
+      (tester) async {
+        whenListen(
+          bloc,
+          const Stream<DashboardState>.empty(),
+          initialState: DashboardFinanceLoading(
+            loadedState(financeSummary: finance),
+            filters: {'paymentStatus': 'PAID'},
+          ),
+        );
 
-      await tester.pumpWidget(buildTestable());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(buildTestable());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Dashboard content persists while only the finance panel refreshes.
-      expect(find.text('Recent activity'), findsOneWidget);
-      expect(find.text('Finance'), findsOneWidget);
-      expect(find.text('EGP 10,000.00'), findsOneWidget);
-    });
+        // Dashboard content persists while only the finance panel refreshes.
+        expect(find.text('Recent activity'), findsOneWidget);
+        expect(find.text('Finance'), findsOneWidget);
+        expect(find.text('EGP 10,000.00'), findsOneWidget);
+      },
+    );
   });
 
   group('loading / error', () {
-    testWidgets('(10) shows a loading spinner while DashboardLoading',
-        (tester) async {
+    testWidgets('(10) shows a loading spinner while DashboardLoading', (
+      tester,
+    ) async {
       whenListen(
         bloc,
         const Stream<DashboardState>.empty(),
@@ -434,8 +442,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('(11) shows the shared error view on DashboardError',
-        (tester) async {
+    testWidgets('(11) shows the shared error view on DashboardError', (
+      tester,
+    ) async {
       whenListen(
         bloc,
         const Stream<DashboardState>.empty(),

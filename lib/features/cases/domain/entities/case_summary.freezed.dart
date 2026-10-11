@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CaseSummary {
 
- String get id; String get tenantId; String get caseNumber;@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus get status; String get clientId; String get caseTypeId; String? get courtName;@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority get priority; DateTime? get openingDate; DateTime? get closingDate; String? get outcomeSummary; DateTime get createdAt; DateTime get updatedAt;
+ String get id; String get tenantId; String get caseNumber; String? get courtCaseNumber; int? get courtCaseYear;@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus get status; String get clientId; String get caseTypeId; String? get courtName;@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority get priority; DateTime? get openingDate; DateTime? get closingDate; String? get outcomeSummary; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of CaseSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $CaseSummaryCopyWith<CaseSummary> get copyWith => _$CaseSummaryCopyWithImpl<Case
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CaseSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.tenantId, tenantId) || other.tenantId == tenantId)&&(identical(other.caseNumber, caseNumber) || other.caseNumber == caseNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.caseTypeId, caseTypeId) || other.caseTypeId == caseTypeId)&&(identical(other.courtName, courtName) || other.courtName == courtName)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CaseSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.tenantId, tenantId) || other.tenantId == tenantId)&&(identical(other.caseNumber, caseNumber) || other.caseNumber == caseNumber)&&(identical(other.courtCaseNumber, courtCaseNumber) || other.courtCaseNumber == courtCaseNumber)&&(identical(other.courtCaseYear, courtCaseYear) || other.courtCaseYear == courtCaseYear)&&(identical(other.status, status) || other.status == status)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.caseTypeId, caseTypeId) || other.caseTypeId == caseTypeId)&&(identical(other.courtName, courtName) || other.courtName == courtName)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,tenantId,caseNumber,status,clientId,caseTypeId,courtName,priority,openingDate,closingDate,outcomeSummary,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,tenantId,caseNumber,courtCaseNumber,courtCaseYear,status,clientId,caseTypeId,courtName,priority,openingDate,closingDate,outcomeSummary,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'CaseSummary(id: $id, tenantId: $tenantId, caseNumber: $caseNumber, status: $status, clientId: $clientId, caseTypeId: $caseTypeId, courtName: $courtName, priority: $priority, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'CaseSummary(id: $id, tenantId: $tenantId, caseNumber: $caseNumber, courtCaseNumber: $courtCaseNumber, courtCaseYear: $courtCaseYear, status: $status, clientId: $clientId, caseTypeId: $caseTypeId, courtName: $courtName, priority: $priority, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $CaseSummaryCopyWith<$Res>  {
   factory $CaseSummaryCopyWith(CaseSummary value, $Res Function(CaseSummary) _then) = _$CaseSummaryCopyWithImpl;
 @useResult
 $Res call({
- String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId, String? courtName,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, DateTime createdAt, DateTime updatedAt
+ String id, String tenantId, String caseNumber, String? courtCaseNumber, int? courtCaseYear,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId, String? courtName,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -65,12 +65,14 @@ class _$CaseSummaryCopyWithImpl<$Res>
 
 /// Create a copy of CaseSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? courtName = freezed,Object? priority = null,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? courtCaseNumber = freezed,Object? courtCaseYear = freezed,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? courtName = freezed,Object? priority = null,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,tenantId: null == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
 as String,caseNumber: null == caseNumber ? _self.caseNumber : caseNumber // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,courtCaseNumber: freezed == courtCaseNumber ? _self.courtCaseNumber : courtCaseNumber // ignore: cast_nullable_to_non_nullable
+as String?,courtCaseYear: freezed == courtCaseYear ? _self.courtCaseYear : courtCaseYear // ignore: cast_nullable_to_non_nullable
+as int?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as CaseStatus,clientId: null == clientId ? _self.clientId : clientId // ignore: cast_nullable_to_non_nullable
 as String,caseTypeId: null == caseTypeId ? _self.caseTypeId : caseTypeId // ignore: cast_nullable_to_non_nullable
 as String,courtName: freezed == courtName ? _self.courtName : courtName // ignore: cast_nullable_to_non_nullable
@@ -165,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId,  String? courtName, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber,  String? courtCaseNumber,  int? courtCaseYear, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId,  String? courtName, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CaseSummary() when $default != null:
-return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.courtName,_that.priority,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.tenantId,_that.caseNumber,_that.courtCaseNumber,_that.courtCaseYear,_that.status,_that.clientId,_that.caseTypeId,_that.courtName,_that.priority,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -186,10 +188,10 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId,  String? courtName, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String tenantId,  String caseNumber,  String? courtCaseNumber,  int? courtCaseYear, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId,  String? courtName, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _CaseSummary():
-return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.courtName,_that.priority,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.tenantId,_that.caseNumber,_that.courtCaseNumber,_that.courtCaseYear,_that.status,_that.clientId,_that.caseTypeId,_that.courtName,_that.priority,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -206,10 +208,10 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tenantId,  String caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId,  String? courtName, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String tenantId,  String caseNumber,  String? courtCaseNumber,  int? courtCaseYear, @JsonKey(unknownEnumValue: CaseStatus.unknown)  CaseStatus status,  String clientId,  String caseTypeId,  String? courtName, @JsonKey(unknownEnumValue: CasePriority.unknown)  CasePriority priority,  DateTime? openingDate,  DateTime? closingDate,  String? outcomeSummary,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _CaseSummary() when $default != null:
-return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clientId,_that.caseTypeId,_that.courtName,_that.priority,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.tenantId,_that.caseNumber,_that.courtCaseNumber,_that.courtCaseYear,_that.status,_that.clientId,_that.caseTypeId,_that.courtName,_that.priority,_that.openingDate,_that.closingDate,_that.outcomeSummary,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -221,12 +223,14 @@ return $default(_that.id,_that.tenantId,_that.caseNumber,_that.status,_that.clie
 @JsonSerializable()
 
 class _CaseSummary implements CaseSummary {
-  const _CaseSummary({required this.id, required this.tenantId, required this.caseNumber, @JsonKey(unknownEnumValue: CaseStatus.unknown) required this.status, required this.clientId, required this.caseTypeId, this.courtName, @JsonKey(unknownEnumValue: CasePriority.unknown) required this.priority, this.openingDate, this.closingDate, this.outcomeSummary, required this.createdAt, required this.updatedAt});
+  const _CaseSummary({required this.id, required this.tenantId, required this.caseNumber, this.courtCaseNumber, this.courtCaseYear, @JsonKey(unknownEnumValue: CaseStatus.unknown) required this.status, required this.clientId, required this.caseTypeId, this.courtName, @JsonKey(unknownEnumValue: CasePriority.unknown) required this.priority, this.openingDate, this.closingDate, this.outcomeSummary, required this.createdAt, required this.updatedAt});
   factory _CaseSummary.fromJson(Map<String, dynamic> json) => _$CaseSummaryFromJson(json);
 
 @override final  String id;
 @override final  String tenantId;
 @override final  String caseNumber;
+@override final  String? courtCaseNumber;
+@override final  int? courtCaseYear;
 @override@JsonKey(unknownEnumValue: CaseStatus.unknown) final  CaseStatus status;
 @override final  String clientId;
 @override final  String caseTypeId;
@@ -251,16 +255,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CaseSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.tenantId, tenantId) || other.tenantId == tenantId)&&(identical(other.caseNumber, caseNumber) || other.caseNumber == caseNumber)&&(identical(other.status, status) || other.status == status)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.caseTypeId, caseTypeId) || other.caseTypeId == caseTypeId)&&(identical(other.courtName, courtName) || other.courtName == courtName)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CaseSummary&&(identical(other.id, id) || other.id == id)&&(identical(other.tenantId, tenantId) || other.tenantId == tenantId)&&(identical(other.caseNumber, caseNumber) || other.caseNumber == caseNumber)&&(identical(other.courtCaseNumber, courtCaseNumber) || other.courtCaseNumber == courtCaseNumber)&&(identical(other.courtCaseYear, courtCaseYear) || other.courtCaseYear == courtCaseYear)&&(identical(other.status, status) || other.status == status)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.caseTypeId, caseTypeId) || other.caseTypeId == caseTypeId)&&(identical(other.courtName, courtName) || other.courtName == courtName)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.openingDate, openingDate) || other.openingDate == openingDate)&&(identical(other.closingDate, closingDate) || other.closingDate == closingDate)&&(identical(other.outcomeSummary, outcomeSummary) || other.outcomeSummary == outcomeSummary)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,tenantId,caseNumber,status,clientId,caseTypeId,courtName,priority,openingDate,closingDate,outcomeSummary,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,tenantId,caseNumber,courtCaseNumber,courtCaseYear,status,clientId,caseTypeId,courtName,priority,openingDate,closingDate,outcomeSummary,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'CaseSummary(id: $id, tenantId: $tenantId, caseNumber: $caseNumber, status: $status, clientId: $clientId, caseTypeId: $caseTypeId, courtName: $courtName, priority: $priority, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'CaseSummary(id: $id, tenantId: $tenantId, caseNumber: $caseNumber, courtCaseNumber: $courtCaseNumber, courtCaseYear: $courtCaseYear, status: $status, clientId: $clientId, caseTypeId: $caseTypeId, courtName: $courtName, priority: $priority, openingDate: $openingDate, closingDate: $closingDate, outcomeSummary: $outcomeSummary, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -271,7 +275,7 @@ abstract mixin class _$CaseSummaryCopyWith<$Res> implements $CaseSummaryCopyWith
   factory _$CaseSummaryCopyWith(_CaseSummary value, $Res Function(_CaseSummary) _then) = __$CaseSummaryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String tenantId, String caseNumber,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId, String? courtName,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, DateTime createdAt, DateTime updatedAt
+ String id, String tenantId, String caseNumber, String? courtCaseNumber, int? courtCaseYear,@JsonKey(unknownEnumValue: CaseStatus.unknown) CaseStatus status, String clientId, String caseTypeId, String? courtName,@JsonKey(unknownEnumValue: CasePriority.unknown) CasePriority priority, DateTime? openingDate, DateTime? closingDate, String? outcomeSummary, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -288,12 +292,14 @@ class __$CaseSummaryCopyWithImpl<$Res>
 
 /// Create a copy of CaseSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? courtName = freezed,Object? priority = null,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? tenantId = null,Object? caseNumber = null,Object? courtCaseNumber = freezed,Object? courtCaseYear = freezed,Object? status = null,Object? clientId = null,Object? caseTypeId = null,Object? courtName = freezed,Object? priority = null,Object? openingDate = freezed,Object? closingDate = freezed,Object? outcomeSummary = freezed,Object? createdAt = null,Object? updatedAt = null,}) {
   return _then(_CaseSummary(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,tenantId: null == tenantId ? _self.tenantId : tenantId // ignore: cast_nullable_to_non_nullable
 as String,caseNumber: null == caseNumber ? _self.caseNumber : caseNumber // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,courtCaseNumber: freezed == courtCaseNumber ? _self.courtCaseNumber : courtCaseNumber // ignore: cast_nullable_to_non_nullable
+as String?,courtCaseYear: freezed == courtCaseYear ? _self.courtCaseYear : courtCaseYear // ignore: cast_nullable_to_non_nullable
+as int?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as CaseStatus,clientId: null == clientId ? _self.clientId : clientId // ignore: cast_nullable_to_non_nullable
 as String,caseTypeId: null == caseTypeId ? _self.caseTypeId : caseTypeId // ignore: cast_nullable_to_non_nullable
 as String,courtName: freezed == courtName ? _self.courtName : courtName // ignore: cast_nullable_to_non_nullable

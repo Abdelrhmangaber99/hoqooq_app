@@ -43,7 +43,7 @@ void main() {
   // Real shape confirmed from source: TasksService.findAll loads
   // relations: ['case', 'assignedTo', 'assignedBy'] -- all three nested.
   Map<String, dynamic> taskJson({
-    String status = 'NEW',
+    String status = 'TODO',
     String priority = 'HIGH',
   }) {
     return {
@@ -105,6 +105,43 @@ void main() {
       result.fold((_) => fail('expected Right'), (tasks) {
         expect(tasks.first.status, TaskStatus.unknown);
         expect(tasks.first.priority, TaskPriority.unknown);
+      });
+    });
+
+    test('parses the compact deployed task shape', () async {
+      final deployedTask = <String, dynamic>{
+        'id': 'task-compact',
+        'caseId': {'id': 'case-compact', 'caseNumber': 'CASE-42'},
+        'assignedBy': {'id': 'admin-1', 'fullName': 'Firm Admin'},
+        'assignedTo': {
+          'id': 'employee-1',
+          'email': 'employee@firm.test',
+          'fullName': 'Employee One',
+        },
+        'title': 'Review filing',
+        'priority': 'MEDIUM',
+        'status': 'TODO',
+        'description': null,
+        'dueDate': null,
+        'completedAt': null,
+        'createdAt': '2026-10-11T10:00:00.000Z',
+        'updatedAt': '2026-10-11T10:00:00.000Z',
+      };
+      when(
+        () => dio.get('/tasks'),
+      ).thenAnswer((_) async => okResponse('/tasks', [deployedTask]));
+
+      final result = await repository.getTasks();
+
+      result.fold((failure) => fail('expected Right, got $failure'), (tasks) {
+        final task = tasks.single;
+        expect(task.caseId, 'case-compact');
+        expect(task.caseSummary?.caseNumber, 'CASE-42');
+        expect(task.assignedById, 'admin-1');
+        expect(task.assignedToId, 'employee-1');
+        expect(task.assignedTo?.fullName, 'Employee One');
+        expect(task.status, TaskStatus.newTask);
+        expect(task.priority, TaskPriority.normal);
       });
     });
 

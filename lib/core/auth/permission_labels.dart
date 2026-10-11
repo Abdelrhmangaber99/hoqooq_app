@@ -162,6 +162,44 @@ String canonicalPermissionCode(String permissionCode) {
   return legacyPermissionAliases[normalized] ?? normalized;
 }
 
+/// Collapses a server-supplied permission catalog to one entry per capability
+/// for display, while keeping codes the caller actually holds.
+///
+/// The backend's `permissions` table still carries both the legacy and the
+/// current code for many capabilities (`employees.read` *and* `employee.read`,
+/// `finance.create` *and* `finance.payment.record`, …), so a raw catalog
+/// renders the same permission as several identical-looking rows.
+/// [legacyPermissionAliases] folds them onto one canonical capability.
+///
+/// The returned code is **always one that appeared in the input** — the server
+/// validates a granted permission against the exact code it stores, so
+/// substituting a manufactured canonical code for a legacy one would be
+/// rejected when the caller only holds the legacy form. The current code wins
+/// when the catalog contains it; otherwise the legacy one is kept.
+List<String> normalizePermissionCodes(Iterable<String> codes) {
+  final present = <String>[];
+  final presentSet = <String>{};
+  for (final raw in codes) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty || !presentSet.add(trimmed)) continue;
+    present.add(trimmed);
+  }
+
+  final chosen = <String, String>{};
+  final order = <String>[];
+  for (final code in present) {
+    final canonical = canonicalPermissionCode(code);
+    if (!chosen.containsKey(canonical)) {
+      order.add(canonical);
+      chosen[canonical] = code;
+    } else if (chosen[canonical] != canonical && code == canonical) {
+      // Prefer the current code over a legacy alias when both are present.
+      chosen[canonical] = code;
+    }
+  }
+  return [for (final canonical in order) chosen[canonical]!];
+}
+
 String permissionLabel(BuildContext context, String permissionCode) {
   final canonical = canonicalPermissionCode(permissionCode);
   final key = permissionTranslationKey(canonical);

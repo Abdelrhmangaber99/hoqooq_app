@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -177,9 +178,7 @@ class _ServiceProcessFormViewState extends State<_ServiceProcessFormView> {
             context.pop(true);
           } else if (state is ServiceProcessFormReady &&
               state.submitError != null) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.submitError!)));
+            context.showErrorSnackBar(state.submitError);
           }
         },
         child: BlocBuilder<ServiceProcessFormBloc, ServiceProcessFormState>(
@@ -214,7 +213,14 @@ class _ServiceProcessFormViewState extends State<_ServiceProcessFormView> {
                     items: [null, ...state.courts.map((item) => item.id)],
                     labelOf: (id) => id == null
                         ? context.tr('none')
-                        : state.courts.firstWhere((item) => item.id == id).name,
+                        : () {
+                            final court = state.courts.firstWhere(
+                              (item) => item.id == id,
+                            );
+                            return locale.languageCode == 'ar'
+                                ? (court.nameAr ?? court.name)
+                                : (court.nameEn ?? court.name);
+                          }(),
                     onChanged: (value) => setState(() => _courtId = value),
                   ),
                   const SizedBox(height: AppSpacing.m),

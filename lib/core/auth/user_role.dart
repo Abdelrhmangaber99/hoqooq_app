@@ -32,13 +32,11 @@ class PermissionManager {
   bool get canManageEmployees => [
     UserRole.firmOwner,
     UserRole.hr,
-    UserRole.platformAdmin,
   ].contains(role);
 
   bool get canEditCases => [
     UserRole.firmOwner,
     UserRole.lawyer,
-    UserRole.platformAdmin,
   ].contains(role);
 
   bool get isClient => role == UserRole.client;

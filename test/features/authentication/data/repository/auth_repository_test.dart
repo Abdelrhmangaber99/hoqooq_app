@@ -149,9 +149,8 @@ void main() {
       'id': 'u1',
       'email': 'lawyer@firm.com',
       'fullName': 'Jane Doe',
-      'isSuperAdmin': false,
+      'accountType': 'EMPLOYEE',
       'status': 'ACTIVE',
-      'mfaEnabled': false,
       'createdAt': '2026-01-01T00:00:00.000Z',
       'updatedAt': '2026-01-01T00:00:00.000Z',
       'permissions': ['cases.read'],
@@ -169,6 +168,8 @@ void main() {
       result.fold((_) => fail('expected Right'), (user) {
         expect(user.id, 'u1');
         expect(user.fullName, 'Jane Doe');
+        expect(user.accountType, 'EMPLOYEE');
+        expect(user.isSuperAdmin, isFalse);
         expect(user.hasPerm('cases.read'), isTrue);
         expect(user.hasPerm('cases.delete'), isFalse);
         expect(user.tenant?.name, 'Reynolds & Associates');
@@ -212,6 +213,37 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'activateAccount POSTs token and password to /auth/activate',
+      () async {
+        final responseBody = {
+          'accessToken': 'act-access',
+          'refreshToken': 'act-refresh',
+          'user': <String, dynamic>{},
+        };
+        when(
+          () => dio.post('/auth/activate', data: any(named: 'data')),
+        ).thenAnswer((_) async => okResponse('/auth/activate', responseBody));
+
+        final result = await repository.activateAccount(
+          token: 'act-token-123',
+          password: 'newPassword123',
+        );
+
+        verify(
+          () => dio.post(
+            '/auth/activate',
+            data: {'token': 'act-token-123', 'password': 'newPassword123'},
+          ),
+        ).called(1);
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('expected Right'), (auth) {
+          expect(auth?.accessToken, 'act-access');
+          expect(auth?.refreshToken, 'act-refresh');
+        });
+      },
+    );
+
     test('changePassword POSTs exactly {oldPassword, newPassword}', () async {
       when(
         () => dio.post('/auth/change-password', data: any(named: 'data')),
@@ -230,6 +262,100 @@ void main() {
           data: {'oldPassword': 'oldpw123', 'newPassword': 'newpw123'},
         ),
       ).called(1);
+    });
+  });
+
+  group('updateProfile', () {
+    final userJson = {
+      'id': 'u1',
+      'email': 'lawyer@firm.com',
+      'fullName': 'Jane Doe',
+      'accountType': 'EMPLOYEE',
+      'status': 'ACTIVE',
+      'createdAt': '2026-01-01T00:00:00.000Z',
+      'updatedAt': '2026-02-02T00:00:00.000Z',
+      'avatarUrl': 'https://cdn.example.com/avatar.png',
+      'permissions': <String>[],
+    };
+
+    test('PATCHes /users/me with the avatar URL', () async {
+      when(
+        () => dio.patch('/users/me', data: any(named: 'data')),
+      ).thenAnswer((_) async => okResponse('/users/me', userJson));
+
+      final result = await repository.updateProfile(
+        userId: 'u1',
+        fullName: 'Jane Doe',
+        avatarUrl: 'https://cdn.example.com/avatar.png',
+      );
+
+      verify(
+        () => dio.patch(
+          '/users/me',
+          data: {
+            'fullName': 'Jane Doe',
+            'avatarUrl': 'https://cdn.example.com/avatar.png',
+          },
+        ),
+      ).called(1);
+      result.fold((_) => fail('expected Right'), (user) {
+        expect(user.avatarUrl, 'https://cdn.example.com/avatar.png');
+      });
+    });
+
+    test(
+      'omits a blank avatarUrl instead of sending an empty string, which the '
+      'backend rejects as an invalid URL',
+      () async {
+        when(
+          () => dio.patch('/users/me', data: any(named: 'data')),
+        ).thenAnswer((_) async => okResponse('/users/me', userJson));
+
+        await repository.updateProfile(userId: 'u1', avatarUrl: '   ');
+
+        verify(
+          () => dio.patch('/users/me', data: <String, dynamic>{}),
+        ).called(1);
+      },
+    );
+
+    test('uses only the deployed self-service route', () async {
+      when(
+        () => dio.patch('/users/me', data: any(named: 'data')),
+      ).thenAnswer((_) async => okResponse('/users/me', userJson));
+
+      final result = await repository.updateProfile(
+        userId: 'u1',
+        avatarUrl: 'https://cdn.example.com/avatar.png',
+      );
+
+      verify(() => dio.patch('/users/me', data: any(named: 'data'))).called(1);
+      verifyNever(() => dio.patch('/users/u1', data: any(named: 'data')));
+      expect(result.isRight(), isTrue);
+    });
+
+    test('maps a real answer such as a 403', () async {
+      when(() => dio.patch('/users/me', data: any(named: 'data'))).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/users/me'),
+          type: DioExceptionType.badResponse,
+          response: Response<void>(
+            requestOptions: RequestOptions(path: '/users/me'),
+            statusCode: 403,
+          ),
+        ),
+      );
+
+      final result = await repository.updateProfile(
+        userId: 'u1',
+        avatarUrl: 'https://cdn.example.com/avatar.png',
+      );
+
+      verify(() => dio.patch('/users/me', data: any(named: 'data'))).called(1);
+      result.fold(
+        (failure) => expect(failure, isA<ForbiddenFailure>()),
+        (_) => fail('expected Left'),
+      );
     });
   });
 }

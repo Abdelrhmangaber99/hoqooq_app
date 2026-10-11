@@ -1,10 +1,14 @@
-import '../../domain/entities/case_priority.dart';
-
 /// Request body for `PATCH /cases/{id}`. Null fields are omitted so unchanged
 /// Case values are not overwritten.
+///
+/// Every key here must exist on the deployed backend's `UpdateCaseDto`: its
+/// global ValidationPipe runs with `whitelist: true` and
+/// `forbidNonWhitelisted: true`, so one extra key fails the entire request
+/// with a 400 instead of being ignored. `caseNumber`, `courtName` and
+/// `priority` are *not* in that DTO (verified against the deployed Swagger,
+/// HOQOOQ v3) — sending them is what made the Edit-Case screen error on save.
 class UpdateCaseRequest {
   const UpdateCaseRequest({
-    this.caseNumber,
     this.title,
     this.courtCaseNumber,
     this.courtCaseYear,
@@ -13,14 +17,11 @@ class UpdateCaseRequest {
     this.governorateId,
     this.defaultCourtId,
     this.circuitId,
-    this.courtName,
     this.openingDate,
     this.description,
     this.agreedFee,
-    this.priority,
   });
 
-  final String? caseNumber;
   final String? title;
   final String? courtCaseNumber;
   final int? courtCaseYear;
@@ -29,14 +30,11 @@ class UpdateCaseRequest {
   final String? governorateId;
   final String? defaultCourtId;
   final String? circuitId;
-  final String? courtName;
   final DateTime? openingDate;
   final String? description;
   final double? agreedFee;
-  final CasePriority? priority;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'caseNumber': caseNumber,
     'title': title,
     'courtCaseNumber': courtCaseNumber,
     'courtCaseYear': courtCaseYear,
@@ -45,10 +43,8 @@ class UpdateCaseRequest {
     'governorateId': governorateId,
     'defaultCourtId': defaultCourtId,
     'circuitId': circuitId,
-    'courtName': courtName,
     'openingDate': openingDate?.toIso8601String(),
     'description': description,
     'agreedFee': agreedFee,
-    'priority': priority?.name.toUpperCase(),
   }..removeWhere((_, value) => value == null);
 }

@@ -55,7 +55,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         final user =
             sessionState is SessionAuthenticated ? sessionState.user : null;
         final canViewHearings =
-            user?.hasPerm(PermissionCodes.hearingView) ?? false;
+            user?.isFirmAdmin == true ||
+            (user?.hasPerm(PermissionCodes.hearingView) ?? false);
         final canViewFinance = _canViewFirmFinance();
 
         var upcomingHearings = const <Hearing>[];
@@ -140,6 +141,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   bool _canViewFirmFinance() {
     final sessionState = _sessionCubit.state;
     return sessionState is SessionAuthenticated &&
-        sessionState.user.hasPerm(PermissionCodes.financeFirmRead);
+        (sessionState.isFirmAdmin ||
+            sessionState.user.hasPerm(PermissionCodes.financeFirmRead));
   }
 }

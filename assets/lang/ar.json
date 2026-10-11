@@ -46,7 +46,7 @@
   "court_not_selected": "\u0644\u0645 \u062a\u062d\u062f\u062f \u0627\u0644\u0645\u062d\u0643\u0645\u0629",
   "platform_admin": "\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0646\u0635\u0629",
   "invite_only_access": "\u0627\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0627\u0644\u0645\u0646\u0635\u0629 \u0628\u0627\u0644\u062f\u0639\u0648\u0629 \u0641\u0642\u0637. \u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0646\u0635\u0629 \u0644\u0625\u0646\u0634\u0627\u0621 \u0645\u0633\u0627\u062d\u0629 \u0639\u0645\u0644.",
-  "hoqooq_brand": "\u062d\u0642\u0648\u0642",
+  "hoqooq_brand": "ليكسورا",
   "brand_quote": "\u0646\u064f\u064a\u0633\u0651\u0631 \u0627\u0644\u0639\u0645\u0644 \u0627\u0644\u0642\u0627\u0646\u0648\u0646\u064a \u062d\u062a\u0649 \u062a\u0631\u0643\u0632\u0648\u0627 \u0639\u0644\u0649 \u0627\u0644\u0639\u062f\u0627\u0644\u0629.",
   "case_timeline": "\u0627\u0644\u062a\u0633\u0644\u0633\u0644 \u0627\u0644\u0632\u0645\u0646\u064a \u0644\u0644\u0642\u0636\u064a\u0629",
   "download_document": "\u062a\u0646\u0632\u064a\u0644 \u0627\u0644\u0645\u0633\u062a\u0646\u062f",
@@ -235,6 +235,7 @@
   "scheduled": "مجدولة",
   "completed": "مكتملة",
   "adjourned": "مؤجلة",
+  "missed": "فائتة",
   "cancelled": "ملغاة",
   "pending": "قيد الانتظار",
   "in_progress": "قيد التنفيذ",
@@ -393,6 +394,7 @@
   "department_optional": "القسم (اختياري)",
   "hire_date": "تاريخ التعيين",
   "lawyer_specializations": "تخصصات المحامي",
+  "specialization_general": "تخصص عام (جميع أنواع القضايا)",
   "base_permissions": "الصلاحيات الأساسية",
   "employee_permissions_explanation": "حدد ما يمكن للموظف الوصول إليه. التصنيف الوظيفي وحده لا يمنح أي صلاحيات.",
   "employee_position": "المسمى الوظيفي",
@@ -420,7 +422,6 @@
   "delete": "حذف"
   ,"permissions_selected": "صلاحية محددة",
   "case_title": "عنوان القضية",
-  "client_type": "نوع الموكل",
   "client_name": "اسم الموكل",
   "individual": "فرد",
   "company": "شركة",
@@ -683,5 +684,79 @@
   ,"employee_option_hr": "الموارد البشرية"
   ,"employee_option_administration": "الإدارة"
   ,"employee_option_general": "عام"
+  ,"select_all": "تحديد الكل"
+  ,"choose_photo": "اختر صورة"
+  ,"error_server": "حدث خطأ في الخادم"
+  ,"error_cache": "حدث خطأ في البيانات المحفوظة على الجهاز"
+  ,"error_network": "لا يوجد اتصال بالإنترنت"
+  ,"error_unauthorized": "وصول غير مصرح به"
+  ,"error_forbidden": "ليست لديك صلاحية للقيام بذلك"
+  ,"error_subscription_inactive": "الاشتراك غير نشط أو منتهي الصلاحية"
+  ,"error_invalid_request": "طلب غير صحيح"
+  ,"error_invalid_credentials": "بيانات الدخول غير صحيحة"
+  ,"error_session_expired": "انتهت صلاحية الجلسة"
+  ,"error_insufficient_permissions": "الصلاحيات غير كافية"
+  ,"error_not_found": "العنصر غير موجود"
+  ,"error_unprocessable": "تعذر معالجة الطلب"
+  ,"error_too_many_requests": "عدد الطلبات كبير جداً. الرجاء المحاولة لاحقاً."
+  ,"error_generic": "حدث خطأ ما. الرجاء المحاولة مرة أخرى."
+  ,"error_missing_permission": "الصلاحية المطلوبة غير متوفرة:"
+  ,"error_platform_permission_required": "يتطلب هذا الإجراء صلاحية على مستوى المنصة، ولا يملكها حساب المكتب."
+  ,"error_platform_accounts_blocked": "لا يمكن لحساب المنصة الوصول إلى بيانات المكتب القانونية."
+  ,"error_account_inactive": "هذا الحساب غير نشط. اطلب من مسؤول المكتب تفعيله."
+  ,"error_firm_inactive": "هذا المكتب غير نشط. تواصل مع إدارة المنصة."
+  ,"error_own_firm_only": "يمكنك إدارة الحسابات داخل مكتبك فقط."
+  ,"error_platform_permissions_not_grantable": "لا يمكن منح صلاحيات على مستوى المنصة لحساب مكتب."
+  ,"error_cannot_grant_unheld_permission": "لا يمكنك منح صلاحية لا تملكها أنت."
+  ,"error_firm_account_required": "يتطلب هذا الإجراء حساب مسؤول مكتب."
+  ,"error_super_admin_status_locked": "لا يمكن تغيير حالة حساب المسؤول العام من هنا."
+  ,"error_lawyer_specializations_only": "الصلاحيات الفرعية لأنواع القضايا للمحامين فقط."
+  ,"error_lawyer_specialization_required": "يجب أن يمتلك المحامي تخصصاً واحداً على الأقل."
+  ,"error_invalid_specializations": "واحد أو أكثر من التخصصات المحددة غير صحيح."
+  ,"error_invalid_permissions": "واحد أو أكثر من الصلاحيات المحددة غير صحيح."
+  ,"error_email_already_exists": "هذا البريد الإلكتروني مستخدم بالفعل بحساب موجود. فعّل ذلك الموظف بدلاً من إنشاء حساب جديد."
+  ,"error_employee_open_assignments": "لا يزال لدى هذا الموظف تكليفات مفتوحة"
+  ,"error_subscription_not_found": "لا يوجد اشتراك مسجل لهذا المكتب"
+  ,"could_not_provision_firm": "تعذر إنشاء المكتب."
+  ,"temporary_password_min_length": "استخدم 8 أحرف على الأقل أو اترك الحقل فارغاً"
+  ,"could_not_update_profile": "تعذر تحديث الملف الشخصي. حاول مرة أخرى."
+  ,"activate_account": "تفعيل الحساب"
+  ,"activation_help": "أنشئ كلمة مرور جديدة لتفعيل حسابك."
+  ,"account_activated_success": "تم تفعيل الحساب بنجاح! يمكنك الآن تسجيل الدخول."
+  ,"invalid_activation_link": "رابط التفعيل غير صالح أو منتهي الصلاحية."
+  ,"activation_failed": "تعذر تفعيل الحساب. يرجى المحاولة مرة أخرى."
+  ,"deactivate_account": "إلغاء تفعيل الحساب"
+  ,"employee_activated_successfully": "تم تفعيل حساب الموظف بنجاح"
+  ,"employee_deactivated_successfully": "تم إلغاء تفعيل حساب الموظف بنجاح"
+  ,"account_status": "حالة الحساب"
+  ,"error_invalid_credentials_or_mfa": "بيانات الدخول أو رمز التحقق غير صحيحة."
+  ,"error_invalid_mfa_code": "رمز التحقق غير صحيح."
+  ,"error_mfa_required": "يجب إعداد تطبيق التحقق وتأكيد الرمز."
+  ,"error_incorrect_old_password": "كلمة المرور الحالية غير صحيحة."
+  ,"error_invitation_already_used": "تم استخدام هذه الدعوة من قبل."
+  ,"error_invalid_activation_link": "رابط التفعيل غير صالح أو منتهي الصلاحية."
+  ,"error_invalid_reset_link": "رابط إعادة التعيين غير صالح أو منتهي الصلاحية."
+  ,"error_cannot_change_own_permissions": "لا يمكنك تغيير صلاحياتك بنفسك."
+  ,"error_assignee_inactive": "الحساب المحدد غير صالح أو غير نشط."
+  ,"error_value_too_short": "إحدى القيم أقصر من الحد المسموح."
+  ,"error_value_too_long": "إحدى القيم أطول من الحد المسموح."
+  ,"error_unexpected_field": "يحتوي الطلب على حقل غير مدعوم."
+  ,"error_firm_status_change_failed": "تعذر تغيير حالة المكتب."
+  ,"error_account_status_change_failed": "تعذر تغيير حالة الحساب."
+  ,"error_subscription_change_failed": "تعذر تغيير حالة الاشتراك."
+  ,"error_plan_update_failed": "تعذر تحديث الخطة."
+  ,"error_password_min_length": "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل."
+  ,"view_details": "عرض التفاصيل"
+  ,"client_not_found": "لم يتم العثور على بيانات الموكل"
+  ,"reports": "التقارير"
+  ,"schedule_hearing": "جدولة جلسة"
+  ,"select_case": "اختر القضية"
+  ,"case_payment_status_breakdown": "توزيع حالة سداد القضايا"
+  ,"top_outstanding_cases": "أعلى القضايا مبالغ مستحقة"
+  ,"firm_admin_invitation_note": "يصل إلى بريد المسؤول دعوة لتعيين كلمة المرور وتفعيل الحساب."
+  ,"firm_admin_permissions_not_applied": "تم إنشاء المكتب والمسؤول، لكن تعذر تطبيق الصلاحيات."
 }
+
+
+
 

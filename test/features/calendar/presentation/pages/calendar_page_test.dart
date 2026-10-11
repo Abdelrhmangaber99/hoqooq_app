@@ -49,9 +49,7 @@ void main() {
     id: 'u1',
     email: 'employee@firm.com',
     fullName: 'Employee',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     accountType: 'EMPLOYEE',
@@ -223,5 +221,29 @@ void main() {
 
     expect(find.byType(FloatingActionButton), findsOneWidget);
     expect(find.byIcon(Icons.add), findsOneWidget);
+  });
+
+  testWidgets('tapping the header month opens a picker and jumps months', (
+    tester,
+  ) async {
+    setPhoneViewport(tester);
+    whenListen(
+      bloc,
+      const Stream<CalendarState>.empty(),
+      initialState: CalendarLoaded([item], selectedDate),
+    );
+
+    await tester.pumpWidget(buildTestable());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('July '));
+    await tester.pumpAndSettle();
+
+    // The picker lists the year's months; choosing one dispatches the jump.
+    expect(find.text('March'), findsOneWidget);
+    await tester.tap(find.text('March'));
+    await tester.pumpAndSettle();
+
+    verify(() => bloc.add(const ChangeMonthRequested(2026, 3))).called(1);
   });
 }

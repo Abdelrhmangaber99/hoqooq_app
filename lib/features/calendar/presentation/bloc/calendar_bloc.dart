@@ -2,6 +2,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../di/injection.dart';
+import '../../../hearings/domain/entities/hearing.dart';
+import '../../../hearings/domain/repository/i_hearing_repository.dart';
 import '../../domain/entities/timeline_item.dart';
 import '../../domain/repository/i_calendar_repository.dart';
 
@@ -19,6 +22,7 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
   DateTime _selectedDate = DateTime.now();
   CalendarViewMode _viewMode = CalendarViewMode.month;
   List<TimelineItem> _items = [];
+  Map<String, Hearing> _hearingsById = const {};
 
   CalendarBloc(this._calendarRepository) : super(CalendarInitial()) {
     on<FetchTimelineRequested>(_onFetch);
@@ -45,6 +49,15 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
       );
       add(FetchTimelineRequested());
     });
+    on<ChangeMonthRequested>((event, emit) {
+      // Clamp the day to the target month's length before constructing the
+      // date, so jumping from Jan 31 to February can't silently roll into
+      // March (DateTime normalizes out-of-range days).
+      final lastDay = DateTime(event.year, event.month + 1, 0).day;
+      final day = _selectedDate.day > lastDay ? lastDay : _selectedDate.day;
+      _selectedDate = DateTime(event.year, event.month, day);
+      add(FetchTimelineRequested());
+    });
   }
 
   Future<void> _onFetch(
@@ -62,8 +75,8 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
       startDate: monthStart,
       endDate: monthEnd,
     );
-    result.fold(
-      (failure) {
+    await result.fold(
+      (failure) async {
         emit(
           CalendarError(
             failure.message,
@@ -71,14 +84,43 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
           ),
         );
       },
-      (items) {
+      (items) async {
         _items = items;
+        await _loadHearings();
         _emitLoaded(emit);
       },
     );
   }
 
+  /// Timeline HEARING items are id-only ({id, caseId, startsAt, status}), so
+  /// there is no court or case number to show. `GET /hearings` joins both
+  /// relations; index the full hearings by id for the day list to resolve.
+  /// Degrades to an empty map on failure, and is skipped entirely when the
+  /// repository isn't registered (unit tests building this bloc in isolation).
+  Future<void> _loadHearings() async {
+    if (!getIt.isRegistered<IHearingRepository>()) {
+      _hearingsById = const {};
+      return;
+    }
+    try {
+      final result = await getIt<IHearingRepository>().getHearings();
+      _hearingsById = result.fold(
+        (_) => const {},
+        (hearings) => {for (final hearing in hearings) hearing.id: hearing},
+      );
+    } catch (_) {
+      _hearingsById = const {};
+    }
+  }
+
   void _emitLoaded(Emitter<CalendarState> emit) {
-    emit(CalendarLoaded(_items, _selectedDate, viewMode: _viewMode));
+    emit(
+      CalendarLoaded(
+        _items,
+        _selectedDate,
+        viewMode: _viewMode,
+        hearingsById: _hearingsById,
+      ),
+    );
   }
 }

@@ -70,10 +70,45 @@ List<CaseTimelineEvent>? _timelineFromJson(List<dynamic>? value) => value
     ?.map((item) => CaseTimelineEvent.fromJson(item as Map<String, dynamic>))
     .toList();
 
+/// The deployed backend omits `priority` entirely — it is not in
+/// `CaseResponseDto` and the live `GET /cases` payload carries no such key
+/// (verified 2026-10-11). Because `json_serializable`'s generated `$enumDecode`
+/// throws `Invalid argument(s): A value must be provided` on a *null* source
+/// even when `unknownEnumValue` is set (unlike a merely unrecognized string),
+/// the missing key crashed decoding. That `Invalid argument` is not a
+/// `DioException`, so it escaped `CaseRepository`'s `on DioException` catch,
+/// killed `CasesBloc`'s fetch handler before it could emit, and pinned the
+/// Cases screen on an endless loading spinner. Defaulting the non-nullable
+/// enums to their `unknown` member keeps a missing/odd value from taking the
+/// whole list down.
 Map<String, dynamic> _normalizeCaseJson(Map<String, dynamic> json) {
   return {
     ...json,
     'caseTypeId': json['caseTypeId'] ?? '',
     'team': json['team'] ?? const <dynamic>[],
+    'status': json['status'] ?? 'unknown',
+    'priority': json['priority'] ?? 'unknown',
+    // The deployed backend returns case parties as `clients[]` (plus
+    // `opponentSnapshots[]`) — there is no singular `clientSnapshot` key any
+    // more. Everything downstream reads `clientSnapshot` (the Clients page
+    // filters on it, Case Details renders it, search matches it), so derive
+    // it from the primary entry of `clients[]`; with it absent, the Clients
+    // page silently showed zero rows.
+    'clientSnapshot': json['clientSnapshot'] ??
+        _primaryClient(json['clients']),
   };
+}
+
+/// First entry of the v3 `clients[]` array, preferring `isPrimary`, shaped as
+/// the `clientSnapshot` map the rest of the app expects. Only `id`,
+/// `clientType` and `name` are guaranteed on the wire; every other field on
+/// `CaseClientSnapshot` is optional and decodes to `null` when absent.
+Map<String, dynamic>? _primaryClient(Object? clients) {
+  if (clients is! List) return null;
+  final entries = clients.whereType<Map<String, dynamic>>().toList();
+  if (entries.isEmpty) return null;
+  return entries.firstWhere(
+    (entry) => entry['isPrimary'] == true,
+    orElse: () => entries.first,
+  );
 }

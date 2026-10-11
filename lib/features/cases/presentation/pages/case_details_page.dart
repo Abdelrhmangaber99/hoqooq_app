@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -23,6 +24,7 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
+import '../../../courts/domain/entities/case_type_reference.dart';
 import '../../../documents/domain/entities/document_item.dart';
 import '../../../documents/domain/upload_file_validation.dart';
 import '../../../documents/presentation/bloc/document_upload_bloc.dart';
@@ -120,17 +122,13 @@ class CaseDetailsPage extends StatelessWidget {
                   FetchCaseDocumentsRequested(caseId),
                 );
               } else if (state is DocumentUploadFailure) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(state.message)));
+                context.showErrorSnackBar(state.message);
               }
             },
             child: BlocConsumer<CaseDetailsBloc, CaseDetailsState>(
               listener: (context, state) {
                 if (state is CaseDetailsLoaded && state.actionError != null) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(state.actionError!)));
+                  context.showErrorSnackBar(state.actionError);
                 }
               },
               builder: (context, state) {
@@ -221,7 +219,14 @@ class CaseDetailsPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.l),
           Text(context.tr('overview'), style: AppTypography.h3),
           const SizedBox(height: AppSpacing.m),
-          _buildOverview(context, legalCase),
+          FutureBuilder<List<CaseTypeReference>>(
+            future: loadCaseTypeReferences(),
+            builder: (context, snapshot) => _buildOverview(
+              context,
+              legalCase,
+              snapshot.data ?? const [],
+            ),
+          ),
           if (legalCase.timelineEvents?.isNotEmpty ?? false) ...[
             const SizedBox(height: AppSpacing.l),
             Text(context.tr('case_timeline'), style: AppTypography.h3),
@@ -575,9 +580,7 @@ class CaseDetailsPage extends StatelessWidget {
     return BlocConsumer<CaseServiceProcessBloc, CaseServiceProcessState>(
       listener: (context, state) {
         if (state is CaseServiceProcessLoaded && state.actionError != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.actionError!)));
+          context.showErrorSnackBar(state.actionError);
         }
       },
       builder: (context, state) {
@@ -749,9 +752,7 @@ class CaseDetailsPage extends StatelessWidget {
     return BlocConsumer<CaseMeetingsBloc, CaseMeetingsState>(
       listener: (context, state) {
         if (state is CaseMeetingsLoaded && state.actionError != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.actionError!)));
+          context.showErrorSnackBar(state.actionError);
         }
       },
       builder: (context, state) {
@@ -923,9 +924,7 @@ class CaseDetailsPage extends StatelessWidget {
     return BlocConsumer<CaseTasksBloc, CaseTasksState>(
       listener: (context, state) {
         if (state is CaseTasksLoaded && state.actionError != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.actionError!)));
+          context.showErrorSnackBar(state.actionError);
         }
       },
       builder: (context, state) {
@@ -1101,9 +1100,7 @@ class CaseDetailsPage extends StatelessWidget {
       listener: (context, state) async {
         if (state is! CaseDocumentsLoaded) return;
         if (state.actionError != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.actionError!)));
+          context.showErrorSnackBar(state.actionError);
         }
         final download = state.downloadedDocument;
         if (download != null) {
@@ -1507,7 +1504,7 @@ class CaseDetailsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            legalCase.caseNumber,
+            legalCaseCourtReference(legalCase),
             style: AppTypography.h1.copyWith(
               fontFamily: AppTypography.monoFont,
             ),
@@ -1581,7 +1578,11 @@ class CaseDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildOverview(BuildContext context, LegalCase legalCase) {
+  Widget _buildOverview(
+    BuildContext context,
+    LegalCase legalCase,
+    List<CaseTypeReference> caseTypes,
+  ) {
     final dateFormat = DateFormat.yMMMd(
       Localizations.localeOf(context).languageCode,
     );
@@ -1596,7 +1597,15 @@ class CaseDetailsPage extends StatelessWidget {
         label: context.tr('client'),
         value: legalCase.clientSnapshot?.name ?? '—',
       ),
-      (label: context.tr('case_type'), value: legalCase.caseType?.name ?? '—'),
+      (
+        label: context.tr('case_type'),
+        value: caseTypeLabelFor(
+          languageCode: Localizations.localeOf(context).languageCode,
+          caseTypeId: legalCase.caseTypeId,
+          caseType: legalCase.caseType,
+          caseTypes: caseTypes,
+        ),
+      ),
       (label: context.tr('court'), value: legalCase.courtName ?? '—'),
       (
         label: context.tr('primary_lawyer'),
@@ -1974,7 +1983,7 @@ class _CaseDetailsTabs extends StatelessWidget {
         ),
         Expanded(
           child: Text(
-            legalCase.caseNumber,
+            legalCaseCourtReference(legalCase),
             overflow: TextOverflow.ellipsis,
             style: AppTypography.bodySmall.copyWith(
               fontFamily: AppTypography.monoFont,
@@ -2031,7 +2040,14 @@ class _CaseDetailsTabs extends StatelessWidget {
 
   Widget _overviewTab(BuildContext context) {
     return _tabScroll([
-      owner._buildOverview(context, legalCase),
+      FutureBuilder<List<CaseTypeReference>>(
+        future: loadCaseTypeReferences(),
+        builder: (context, snapshot) => owner._buildOverview(
+          context,
+          legalCase,
+          snapshot.data ?? const [],
+        ),
+      ),
       if (legalCase.clientSnapshot != null &&
           currentUserHasPerm(PermissionCodes.clientView)) ...[
         const SizedBox(height: AppSpacing.l),
@@ -2270,9 +2286,7 @@ class _AssignTeamMemberSheetState extends State<_AssignTeamMemberSheet> {
           Navigator.of(context).pop(true);
         } else if (state is CaseTeamAssignmentReady &&
             state.submitError != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.submitError!)));
+          context.showErrorSnackBar(state.submitError);
         }
       },
       child: BlocBuilder<CaseTeamAssignmentBloc, CaseTeamAssignmentState>(

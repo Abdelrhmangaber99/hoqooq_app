@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/auth/permission_labels.dart';
@@ -10,10 +11,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/select_all_tile.dart';
 import '../../../../di/injection.dart';
 
 /// Firm-scoped employee onboarding. The backend sends an activation
-/// invitation, so this form deliberately does not collect a password.
+/// invitation and also accepts an optional temporary password for the new
+/// employee account.
 class CreateUserPage extends StatefulWidget {
   const CreateUserPage({super.key});
 
@@ -55,9 +58,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _email = TextEditingController();
+  final _password = TextEditingController();
   final _phone = TextEditingController();
   final Set<String> _selectedPermissions = {};
-  final Set<String> _selectedSpecializations = {};
+  bool _isGeneralSpecialization = true;
+  String? _selectedSpecializationId;
   late Future<_ReferenceData> _referenceData;
   String? _classification;
   String _lawyerPosition = 'ASSOCIATE';
@@ -75,6 +80,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _password.dispose();
     _phone.dispose();
     super.dispose();
   }
@@ -85,8 +91,8 @@ class _CreateUserPageState extends State<CreateUserPage> {
       getIt<Dio>().get('/reference/case-types'),
     ]);
     final permissionData = responses[0].data as Map<String, dynamic>;
-    final permissionCodes = List<String>.from(
-      permissionData['codes'] as List? ?? const [],
+    final permissionCodes = normalizePermissionCodes(
+      (permissionData['codes'] as List? ?? const []).whereType<String>(),
     );
     final caseTypes = (responses[1].data as List<dynamic>)
         .map((row) => _CaseType.fromJson(Map<String, dynamic>.from(row as Map)))
@@ -112,7 +118,9 @@ class _CreateUserPageState extends State<CreateUserPage> {
     if (!_formKey.currentState!.validate() ||
         _classification == null ||
         _selectedPermissions.isEmpty ||
-        (isLawyer && _selectedSpecializations.isEmpty)) {
+        (isLawyer &&
+            !_isGeneralSpecialization &&
+            _selectedSpecializationId == null)) {
       _showMessage(context.tr('complete_all_employee_fields'));
       return;
     }
@@ -121,6 +129,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
       final data = <String, dynamic>{
         'fullName': _name.text.trim(),
         'email': _email.text.trim(),
+        'password': _password.text,
         'jobClassification': _classification,
         'hireDate': _dateValue(_hireDate),
         'permissionKeys': _selectedPermissions.toList()..sort(),
@@ -129,7 +138,11 @@ class _CreateUserPageState extends State<CreateUserPage> {
       if (phone.isNotEmpty) data['phone'] = phone;
       if (_department != null) data['department'] = _department;
       if (isLawyer) {
-        data['specializations'] = _selectedSpecializations.toList();
+        if (_isGeneralSpecialization) {
+          data['generalSpecialization'] = true;
+        } else if (_selectedSpecializationId != null) {
+          data['specializationId'] = _selectedSpecializationId;
+        }
       }
       final response = await getIt<Dio>().post(
         '/employees/onboard',
@@ -149,15 +162,24 @@ class _CreateUserPageState extends State<CreateUserPage> {
       }
       if (mounted) Navigator.pop(context, true);
     } on DioException catch (error) {
-      if (mounted) _showMessage(mapDioError(error).message);
+      if (!mounted) return;
+      // A 409 is the backend's `email` uniqueness rule: the address already
+      // belongs to an account, very often a deactivated employee. Point the
+      // user at reactivation instead of leaking the raw backend sentence.
+      _showMessage(
+        error.response?.statusCode == 409
+            ? context.tr('error_email_already_exists')
+            : mapDioError(error).message,
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  void _showMessage(String message) => ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
+  /// Success and failure copy both pass through here, so the message is run
+  /// through [localizedErrorMessage] — it translates this app's own English
+  /// failure defaults and leaves already-localized text untouched.
+  void _showMessage(String message) => context.showErrorSnackBar(message);
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -178,7 +200,10 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 children: [
                   const Icon(Icons.error_outline, color: AppColors.error),
                   const SizedBox(height: AppSpacing.m),
-                  Text(message, textAlign: TextAlign.center),
+                  Text(
+                    localizedErrorMessage(context, message),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: AppSpacing.m),
                   AppButton(
                     text: context.tr('try_again'),
@@ -220,6 +245,19 @@ class _CreateUserPageState extends State<CreateUserPage> {
             ),
             const SizedBox(height: AppSpacing.m),
             AppTextField(
+              label: context.tr('temporary_password'),
+              controller: _password,
+              obscureText: true,
+              keyboardType: TextInputType.visiblePassword,
+              validator: _passwordValidator,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              context.tr('temporary_password_min_length'),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: AppSpacing.m),
+            AppTextField(
               label: context.tr('phone'),
               controller: _phone,
               keyboardType: TextInputType.phone,
@@ -231,7 +269,10 @@ class _CreateUserPageState extends State<CreateUserPage> {
               values: _classifications,
               onChanged: (value) => setState(() {
                 _classification = value;
-                if (value != 'LAWYER') _selectedSpecializations.clear();
+                if (value == 'LAWYER') {
+                  _isGeneralSpecialization = true;
+                  _selectedSpecializationId = null;
+                }
               }),
             ),
             const SizedBox(height: AppSpacing.m),
@@ -270,20 +311,40 @@ class _CreateUserPageState extends State<CreateUserPage> {
               Wrap(
                 spacing: AppSpacing.s,
                 runSpacing: AppSpacing.s,
-                children: data.caseTypes.map((caseType) {
-                  final selected = _selectedSpecializations.contains(
-                    caseType.id,
-                  );
-                  return FilterChip(
-                    label: Text(caseType.labelFor(languageCode)),
-                    selected: selected,
-                    onSelected: (value) => setState(() {
-                      value
-                          ? _selectedSpecializations.add(caseType.id)
-                          : _selectedSpecializations.remove(caseType.id);
-                    }),
-                  );
-                }).toList(),
+                children: [
+                  ChoiceChip(
+                    label: Text(context.tr('specialization_general')),
+                    selected: _isGeneralSpecialization,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _isGeneralSpecialization = true;
+                          _selectedSpecializationId = null;
+                        });
+                      }
+                    },
+                  ),
+                  ...data.caseTypes.map((caseType) {
+                    final isSelected =
+                        !_isGeneralSpecialization &&
+                        _selectedSpecializationId == caseType.id;
+                    return ChoiceChip(
+                      label: Text(caseType.labelFor(languageCode)),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _isGeneralSpecialization = false;
+                            _selectedSpecializationId = caseType.id;
+                          } else {
+                            _isGeneralSpecialization = true;
+                            _selectedSpecializationId = null;
+                          }
+                        });
+                      },
+                    );
+                  }),
+                ],
               ),
             ],
             const SizedBox(height: AppSpacing.l),
@@ -294,6 +355,17 @@ class _CreateUserPageState extends State<CreateUserPage> {
             const SizedBox(height: AppSpacing.xs),
             Text(context.tr('employee_permissions_explanation')),
             const SizedBox(height: AppSpacing.s),
+            SelectAllTile(
+              keys: data.permissionCodes,
+              selected: _selectedPermissions,
+              onChanged: (all) => setState(() {
+                if (all) {
+                  _selectedPermissions.addAll(data.permissionCodes);
+                } else {
+                  _selectedPermissions.clear();
+                }
+              }),
+            ),
             ...data.permissionCodes.map(
               (code) => CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -347,6 +419,15 @@ class _CreateUserPageState extends State<CreateUserPage> {
   String? _emailValidator(String? value) =>
       _required(value) ??
       (!(value?.contains('@') ?? false) ? context.tr('invalid_email') : null);
+
+  String? _passwordValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return context.tr('field_required');
+    }
+    return value.length < 8
+        ? context.tr('temporary_password_min_length')
+        : null;
+  }
 
   static String _dateValue(DateTime value) =>
       '${value.year.toString().padLeft(4, '0')}-'

@@ -4,12 +4,18 @@ class EmployeeSummary {
     required this.name,
     required this.email,
     required this.positionLabel,
+    this.status = 'ACTIVE',
+    this.userId,
   });
 
   final String id;
   final String name;
   final String email;
   final String positionLabel;
+  final String status;
+  final String? userId;
+
+  bool get isActive => status.toUpperCase() == 'ACTIVE';
 
   factory EmployeeSummary.fromJson(Map<String, dynamic> json) {
     final user = json['user'] is Map
@@ -20,6 +26,8 @@ class EmployeeSummary {
       name: user['fullName']?.toString() ?? '',
       email: user['email']?.toString() ?? '',
       positionLabel: humanize(json['position']?.toString() ?? ''),
+      status: (json['status'] ?? user['status'])?.toString() ?? 'ACTIVE',
+      userId: (json['userId'] ?? user['id'])?.toString(),
     );
   }
 

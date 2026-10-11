@@ -7,12 +7,15 @@ import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/network/api_result.dart';
+import '../../../../core/router/app_route_observer.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
+import '../../../cases/domain/entities/legal_case.dart';
+import '../../../cases/presentation/case_display_helpers.dart';
 import '../../domain/entities/task_item.dart';
 import '../../domain/entities/task_status.dart';
 import '../../domain/repository/i_task_repository.dart';
@@ -25,8 +28,12 @@ class TasksPage extends StatefulWidget {
   State<TasksPage> createState() => _TasksPageState();
 }
 
-class _TasksPageState extends State<TasksPage> {
+class _TasksPageState extends State<TasksPage> with RouteAware {
   late ApiResult<List<TaskItem>> _load;
+
+  /// `GET /cases`, so a card can show its Case's court number + year instead
+  /// of the internal generated number its own payload carries.
+  late final Future<Map<String, LegalCase>> _casesById = loadCasesById();
 
   @override
   void initState() {
@@ -34,11 +41,30 @@ class _TasksPageState extends State<TasksPage> {
     _reload();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    subscribeToAppRouteObserver(context, this);
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// The create/edit screen was closed: re-read the list, whichever way it
+  /// was left, rather than only when it pops `true`.
+  @override
+  void didPopNext() {
+    if (mounted) setState(_reload);
+  }
+
   void _reload() => _load = getIt<ITaskRepository>().getTasks();
 
   Future<void> _openCreate() async {
-    final created = await context.push<bool>(AppRouter.tasksNew);
-    if (created == true && mounted) setState(_reload);
+    await context.push<bool>(AppRouter.tasksNew);
+    if (mounted) setState(_reload);
   }
 
   @override
@@ -83,7 +109,13 @@ class _TasksPageState extends State<TasksPage> {
                         message: failure.message,
                         onRetry: () => setState(_reload),
                       ),
-                      _buildBoard,
+                      (tasks) => FutureBuilder<Map<String, LegalCase>>(
+                        future: _casesById,
+                        builder: (context, casesSnapshot) => _buildBoard(
+                          casesSnapshot.data ?? const <String, LegalCase>{},
+                          tasks,
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -95,7 +127,7 @@ class _TasksPageState extends State<TasksPage> {
     );
   }
 
-  Widget _buildBoard(List<TaskItem> tasks) {
+  Widget _buildBoard(Map<String, LegalCase> casesById, List<TaskItem> tasks) {
     if (tasks.isEmpty) {
       return EmptyState(
         icon: Icons.task_alt_rounded,
@@ -148,7 +180,7 @@ class _TasksPageState extends State<TasksPage> {
                     ),
                   )
                 else
-                  ...items.map(_TaskCard.new),
+                  ...items.map((task) => _TaskCard(task, casesById)),
               ],
             ),
           );
@@ -159,8 +191,9 @@ class _TasksPageState extends State<TasksPage> {
 }
 
 class _TaskCard extends StatelessWidget {
-  const _TaskCard(this.task);
+  const _TaskCard(this.task, this.casesById);
   final TaskItem task;
+  final Map<String, LegalCase> casesById;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -171,10 +204,10 @@ class _TaskCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(task.title, style: AppTypography.labelLarge),
-          if (task.caseSummary?.caseNumber != null) ...[
+          if (task.caseSummary != null) ...[
             const SizedBox(height: 7),
             Text(
-              task.caseSummary!.caseNumber,
+              courtReferenceForSummary(casesById, task.caseSummary),
               style: AppTypography.bodySmall.copyWith(
                 fontFamily: AppTypography.monoFont,
               ),

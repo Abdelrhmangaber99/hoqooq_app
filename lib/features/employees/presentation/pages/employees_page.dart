@@ -6,13 +6,16 @@ import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/auth/permission_labels.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/network/dio_error_mapper.dart';
+import '../../../../core/router/app_route_observer.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../di/injection.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
+import '../../data/employee_status_api.dart';
 import '../../data/models/employee_summary.dart';
 
 class EmployeesPage extends StatefulWidget {
@@ -22,7 +25,7 @@ class EmployeesPage extends StatefulWidget {
   State<EmployeesPage> createState() => _EmployeesPageState();
 }
 
-class _EmployeesPageState extends State<EmployeesPage> {
+class _EmployeesPageState extends State<EmployeesPage> with RouteAware {
   late Future<List<EmployeeSummary>> _employees;
 
   bool get _canCreate =>
@@ -32,6 +35,8 @@ class _EmployeesPageState extends State<EmployeesPage> {
   bool get _canUpdate =>
       currentUserHasPerm(PermissionCodes.employeeEdit) ||
       currentUserHasPerm(PermissionCodes.employeePermissionManage);
+  bool get _canManageStatus =>
+      _isFirmAdmin || currentUserHasPerm(PermissionCodes.employeeStatusManage);
   bool get _isFirmAdmin {
     final session = getIt<SessionCubit>().state;
     return session is SessionAuthenticated && session.user.isFirmAdmin;
@@ -43,6 +48,25 @@ class _EmployeesPageState extends State<EmployeesPage> {
     _employees = _canRead ? _loadEmployees() : Future.value(const []);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    subscribeToAppRouteObserver(context, this);
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// The employee list was covered by the create/edit screen and is visible
+  /// again: re-read it, whichever way that screen was left.
+  @override
+  void didPopNext() {
+    if (mounted && _canRead) _reload();
+  }
+
   Future<List<EmployeeSummary>> _loadEmployees() async {
     final response = await getIt<Dio>().get('/employees');
     final rows = response.data as List<dynamic>;
@@ -52,6 +76,48 @@ class _EmployeesPageState extends State<EmployeesPage> {
   }
 
   void _reload() => setState(() => _employees = _loadEmployees());
+
+  /// Deactivates the employee through `DELETE /employees/:id`, the only
+  /// lifecycle route the deployed backend exposes (it has no
+  /// `PATCH /employees/:id/status`, and no reactivation endpoint either — see
+  /// `employee_status_api.dart`). Kept behind a confirmation because, without
+  /// a reactivation route, this cannot be undone from the app.
+  Future<void> _deactivateEmployee(EmployeeSummary employee) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(context.tr('delete_employee')),
+        content: Text(context.tr('delete_employee_confirmation')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(context.tr('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(context.tr('confirm')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await deactivateEmployee(getIt<Dio>(), employee.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('employee_deactivated_successfully')),
+        ),
+      );
+      // The archived employee no longer belongs in the list: re-read the
+      // server list instead of only flipping a local status flag.
+      _reload();
+    } on DioException catch (error) {
+      if (mounted) {
+        context.showErrorSnackBar(mapDioError(error).message);
+      }
+    }
+  }
 
   Future<void> _createEmployee() async {
     if (!_canCreate) {
@@ -80,8 +146,12 @@ class _EmployeesPageState extends State<EmployeesPage> {
       return;
     }
     final created = await context.push<bool>(AppRouter.createEmployee);
-    if (created == true && mounted) {
-      _reload();
+    if (!mounted) return;
+    // Re-read on return regardless of the popped result: the create screen can
+    // be left in ways that carry no result, and a stale list is worse than one
+    // extra request.
+    _reload();
+    if (created == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.tr('employee_invitation_pending'))),
       );
@@ -116,7 +186,10 @@ class _EmployeesPageState extends State<EmployeesPage> {
                       children: [
                         const Icon(Icons.error_outline, color: AppColors.error),
                         const SizedBox(height: AppSpacing.m),
-                        Text(message, textAlign: TextAlign.center),
+                        Text(
+                          localizedErrorMessage(context, message),
+                          textAlign: TextAlign.center,
+                        ),
                         const SizedBox(height: AppSpacing.m),
                         AppButton(
                           text: context.tr('try_again'),
@@ -190,18 +263,41 @@ class _EmployeesPageState extends State<EmployeesPage> {
                           <String>[
                             employee.email,
                             employee.positionLabel,
+                            '${context.tr('status')}: ${employee.isActive ? context.tr('active') : context.tr('inactive')}',
                           ].where((value) => value.isNotEmpty).join('\n'),
                         ),
-                        isThreeLine: employee.email.isNotEmpty,
-                        trailing: _canUpdate
-                            ? const Icon(Icons.edit_outlined)
-                            : null,
+                        isThreeLine: true,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_canManageStatus)
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.person_off_outlined,
+                                  color: AppColors.error,
+                                ),
+                                tooltip: context.tr('delete_employee'),
+                                onPressed: () => _deactivateEmployee(employee),
+                              ),
+                            if (_canUpdate)
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined),
+                                tooltip: context.tr('edit_employee'),
+                                onPressed: () async {
+                                  await context.push<bool>(
+                                    AppRouter.editEmployee(employee.id),
+                                  );
+                                  if (mounted) _reload();
+                                },
+                              ),
+                          ],
+                        ),
                         onTap: _canUpdate
                             ? () async {
-                                final updated = await context.push<bool>(
+                                await context.push<bool>(
                                   AppRouter.editEmployee(employee.id),
                                 );
-                                if (updated == true && mounted) _reload();
+                                if (mounted) _reload();
                               }
                             : null,
                       ),

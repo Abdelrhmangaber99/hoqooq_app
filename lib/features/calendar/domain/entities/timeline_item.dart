@@ -172,13 +172,14 @@ CalendarEventType _parseEventType(String? value) => switch (value) {
 HearingStatus _parseHearingStatus(String? value) => switch (value) {
   'SCHEDULED' => HearingStatus.scheduled,
   'COMPLETED' => HearingStatus.completed,
-  'ADJOURNED' => HearingStatus.adjourned,
+  'POSTPONED' => HearingStatus.adjourned,
+  'MISSED' => HearingStatus.missed,
   'CANCELLED' => HearingStatus.cancelled,
   _ => HearingStatus.unknown,
 };
 
 TaskStatus _parseTaskStatus(String? value) => switch (value) {
-  'NEW' => TaskStatus.newTask,
+  'TODO' => TaskStatus.newTask,
   'IN_PROGRESS' => TaskStatus.inProgress,
   'WAITING' => TaskStatus.waiting,
   'COMPLETED' => TaskStatus.completed,
@@ -188,7 +189,7 @@ TaskStatus _parseTaskStatus(String? value) => switch (value) {
 
 TaskPriority _parseTaskPriority(String? value) => switch (value) {
   'LOW' => TaskPriority.low,
-  'NORMAL' => TaskPriority.normal,
+  'MEDIUM' => TaskPriority.normal,
   'HIGH' => TaskPriority.high,
   'URGENT' => TaskPriority.urgent,
   _ => TaskPriority.unknown,

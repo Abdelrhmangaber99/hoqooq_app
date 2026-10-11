@@ -35,6 +35,28 @@ void main() {
       expect(summary.positionLabel, '');
     });
 
+    test('parses status and userId from employee JSON', () {
+      final json = {
+        'id': 'emp-102',
+        'status': 'INACTIVE',
+        'userId': 'usr-202',
+        'position': 'LAWYER',
+        'user': {
+          'id': 'usr-202',
+          'fullName': 'Tariq Hassan',
+          'email': 'tariq@firm.test',
+          'status': 'INACTIVE',
+        },
+      };
+
+      final summary = EmployeeSummary.fromJson(json);
+
+      expect(summary.id, 'emp-102');
+      expect(summary.status, 'INACTIVE');
+      expect(summary.userId, 'usr-202');
+      expect(summary.isActive, false);
+    });
+
     test('humanize correctly formats various underscore position formats', () {
       expect(EmployeeSummary.humanize('JUNIOR_ASSOCIATE'), 'Junior Associate');
       expect(EmployeeSummary.humanize('LAWYER'), 'Lawyer');

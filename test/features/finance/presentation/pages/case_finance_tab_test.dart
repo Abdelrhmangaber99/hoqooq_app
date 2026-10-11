@@ -25,12 +25,10 @@ class MockFinanceRepository extends Mock implements IFinanceRepository {}
 class MockSessionCubit extends MockCubit<SessionState>
     implements SessionCubit {}
 
-class MockCaseLedgerBloc
-    extends MockBloc<CaseLedgerEvent, CaseLedgerState>
+class MockCaseLedgerBloc extends MockBloc<CaseLedgerEvent, CaseLedgerState>
     implements CaseLedgerBloc {}
 
-class MockPaymentFormBloc
-    extends MockBloc<PaymentFormEvent, PaymentFormState>
+class MockPaymentFormBloc extends MockBloc<PaymentFormEvent, PaymentFormState>
     implements PaymentFormBloc {}
 
 class _PreloadedAppLocalizationsDelegate
@@ -43,8 +41,7 @@ class _PreloadedAppLocalizationsDelegate
   bool isSupported(Locale locale) => true;
 
   @override
-  Future<AppLocalizations> load(Locale locale) =>
-      SynchronousFuture(_instance);
+  Future<AppLocalizations> load(Locale locale) => SynchronousFuture(_instance);
 
   @override
   bool shouldReload(_PreloadedAppLocalizationsDelegate old) => false;
@@ -61,9 +58,7 @@ void main() {
     id: 'u1',
     email: 'acc@firm.com',
     fullName: 'Accountant Ali',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     tenant: const TenantRef(id: 't1', name: 'Demo Law Firm'),
@@ -182,8 +177,9 @@ void main() {
       expect(find.byType(ErrorView), findsNothing);
     });
 
-    testWidgets('shows the shared ErrorView with retry on fetch failure',
-        (tester) async {
+    testWidgets('shows the shared ErrorView with retry on fetch failure', (
+      tester,
+    ) async {
       stubSession(['finance.case.view']);
       stubLedgerState(
         const CaseLedgerError(
@@ -218,62 +214,67 @@ void main() {
     });
 
     testWidgets(
-        'empty case shows agreed fee, paid 0, remaining, no history, and the '
-        'record action for finance.payment.record', (tester) async {
-      stubSession(['finance.case.view', 'finance.payment.record']);
-      stubLedgerState(const CaseLedgerLoaded(feeDetail));
+      'empty case shows agreed fee, paid 0, remaining, no history, and the '
+      'record action for finance.payment.record',
+      (tester) async {
+        stubSession(['finance.case.view', 'finance.payment.record']);
+        stubLedgerState(const CaseLedgerLoaded(feeDetail));
 
-      await tester.pumpWidget(buildTestable());
-      await settle(tester);
+        await tester.pumpWidget(buildTestable());
+        await settle(tester);
 
-      expect(find.text('Agreed Fee'), findsOneWidget);
-      expect(find.text('Paid'), findsOneWidget);
-      expect(find.text('Remaining'), findsOneWidget);
-      expect(find.text('Payment History'), findsOneWidget);
-      expect(find.text('EGP 0.00'), findsOneWidget);
-      expect(find.text('EGP 10,000.00'), findsNWidgets(2));
-      expect(find.text('Unpaid'), findsOneWidget);
-      expect(
-        find.text('No payments recorded for this case yet'),
-        findsOneWidget,
-      );
-      expect(find.text('Record First Payment'), findsOneWidget);
-    });
+        expect(find.text('Agreed Fee'), findsOneWidget);
+        expect(find.text('Paid'), findsOneWidget);
+        expect(find.text('Remaining'), findsOneWidget);
+        expect(find.text('Payment History'), findsOneWidget);
+        expect(find.text('EGP 0.00'), findsOneWidget);
+        expect(find.text('EGP 10,000.00'), findsNWidgets(2));
+        expect(find.text('Unpaid'), findsOneWidget);
+        expect(
+          find.text('No payments recorded for this case yet'),
+          findsOneWidget,
+        );
+        expect(find.text('Record First Payment'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'no-fee state renders the not-set badge, em-dash fee/remaining, '
-        'guidance, and NO write actions', (tester) async {
-      // The server rejects payment creation until `agreed_fee` is set, and
-      // the Case Finance API has no agreed-fee route — so the tab must not
-      // offer either action. It explains where the fee is set instead.
-      stubSession([
-        'finance.case.view',
-        'finance.manage',
-        'finance.payment.record',
-      ]);
-      stubLedgerState(const CaseLedgerLoaded(noFeeDetail));
+      'no-fee state renders the not-set badge, em-dash fee/remaining, '
+      'guidance, and NO write actions',
+      (tester) async {
+        // The server rejects payment creation until `agreed_fee` is set, and
+        // the Case Finance API has no agreed-fee route — so the tab must not
+        // offer either action. It explains where the fee is set instead.
+        stubSession([
+          'finance.case.view',
+          'finance.manage',
+          'finance.payment.record',
+        ]);
+        stubLedgerState(const CaseLedgerLoaded(noFeeDetail));
 
-      await tester.pumpWidget(buildTestable());
-      await settle(tester);
+        await tester.pumpWidget(buildTestable());
+        await settle(tester);
 
-      expect(find.text('No agreed fee set'), findsOneWidget);
-      expect(find.text('—'), findsNWidgets(2));
-      expect(find.text('EGP 0.00'), findsOneWidget);
-      expect(
-        find.textContaining('No agreed fee is recorded for this case yet'),
-        findsOneWidget,
-      );
-      expect(find.text('Set Agreed Fee'), findsNothing);
-      expect(find.text('Update Agreed Fee'), findsNothing);
-      expect(
-        find.text('Record First Payment'),
-        findsNothing,
-        reason: 'recording is impossible server-side until a fee exists',
-      );
-    });
+        expect(find.text('No agreed fee set'), findsOneWidget);
+        expect(find.text('—'), findsNWidgets(2));
+        expect(find.text('EGP 0.00'), findsOneWidget);
+        expect(
+          find.textContaining('No agreed fee is recorded for this case yet'),
+          findsOneWidget,
+        );
+        expect(find.text('Set Agreed Fee'), findsNothing);
+        expect(find.text('Update Agreed Fee'), findsNothing);
+        expect(
+          find.text('Record First Payment'),
+          findsNothing,
+          reason: 'recording is impossible server-side until a fee exists',
+        );
+      },
+    );
 
-    testWidgets('payment history shows the PRD fields for each record',
-        (tester) async {
+    testWidgets('payment history shows the PRD fields for each record', (
+      tester,
+    ) async {
       stubSession(['finance.case.view']);
       stubLedgerState(CaseLedgerLoaded(partiallyPaidDetail));
 
@@ -292,36 +293,37 @@ void main() {
 
   group('permission visibility', () {
     testWidgets(
-        'finance.case.view only: finance data renders but no write actions',
-        (tester) async {
-      stubSession(['finance.case.view']);
-      stubLedgerState(const CaseLedgerLoaded(feeDetail));
+      'finance.case.view only: finance data renders but no write actions',
+      (tester) async {
+        stubSession(['finance.case.view']);
+        stubLedgerState(const CaseLedgerLoaded(feeDetail));
 
-      await tester.pumpWidget(buildTestable());
-      await settle(tester);
+        await tester.pumpWidget(buildTestable());
+        await settle(tester);
 
-      expect(find.text('Agreed Fee'), findsOneWidget);
-      expect(find.text('Record Payment'), findsNothing);
-      expect(find.text('Set Agreed Fee'), findsNothing);
-      expect(find.text('Update Agreed Fee'), findsNothing);
-    });
-
-    testWidgets(
-        'finance.payment.record shows Record Payment, not fee management',
-        (tester) async {
-      stubSession(['finance.case.view', 'finance.payment.record']);
-      stubLedgerState(const CaseLedgerLoaded(feeDetail));
-
-      await tester.pumpWidget(buildTestable());
-      await settle(tester);
-
-      expect(find.text('Record First Payment'), findsOneWidget);
-      expect(find.text('Set Agreed Fee'), findsNothing);
-      expect(find.text('Update Agreed Fee'), findsNothing);
-    });
+        expect(find.text('Agreed Fee'), findsOneWidget);
+        expect(find.text('Record Payment'), findsNothing);
+        expect(find.text('Set Agreed Fee'), findsNothing);
+        expect(find.text('Update Agreed Fee'), findsNothing);
+      },
+    );
 
     testWidgets(
-        'finance.manage offers reversal, no fee editing, and no Record '
+      'finance.payment.record shows Record Payment, not fee management',
+      (tester) async {
+        stubSession(['finance.case.view', 'finance.payment.record']);
+        stubLedgerState(const CaseLedgerLoaded(feeDetail));
+
+        await tester.pumpWidget(buildTestable());
+        await settle(tester);
+
+        expect(find.text('Record First Payment'), findsOneWidget);
+        expect(find.text('Set Agreed Fee'), findsNothing);
+        expect(find.text('Update Agreed Fee'), findsNothing);
+      },
+    );
+
+    testWidgets('finance.manage offers reversal, no fee editing, and no Record '
         'Payment on a fully-paid case', (tester) async {
       stubSession(['finance.case.view', 'finance.manage']);
       stubLedgerState(
@@ -366,10 +368,10 @@ void main() {
       final button = find.text('Record Payment').evaluate().isNotEmpty
           ? find.text('Record Payment')
           : (find.text('Record First Payment').evaluate().isNotEmpty
-              ? find.text('Record First Payment')
-              : (find.text('تسجيل دفعة').evaluate().isNotEmpty
-                  ? find.text('تسجيل دفعة')
-                  : find.text('تسجيل أول دفعة')));
+                ? find.text('Record First Payment')
+                : (find.text('تسجيل دفعة').evaluate().isNotEmpty
+                      ? find.text('تسجيل دفعة')
+                      : find.text('تسجيل أول دفعة')));
       await tester.tap(button);
       await settle(tester);
     }
@@ -400,8 +402,9 @@ void main() {
       expect(find.text('Please enter a valid amount'), findsOneWidget);
     });
 
-    testWidgets('rejects amounts exceeding the remaining balance',
-        (tester) async {
+    testWidgets('rejects amounts exceeding the remaining balance', (
+      tester,
+    ) async {
       stubSession(['finance.case.view', 'finance.payment.record']);
       stubLedgerState(CaseLedgerLoaded(partiallyPaidDetail));
 
@@ -413,18 +416,15 @@ void main() {
       await tester.tap(find.text('Confirm'));
       await settle(tester);
 
-      expect(
-        find.text('Amount exceeds the remaining balance'),
-        findsOneWidget,
-      );
+      expect(find.text('Amount exceeds the remaining balance'), findsOneWidget);
       expect(find.byType(AlertDialog), findsOneWidget);
     });
   });
 
   group('arabic / rtl', () {
-    testWidgets(
-        'renders the finance tab in Arabic with RTL directionality',
-        (tester) async {
+    testWidgets('renders the finance tab in Arabic with RTL directionality', (
+      tester,
+    ) async {
       stubSession(['finance.case.view', 'finance.payment.record']);
       stubLedgerState(CaseLedgerLoaded(partiallyPaidDetail));
 
@@ -444,8 +444,9 @@ void main() {
       expect(find.text('تحويل بنكي'), findsOneWidget);
     });
 
-    testWidgets('shows the Arabic validation error inside the record dialog',
-        (tester) async {
+    testWidgets('shows the Arabic validation error inside the record dialog', (
+      tester,
+    ) async {
       stubSession(['finance.case.view', 'finance.payment.record']);
       stubLedgerState(const CaseLedgerLoaded(feeDetail));
 

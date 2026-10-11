@@ -25,12 +25,21 @@ abstract class IAuthRepository {
     required String newPassword,
   });
 
+  ApiResult<AuthResponse?> activateAccount({
+    required String token,
+    required String password,
+  });
+
   ApiResult<void> changePassword({
     required String oldPassword,
     required String newPassword,
   });
 
+  /// Updates the signed-in user's own profile. [userId] is required because
+  /// the backend exposes the update at `PATCH /users/{id}` — see
+  /// [AuthRepository.updateProfile]'s note on the self-service fallback.
   ApiResult<User> updateProfile({
+    required String userId,
     String? fullName,
     String? phone,
     String? avatarUrl,

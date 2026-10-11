@@ -82,9 +82,7 @@ void main() {
     id: 'u1',
     email: 'lawyer@firm.com',
     fullName: 'Jane Doe',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
@@ -269,8 +267,6 @@ void main() {
     expect(find.text('CASE-2026-00001'), findsWidgets);
   });
 
-
-
   testWidgets(
     'tapping the Documents upload icon shows Take Photo / Choose File '
     'options',
@@ -330,10 +326,7 @@ void main() {
       when(() => sessionCubit.state).thenReturn(
         SessionAuthenticated(
           user.copyWith(
-            permissions: const [
-              'finance.case.view',
-              'finance.manage',
-            ],
+            permissions: const ['finance.case.view', 'finance.manage'],
           ),
           isFirmAdmin: false,
         ),
@@ -342,11 +335,7 @@ void main() {
         caseLedgerBloc,
         const Stream<CaseLedgerState>.empty(),
         initialState: const CaseLedgerLoaded(
-          CaseFinanceDetail(
-            caseId: 'c1',
-            agreedFee: 10000,
-            payments: [],
-          ),
+          CaseFinanceDetail(caseId: 'c1', agreedFee: 10000, payments: []),
         ),
       );
 
@@ -360,8 +349,10 @@ void main() {
       expect(find.text('Agreed Fee'), findsOneWidget);
       expect(find.text('Remaining'), findsOneWidget);
       expect(find.text('Payment History'), findsOneWidget);
-      expect(find.text('No payments recorded for this case yet'),
-          findsOneWidget);
+      expect(
+        find.text('No payments recorded for this case yet'),
+        findsOneWidget,
+      );
     },
   );
 }

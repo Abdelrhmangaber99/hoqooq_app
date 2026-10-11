@@ -43,6 +43,9 @@ flutter {
     source = "../.."
 }
 
-dependencies {
-    implementation("io.flutter:flutter_embedding_debug:1.0.0-5a2a6a42cce67f965cf540fcecf616faca624aa1")
-}
+// No manual `dependencies {}` block here on purpose. Adding
+// `io.flutter:flutter_embedding_debug` by hand made `assembleRelease` fail with
+// Duplicate class errors (`flutter_embedding_debug` vs `flutter_embedding_release`),
+// because the Flutter Gradle plugin already injects the correct embedding for
+// the build type. `flutter build apk --release` is the check that catches this;
+// the Dart-only checks (`analyze`, `test`) never touch Gradle.

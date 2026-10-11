@@ -27,18 +27,17 @@ void main() {
   });
 
   group('CompleteServiceProcessRequest', () {
-    test('serializes completion status and proof document ID', () {
+    test('serializes only the deployed completion DTO fields', () {
       const request = CompleteServiceProcessRequest(
         status: ServiceStatus.completed,
         resultNotes: 'Served successfully to recipient',
-        documentId: 'doc-999',
       );
 
       final json = request.toJson();
 
-      expect(json['status'], 'COMPLETED');
+      expect(json['status'], 'SERVED');
       expect(json['resultNotes'], 'Served successfully to recipient');
-      expect(json['documentId'], 'doc-999');
+      expect(json.containsKey('documentId'), isFalse);
     });
   });
 }

@@ -86,8 +86,17 @@ class SettingsCubit extends Cubit<SettingsState> {
       return false;
     }
 
+    // The update is addressed to the session user's own account, so a save
+    // without a signed-in user (or without an id) cannot be attempted.
+    final session = _sessionCubit.state;
+    if (session is! SessionAuthenticated) {
+      emit(const ProfileUpdateError('could_not_update_profile'));
+      return false;
+    }
+
     emit(const ProfileUpdateLoading());
     final result = await _authRepository.updateProfile(
+      userId: session.user.id,
       fullName: fullName.trim(),
       phone: phone?.trim(),
       avatarUrl: avatarUrl?.trim(),
@@ -95,10 +104,14 @@ class SettingsCubit extends Cubit<SettingsState> {
 
     return result.fold(
       (failure) {
-        final message = failure.message.isNotEmpty
+        // A stable key when there is nothing specific to say, otherwise the
+        // failure's own text — the display site resolves either form for the
+        // active locale (see `localizedErrorKeyOrMessage`). Never a
+        // hard-coded language here.
+        final messageKey = failure.message.isNotEmpty
             ? failure.message
-            : 'تعذر تحديث الملف الشخصي';
-        emit(ProfileUpdateError(message));
+            : 'could_not_update_profile';
+        emit(ProfileUpdateError(messageKey));
         return false;
       },
       (updatedUser) {

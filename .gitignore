@@ -57,3 +57,7 @@ replay_pid*.log
 # both variants ignored in case it's ever re-provided without the space.
 /Hoqooq-main/
 /Hoqooq-main /
+
+# Local device-automation scratch: adb UI dumps, screenshots, and captured
+# API responses (the latter can contain live access tokens).
+/.tmp_device/

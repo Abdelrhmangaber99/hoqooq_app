@@ -35,7 +35,8 @@ Map<String, dynamic> _$UpdateHearingRequestToJson(
 const _$HearingStatusEnumMap = {
   HearingStatus.scheduled: 'SCHEDULED',
   HearingStatus.completed: 'COMPLETED',
-  HearingStatus.adjourned: 'ADJOURNED',
+  HearingStatus.adjourned: 'POSTPONED',
+  HearingStatus.missed: 'MISSED',
   HearingStatus.cancelled: 'CANCELLED',
   HearingStatus.unknown: 'unknown',
 };

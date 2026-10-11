@@ -79,10 +79,12 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.balance,
-                  color: AppColors.primary,
-                  size: 60,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Image.asset(
+                    'assets/images/hoqooq-logo.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),

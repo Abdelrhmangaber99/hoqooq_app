@@ -82,6 +82,42 @@ void main() {
   );
 
   blocTest<CalendarBloc, CalendarState>(
+    'ChangeMonthRequested jumps to the chosen month and re-fetches',
+    build: () {
+      when(
+        () => repository.getTimeline(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => Right([item]));
+      return CalendarBloc(repository);
+    },
+    act: (bloc) async {
+      bloc.add(FetchTimelineRequested());
+      await Future.delayed(Duration.zero);
+      bloc.add(const ChangeMonthRequested(2026, 2));
+    },
+    verify: (_) {
+      verify(
+        () => repository.getTimeline(
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).called(2);
+    },
+    expect: () => [
+      isA<CalendarLoading>(),
+      isA<CalendarLoaded>(),
+      isA<CalendarLoading>(),
+      isA<CalendarLoaded>().having(
+        (s) => s.selectedDate.month,
+        'selectedDate.month',
+        2,
+      ),
+    ],
+  );
+
+  blocTest<CalendarBloc, CalendarState>(
     'changing the view mode re-emits Loaded without re-fetching',
     build: () {
       when(

@@ -107,7 +107,7 @@ void main() {
       ).thenAnswer(
         (_) async => response(
           '/service-of-process/s1/complete',
-          itemJson(status: 'COMPLETED'),
+          itemJson(status: 'SERVED'),
         ),
       );
 
@@ -116,7 +116,6 @@ void main() {
         const CompleteServiceProcessRequest(
           status: ServiceStatus.completed,
           resultNotes: 'Served and signed.',
-          documentId: 'd1',
         ),
       );
 
@@ -129,9 +128,8 @@ void main() {
               ).captured.single
               as Map<String, dynamic>;
       expect(body, {
-        'status': 'COMPLETED',
+        'status': 'SERVED',
         'resultNotes': 'Served and signed.',
-        'documentId': 'd1',
       });
     },
   );

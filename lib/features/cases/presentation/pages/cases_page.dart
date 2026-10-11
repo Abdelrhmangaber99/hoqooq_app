@@ -11,7 +11,9 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/network/dio_error_mapper.dart';
+import '../../../../core/router/app_route_observer.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -21,6 +23,7 @@ import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
+import '../../../courts/domain/entities/case_type_reference.dart';
 import '../../domain/entities/case_status.dart';
 import '../../domain/entities/legal_case.dart';
 import '../bloc/cases_bloc.dart';
@@ -58,8 +61,31 @@ class _CasesContent extends StatefulWidget {
   State<_CasesContent> createState() => _CasesContentState();
 }
 
-class _CasesContentState extends State<_CasesContent> {
+class _CasesContentState extends State<_CasesContent> with RouteAware {
   bool _exporting = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    subscribeToAppRouteObserver(context, this);
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// A case form, or a case's details, was closed: re-read the list, whichever
+  /// way it was left, rather than only when it pops `true`.
+  @override
+  void didPopNext() {
+    if (mounted) context.read<CasesBloc>().add(FetchCasesRequested());
+  }
+
+  void _refreshCases() {
+    if (mounted) context.read<CasesBloc>().add(FetchCasesRequested());
+  }
 
   bool get _canCreateCase {
     final sessionState = getIt<SessionCubit>().state;
@@ -72,10 +98,8 @@ class _CasesContentState extends State<_CasesContent> {
       currentUserHasPerm(PermissionCodes.reportOperationalRead);
 
   Future<void> _openCreateCase() async {
-    final created = await context.push<bool>('${AppRouter.cases}/new');
-    if (created == true && mounted) {
-      context.read<CasesBloc>().add(FetchCasesRequested());
-    }
+    await context.push<bool>('${AppRouter.cases}/new');
+    _refreshCases();
   }
 
   Future<void> _exportCases() async {
@@ -97,9 +121,7 @@ class _CasesContentState extends State<_CasesContent> {
       }
     } on DioException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(mapDioError(error).message)));
+        context.showErrorSnackBar(mapDioError(error).message);
       }
     } catch (_) {
       if (mounted) {
@@ -428,9 +450,10 @@ class _CaseCard extends StatelessWidget {
                         Text(
                           (legalCase.title?.trim().isNotEmpty ?? false)
                               ? legalCase.title!
-                              : (legalCase.courtCaseNumber?.trim().isNotEmpty ?? false)
-                                  ? legalCase.courtCaseNumber!
-                                  : legalCase.caseNumber,
+                              : (legalCase.courtCaseNumber?.trim().isNotEmpty ??
+                                    false)
+                              ? legalCase.courtCaseNumber!
+                              : legalCase.caseNumber,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.labelLarge.copyWith(
@@ -438,7 +461,8 @@ class _CaseCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          (legalCase.courtCaseNumber?.trim().isNotEmpty ?? false)
+                          (legalCase.courtCaseNumber?.trim().isNotEmpty ??
+                                  false)
                               ? legalCase.courtCaseNumber!
                               : legalCase.caseNumber,
                           maxLines: 1,
@@ -457,9 +481,17 @@ class _CaseCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _MetadataRow(
-                icon: Icons.description_outlined,
-                text: legalCase.caseType?.name ?? '—',
+              FutureBuilder<List<CaseTypeReference>>(
+                future: loadCaseTypeReferences(),
+                builder: (context, snapshot) => _MetadataRow(
+                  icon: Icons.description_outlined,
+                  text: caseTypeLabelFor(
+                    languageCode: Localizations.localeOf(context).languageCode,
+                    caseTypeId: legalCase.caseTypeId,
+                    caseType: legalCase.caseType,
+                    caseTypes: snapshot.data ?? const [],
+                  ),
+                ),
               ),
               const SizedBox(height: 7),
               _MetadataRow(

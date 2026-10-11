@@ -20,9 +20,7 @@ void main() {
         id: id,
         email: '$id@example.com',
         fullName: 'User $id',
-        isSuperAdmin: false,
         status: status,
-        mfaEnabled: false,
         createdAt: now,
         updatedAt: now,
         accountType: accountType,
@@ -52,57 +50,69 @@ void main() {
     });
 
     // Scenario 2: Accountant with Case finance.view -> allowed only for that Case
-    test('Scenario 2: Accountant with Case finance.view -> allowed only for that Case', () {
-      final accountant = createUser(
-        id: 'acc2',
-        jobClassification: 'ACCOUNTANT',
-        permissions: [], // No firm-wide permissions
-      );
+    test(
+      'Scenario 2: Accountant with Case finance.view -> allowed only for that Case',
+      () {
+        final accountant = createUser(
+          id: 'acc2',
+          jobClassification: 'ACCOUNTANT',
+          permissions: [], // No firm-wide permissions
+        );
 
-      // Authorized case
-      final canViewCaseA = FinanceAuthorizationService.canViewCaseFinance(
-        user: accountant,
-        caseTenantId: 'tenant-A',
-        caseCapabilities: ['finance.view'],
-      );
+        // Authorized case
+        final canViewCaseA = FinanceAuthorizationService.canViewCaseFinance(
+          user: accountant,
+          caseTenantId: 'tenant-A',
+          caseCapabilities: ['finance.view'],
+        );
 
-      // Unauthorized case
-      final canViewCaseB = FinanceAuthorizationService.canViewCaseFinance(
-        user: accountant,
-        caseTenantId: 'tenant-A',
-        caseCapabilities: ['case.view'], // no finance capability
-      );
+        // Unauthorized case
+        final canViewCaseB = FinanceAuthorizationService.canViewCaseFinance(
+          user: accountant,
+          caseTenantId: 'tenant-A',
+          caseCapabilities: ['case.view'], // no finance capability
+        );
 
-      expect(canViewCaseA, true);
-      expect(canViewCaseB, false);
-    });
+        expect(canViewCaseA, true);
+        expect(canViewCaseB, false);
+      },
+    );
 
     // Scenario 3: Accountant with finance.payment.record -> can record authorized Case payment
-    test('Scenario 3: Accountant with finance.payment.record -> can record payment', () {
-      final accountantWithPerm = createUser(
-        id: 'acc3',
-        jobClassification: 'ACCOUNTANT',
-        permissions: [PermissionCodes.financePaymentRecord],
-      );
+    test(
+      'Scenario 3: Accountant with finance.payment.record -> can record payment',
+      () {
+        final accountantWithPerm = createUser(
+          id: 'acc3',
+          jobClassification: 'ACCOUNTANT',
+          permissions: [PermissionCodes.financePaymentRecord],
+        );
 
-      final canRecord = FinanceAuthorizationService.canRecordPayment(
-        user: accountantWithPerm,
-        caseTenantId: 'tenant-A',
-        caseCapabilities: null,
-      );
+        final canRecord = FinanceAuthorizationService.canRecordPayment(
+          user: accountantWithPerm,
+          caseTenantId: 'tenant-A',
+          caseCapabilities: null,
+        );
 
-      expect(canRecord, true);
-    });
+        expect(canRecord, true);
+      },
+    );
 
     // Scenario 4: User with finance.firm.read -> firm dashboard allowed
-    test('Scenario 4: User with finance.firm.read -> firm dashboard allowed', () {
-      final userWithFirmRead = createUser(
-        id: 'user4',
-        permissions: [PermissionCodes.financeFirmRead],
-      );
+    test(
+      'Scenario 4: User with finance.firm.read -> firm dashboard allowed',
+      () {
+        final userWithFirmRead = createUser(
+          id: 'user4',
+          permissions: [PermissionCodes.financeFirmRead],
+        );
 
-      expect(FinanceAuthorizationService.canViewFirmFinance(userWithFirmRead), true);
-    });
+        expect(
+          FinanceAuthorizationService.canViewFirmFinance(userWithFirmRead),
+          true,
+        );
+      },
+    );
 
     // Scenario 5: Case-only finance user -> firm dashboard denied
     test('Scenario 5: Case-only finance user -> firm dashboard denied', () {
@@ -111,7 +121,10 @@ void main() {
         permissions: [PermissionCodes.financeCaseView], // base case view only
       );
 
-      expect(FinanceAuthorizationService.canViewFirmFinance(caseOnlyUser), false);
+      expect(
+        FinanceAuthorizationService.canViewFirmFinance(caseOnlyUser),
+        false,
+      );
     });
 
     // Scenario 6: Revoked Case finance permission -> immediate denial
@@ -148,10 +161,16 @@ void main() {
       final inactiveUser = createUser(
         id: 'user7',
         status: 'INACTIVE',
-        permissions: [PermissionCodes.financeFirmRead, PermissionCodes.financeCaseView],
+        permissions: [
+          PermissionCodes.financeFirmRead,
+          PermissionCodes.financeCaseView,
+        ],
       );
 
-      expect(FinanceAuthorizationService.canViewFirmFinance(inactiveUser), false);
+      expect(
+        FinanceAuthorizationService.canViewFirmFinance(inactiveUser),
+        false,
+      );
       expect(
         FinanceAuthorizationService.canViewCaseFinance(
           user: inactiveUser,
@@ -167,7 +186,10 @@ void main() {
       final userTenantA = createUser(
         id: 'user8',
         tenantId: 'tenant-A',
-        permissions: [PermissionCodes.financeCaseView, PermissionCodes.financePaymentRecord],
+        permissions: [
+          PermissionCodes.financeCaseView,
+          PermissionCodes.financePaymentRecord,
+        ],
       );
 
       expect(
@@ -207,56 +229,75 @@ void main() {
     });
 
     // Scenario 10: Direct API bypass attempt -> still denied at service boundary
-    test('Scenario 10: Direct API bypass attempt -> still denied at guard boundary', () {
-      final maliciousUser = createUser(
-        id: 'user10',
-        permissions: [], // No permissions
-      );
+    test(
+      'Scenario 10: Direct API bypass attempt -> still denied at guard boundary',
+      () {
+        final maliciousUser = createUser(
+          id: 'user10',
+          permissions: [], // No permissions
+        );
 
-      // Direct guard invocation mimicking API route execution
-      final isAuthorized = FinanceAuthorizationService.canManageFinance(
-        user: maliciousUser,
-        caseTenantId: 'tenant-A',
-      );
+        // Direct guard invocation mimicking API route execution
+        final isAuthorized = FinanceAuthorizationService.canManageFinance(
+          user: maliciousUser,
+          caseTenantId: 'tenant-A',
+        );
 
-      expect(isAuthorized, false);
-    });
+        expect(isAuthorized, false);
+      },
+    );
 
     // Scenario 11: Frontend-hidden route accessed directly -> backend guard denies
-    test('Scenario 11: Frontend-hidden route accessed directly -> guard denies', () {
-      final hiddenRouteUser = createUser(
-        id: 'user11',
-        jobClassification: 'ACCOUNTANT',
-        permissions: [], // hidden in UI
-      );
+    test(
+      'Scenario 11: Frontend-hidden route accessed directly -> guard denies',
+      () {
+        final hiddenRouteUser = createUser(
+          id: 'user11',
+          jobClassification: 'ACCOUNTANT',
+          permissions: [], // hidden in UI
+        );
 
-      final isFirmDashboardAllowed = FinanceAuthorizationService.canViewFirmFinance(hiddenRouteUser);
+        final isFirmDashboardAllowed =
+            FinanceAuthorizationService.canViewFirmFinance(hiddenRouteUser);
 
-      expect(isFirmDashboardAllowed, false);
-    });
+        expect(isFirmDashboardAllowed, false);
+      },
+    );
 
     // Scenario 12: Firm aggregate cannot include Cases outside effective scope
-    test('Scenario 12: Firm aggregate filtering excludes unauthorized cases', () {
-      final userWithCaseAOnly = createUser(
-        id: 'user12',
-        permissions: [],
-      );
+    test(
+      'Scenario 12: Firm aggregate filtering excludes unauthorized cases',
+      () {
+        final userWithCaseAOnly = createUser(id: 'user12', permissions: []);
 
-      final allCases = [
-        {'id': 'c1', 'tenantId': 'tenant-A', 'caps': ['finance.view']},
-        {'id': 'c2', 'tenantId': 'tenant-A', 'caps': ['case.view']}, // No finance view
-        {'id': 'c3', 'tenantId': 'tenant-B', 'caps': ['finance.view']}, // Cross-tenant
-      ];
+        final allCases = [
+          {
+            'id': 'c1',
+            'tenantId': 'tenant-A',
+            'caps': ['finance.view'],
+          },
+          {
+            'id': 'c2',
+            'tenantId': 'tenant-A',
+            'caps': ['case.view'],
+          }, // No finance view
+          {
+            'id': 'c3',
+            'tenantId': 'tenant-B',
+            'caps': ['finance.view'],
+          }, // Cross-tenant
+        ];
 
-      final filtered = FinanceAuthorizationService.filterAuthorizedCases(
-        user: userWithCaseAOnly,
-        cases: allCases,
-        caseTenantIdOf: (item) => item['tenantId'] as String,
-        caseCapabilitiesOf: (item) => (item['caps'] as List).cast<String>(),
-      );
+        final filtered = FinanceAuthorizationService.filterAuthorizedCases(
+          user: userWithCaseAOnly,
+          cases: allCases,
+          caseTenantIdOf: (item) => item['tenantId'] as String,
+          caseCapabilitiesOf: (item) => (item['caps'] as List).cast<String>(),
+        );
 
-      expect(filtered, hasLength(1));
-      expect(filtered.first['id'], 'c1');
-    });
+        expect(filtered, hasLength(1));
+        expect(filtered.first['id'], 'c1');
+      },
+    );
   });
 }

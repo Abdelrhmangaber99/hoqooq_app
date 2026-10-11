@@ -37,6 +37,8 @@ void main() {
         'id': 'c1',
         'tenantId': 't1',
         'caseNumber': 'CASE-2026-00001',
+        'courtCaseNumber': '417',
+        'courtCaseYear': 2026,
         'status': 'ACTIVE',
         'clientId': 'cl1',
         'caseTypeId': 'ct1',
@@ -75,6 +77,8 @@ void main() {
         expect(hearings, hasLength(1));
         expect(hearings.first.caseId, 'c1');
         expect(hearings.first.caseSummary?.caseNumber, 'CASE-2026-00001');
+        expect(hearings.first.caseSummary?.courtCaseNumber, '417');
+        expect(hearings.first.caseSummary?.courtCaseYear, 2026);
         expect(hearings.first.court?.name, 'District Court');
         expect(hearings.first.status, HearingStatus.scheduled);
         expect(hearings.first.judgeName, 'Judge Smith');

@@ -19,9 +19,7 @@ void main() {
     id: 'employee-1',
     email: 'employee@firm.com',
     fullName: 'Mona Ali',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026),
     updatedAt: DateTime(2026),
     accountType: 'EMPLOYEE',
@@ -40,15 +38,12 @@ void main() {
       ).thenAnswer((_) async => Right([employee]));
     },
     build: () => CaseTeamAssignmentBloc(caseRepository, userRepository),
-    act: (bloc) =>
-        bloc.add(LoadCaseTeamAssignmentReferenceDataRequested()),
+    act: (bloc) => bloc.add(LoadCaseTeamAssignmentReferenceDataRequested()),
     expect: () => [
       isA<CaseTeamAssignmentLoading>(),
-      isA<CaseTeamAssignmentReady>().having(
-        (state) => state.users,
-        'users',
-        [employee],
-      ),
+      isA<CaseTeamAssignmentReady>().having((state) => state.users, 'users', [
+        employee,
+      ]),
     ],
     verify: (_) {
       verify(() => userRepository.getAssignableUsers()).called(1);

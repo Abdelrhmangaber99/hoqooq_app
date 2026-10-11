@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -107,9 +108,7 @@ class _CalendarEventFormViewState extends State<_CalendarEventFormView> {
             if (state is CalendarEventFormSuccess) {
               context.pop(true);
             } else if (state is CalendarEventFormFailure) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
+              context.showErrorSnackBar(state.message);
             }
           },
           child: BlocBuilder<CalendarEventFormBloc, CalendarEventFormState>(

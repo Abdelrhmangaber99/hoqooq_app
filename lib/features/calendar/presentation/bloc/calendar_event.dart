@@ -34,3 +34,15 @@ class ChangeYearRequested extends CalendarEvent {
   @override
   List<Object?> get props => [year];
 }
+
+/// Jump to an arbitrary year+month (the header's month picker). Keeps the
+/// selected day where possible, clamped to the target month's last day so
+/// e.g. Jan 31 → Feb lands on Feb 28/29 instead of rolling into March.
+class ChangeMonthRequested extends CalendarEvent {
+  final int year;
+  final int month;
+  const ChangeMonthRequested(this.year, this.month);
+
+  @override
+  List<Object?> get props => [year, month];
+}

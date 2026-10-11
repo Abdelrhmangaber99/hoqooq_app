@@ -25,21 +25,24 @@ void main() {
 
   group('getMetrics', () {
     test(
-      'GETs /reports/dashboard (not /dashboard) and parses the shape',
+      'GETs /dashboard and parses the real total + active case counts',
       () async {
-        when(() => dio.get('/reports/dashboard')).thenAnswer(
-          (_) async => okResponse('/reports/dashboard', {
-            'totalActiveCases': 14,
+        when(() => dio.get('/dashboard')).thenAnswer(
+          (_) async => okResponse('/dashboard', {
+            'totalCases': 42,
+            'activeCases': 14,
             'pendingTasks': 5,
             'upcomingHearings': 3,
+            'recentActivity': <dynamic>[],
           }),
         );
 
         final result = await repository.getMetrics();
 
-        verify(() => dio.get('/reports/dashboard')).called(1);
-        verifyNever(() => dio.get('/dashboard'));
+        verify(() => dio.get('/dashboard')).called(1);
+        verifyNever(() => dio.get('/reports/dashboard'));
         result.fold((_) => fail('expected Right'), (metrics) {
+          expect(metrics.totalCases, 42);
           expect(metrics.totalActiveCases, 14);
           expect(metrics.pendingTasks, 5);
           expect(metrics.upcomingHearings, 3);
@@ -47,12 +50,30 @@ void main() {
       },
     );
 
+    test('tolerates numeric strings and falls back on missing totals', () async {
+      when(() => dio.get('/dashboard')).thenAnswer(
+        (_) async => okResponse('/dashboard', {
+          'totalActiveCases': '14',
+          'pendingTasks': 5.9,
+          'upcomingHearings': 3,
+        }),
+      );
+
+      final result = await repository.getMetrics();
+
+      result.fold((_) => fail('expected Right'), (metrics) {
+        expect(metrics.totalCases, 14);
+        expect(metrics.totalActiveCases, 14);
+        expect(metrics.pendingTasks, 5);
+      });
+    });
+
     test('maps a server error to ServerFailure', () async {
-      when(() => dio.get('/reports/dashboard')).thenThrow(
+      when(() => dio.get('/dashboard')).thenThrow(
         DioException(
-          requestOptions: RequestOptions(path: '/reports/dashboard'),
+          requestOptions: RequestOptions(path: '/dashboard'),
           response: Response(
-            requestOptions: RequestOptions(path: '/reports/dashboard'),
+            requestOptions: RequestOptions(path: '/dashboard'),
             statusCode: 500,
           ),
           type: DioExceptionType.badResponse,

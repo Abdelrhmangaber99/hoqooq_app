@@ -57,20 +57,17 @@ void main() {
   User buildUser({
     List<String> permissions = const [],
     String? classification,
-  }) =>
-      User(
-        id: 'u1',
-        email: 'lawyer@firm.com',
-        fullName: 'Jane Doe',
-        isSuperAdmin: false,
-        status: 'ACTIVE',
-        mfaEnabled: false,
-        permissions: permissions,
-        jobClassification: classification,
-        createdAt: DateTime(2026, 1, 1),
-        updatedAt: DateTime(2026, 1, 1),
-        tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
-      );
+  }) => User(
+    id: 'u1',
+    email: 'lawyer@firm.com',
+    fullName: 'Jane Doe',
+    status: 'ACTIVE',
+    permissions: permissions,
+    jobClassification: classification,
+    createdAt: DateTime(2026, 1, 1),
+    updatedAt: DateTime(2026, 1, 1),
+    tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
+  );
 
   Hearing buildHearing({
     required String id,
@@ -221,9 +218,7 @@ void main() {
     'backend, not client-side derivation',
     setUp: () {
       sessionCubit.authenticated(
-        buildUser(
-          permissions: const [PermissionCodes.financeFirmRead],
-        ),
+        buildUser(permissions: const [PermissionCodes.financeFirmRead]),
         'token',
         isFirmAdmin: false,
       );
@@ -282,8 +277,11 @@ void main() {
     act: (bloc) => bloc.add(FetchDashboardRequested()),
     expect: () => [
       isA<DashboardLoading>(),
-      isA<DashboardLoaded>()
-          .having((state) => state.canViewFinance, 'finance access', false),
+      isA<DashboardLoaded>().having(
+        (state) => state.canViewFinance,
+        'finance access',
+        false,
+      ),
     ],
     verify: (_) {
       verifyNever(() => financeRepository.getSummary());
@@ -295,9 +293,7 @@ void main() {
     'and replaces the summary in place',
     setUp: () {
       sessionCubit.authenticated(
-        buildUser(
-          permissions: const [PermissionCodes.financeFirmRead],
-        ),
+        buildUser(permissions: const [PermissionCodes.financeFirmRead]),
         'token',
         isFirmAdmin: false,
       );
@@ -326,23 +322,20 @@ void main() {
     expect: () => [
       isA<DashboardLoading>(),
       isA<DashboardLoaded>(),
-      isA<DashboardFinanceLoading>()
-          .having(
-            (state) => state.filters,
-            'filters in flight',
-            {'paymentStatus': 'UNPAID'},
-          ),
+      isA<DashboardFinanceLoading>().having(
+        (state) => state.filters,
+        'filters in flight',
+        {'paymentStatus': 'UNPAID'},
+      ),
       isA<DashboardLoaded>()
           .having(
             (state) => state.financeSummary,
             'filtered summary',
             filteredFinance,
           )
-          .having(
-            (state) => state.financeFilters,
-            'active filters',
-            {'paymentStatus': 'UNPAID'},
-          ),
+          .having((state) => state.financeFilters, 'active filters', {
+            'paymentStatus': 'UNPAID',
+          }),
     ],
     verify: (_) {
       final calls = verify(
@@ -350,10 +343,7 @@ void main() {
           queryParameters: captureAny(named: 'queryParameters'),
         ),
       )..called(2);
-      expect(
-        calls.captured.last,
-        {'paymentStatus': 'UNPAID'},
-      );
+      expect(calls.captured.last, {'paymentStatus': 'UNPAID'});
     },
   );
 
@@ -361,9 +351,7 @@ void main() {
     'clearing a filter re-requests the unfiltered aggregates',
     setUp: () {
       sessionCubit.authenticated(
-        buildUser(
-          permissions: const [PermissionCodes.financeFirmRead],
-        ),
+        buildUser(permissions: const [PermissionCodes.financeFirmRead]),
         'token',
         isFirmAdmin: false,
       );
@@ -383,16 +371,11 @@ void main() {
       financeFilters: const {'paymentStatus': 'UNPAID'},
       canViewFinance: true,
     ),
-    act: (bloc) =>
-        bloc.add(const RefreshFinanceSummaryRequested(filters: {})),
+    act: (bloc) => bloc.add(const RefreshFinanceSummaryRequested(filters: {})),
     expect: () => [
       isA<DashboardFinanceLoading>(),
       isA<DashboardLoaded>()
-          .having(
-            (state) => state.financeFilters,
-            'filters cleared',
-            isEmpty,
-          )
+          .having((state) => state.financeFilters, 'filters cleared', isEmpty)
           .having(
             (state) => state.financeSummary,
             'unfiltered summary',
@@ -425,9 +408,7 @@ void main() {
       canViewFinance: false,
     ),
     act: (bloc) => bloc.add(
-      const RefreshFinanceSummaryRequested(
-        filters: {'paymentStatus': 'PAID'},
-      ),
+      const RefreshFinanceSummaryRequested(filters: {'paymentStatus': 'PAID'}),
     ),
     expect: () => <DashboardState>[],
     verify: (_) {
@@ -443,9 +424,7 @@ void main() {
     'a failed filtered fetch keeps the last-loaded aggregates visible',
     setUp: () {
       sessionCubit.authenticated(
-        buildUser(
-          permissions: const [PermissionCodes.financeFirmRead],
-        ),
+        buildUser(permissions: const [PermissionCodes.financeFirmRead]),
         'token',
         isFirmAdmin: false,
       );
@@ -459,15 +438,10 @@ void main() {
       ).thenAnswer((_) async => const Left(NetworkFailure()));
     },
     build: buildBloc,
-    seed: () => DashboardLoaded(
-      metrics,
-      financeSummary: finance,
-      canViewFinance: true,
-    ),
+    seed: () =>
+        DashboardLoaded(metrics, financeSummary: finance, canViewFinance: true),
     act: (bloc) => bloc.add(
-      const RefreshFinanceSummaryRequested(
-        filters: {'paymentStatus': 'PAID'},
-      ),
+      const RefreshFinanceSummaryRequested(filters: {'paymentStatus': 'PAID'}),
     ),
     expect: () => [
       isA<DashboardFinanceLoading>(),

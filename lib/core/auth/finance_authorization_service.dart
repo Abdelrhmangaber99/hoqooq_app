@@ -68,14 +68,12 @@ class FinanceAuthorizationService {
       return false;
     }
 
-    if (!user.isSuperAdmin) {
-      final userTenantId = user.tenant?.id;
-      if (userTenantId == null || caseTenantId == null || userTenantId != caseTenantId) {
-        return false;
-      }
+    final userTenantId = user.tenant?.id;
+    if (userTenantId == null || caseTenantId == null || userTenantId != caseTenantId) {
+      return false;
     }
 
-    if (user.isSuperAdmin || user.isFirmAdmin) {
+    if (user.isFirmAdmin) {
       return true;
     }
 
@@ -98,14 +96,12 @@ class FinanceAuthorizationService {
       return false;
     }
 
-    if (!user.isSuperAdmin) {
-      final userTenantId = user.tenant?.id;
-      if (userTenantId == null || caseTenantId == null || userTenantId != caseTenantId) {
-        return false;
-      }
+    final userTenantId = user.tenant?.id;
+    if (userTenantId == null || caseTenantId == null || userTenantId != caseTenantId) {
+      return false;
     }
 
-    if (user.isSuperAdmin || user.isFirmAdmin) {
+    if (user.isFirmAdmin) {
       return true;
     }
 

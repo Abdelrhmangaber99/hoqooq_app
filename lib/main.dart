@@ -6,7 +6,6 @@ import 'core/localization/app_localizations.dart';
 import 'core/localization/locale_bloc.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/theme/theme_bloc.dart';
 import 'di/injection.dart';
 import 'features/authentication/presentation/bloc/auth_bloc.dart';
 import 'features/authentication/presentation/bloc/session_cubit.dart';
@@ -36,34 +35,32 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => getIt<LocaleBloc>()),
-        BlocProvider(create: (_) => getIt<ThemeBloc>()),
         BlocProvider(create: (_) => getIt<AuthBloc>()),
         BlocProvider(create: (_) => getIt<SessionCubit>()),
         BlocProvider(create: (_) => getIt<ProfileCubit>()),
-        BlocProvider(create: (_) => getIt<SubscriptionCubit>()..fetchSubscription()),
+        BlocProvider(create: (_) => getIt<SubscriptionCubit>()),
       ],
-      child: BlocBuilder<ThemeBloc, ThemeState>(
-        builder: (context, themeState) => BlocBuilder<LocaleBloc, LocaleState>(
-          builder: (context, localeState) => MaterialApp.router(
-            title: 'Hoqooq',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeState.themeMode,
-            locale: localeState.locale,
-            routerConfig: AppRouter.router,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              gen_l10n.GeneratedAppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('en'), // English
-              Locale('ar'), // Arabic
-            ],
-          ),
+      child: BlocBuilder<LocaleBloc, LocaleState>(
+        builder: (context, localeState) => MaterialApp.router(
+          title: 'Lexora',
+          debugShowCheckedModeBanner: false,
+          // Light mode only. No `darkTheme`/`themeMode` is supplied, so the
+          // removed in-app switch cannot come back and the device's own
+          // dark-mode setting cannot flip the app either.
+          theme: AppTheme.lightTheme,
+          locale: localeState.locale,
+          routerConfig: AppRouter.router,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            gen_l10n.GeneratedAppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'), // English
+            Locale('ar'), // Arabic
+          ],
         ),
       ),
     );

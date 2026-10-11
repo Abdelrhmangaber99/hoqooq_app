@@ -9,8 +9,11 @@ enum ServiceStatus {
 
 ServiceStatus serviceStatusFromJson(Object? value) => switch (value) {
   'SCHEDULED' => ServiceStatus.scheduled,
+  'IN_PROGRESS' => ServiceStatus.scheduled,
+  'SERVED' => ServiceStatus.completed,
   'COMPLETED' => ServiceStatus.completed,
   'FAILED' => ServiceStatus.failed,
+  'POSTPONED' => ServiceStatus.rescheduled,
   'RESCHEDULED' => ServiceStatus.rescheduled,
   'CANCELLED' => ServiceStatus.cancelled,
   _ => ServiceStatus.unknown,
@@ -18,9 +21,9 @@ ServiceStatus serviceStatusFromJson(Object? value) => switch (value) {
 
 String serviceStatusToJson(ServiceStatus value) => switch (value) {
   ServiceStatus.scheduled => 'SCHEDULED',
-  ServiceStatus.completed => 'COMPLETED',
+  ServiceStatus.completed => 'SERVED',
   ServiceStatus.failed => 'FAILED',
-  ServiceStatus.rescheduled => 'RESCHEDULED',
+  ServiceStatus.rescheduled => 'POSTPONED',
   ServiceStatus.cancelled => 'CANCELLED',
   ServiceStatus.unknown => 'UNKNOWN',
 };

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -37,9 +38,7 @@ class NotificationsPage extends StatelessWidget {
                 current is NotificationsLoaded && current.actionError != null,
             listener: (context, state) {
               final message = (state as NotificationsLoaded).actionError!;
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(message)));
+              context.showErrorSnackBar(message);
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),

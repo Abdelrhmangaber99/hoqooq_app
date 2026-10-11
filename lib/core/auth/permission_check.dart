@@ -13,5 +13,5 @@ import '../../features/authentication/presentation/bloc/session_cubit.dart';
 bool currentUserHasPerm(String permissionCode) {
   final sessionState = getIt<SessionCubit>().state;
   return sessionState is SessionAuthenticated &&
-      sessionState.user.hasPerm(permissionCode);
+      (sessionState.isFirmAdmin || sessionState.user.hasPerm(permissionCode));
 }

@@ -11,8 +11,10 @@ enum HearingStatus {
   scheduled,
   @JsonValue('COMPLETED')
   completed,
-  @JsonValue('ADJOURNED')
+  @JsonValue('POSTPONED')
   adjourned,
+  @JsonValue('MISSED')
+  missed,
   @JsonValue('CANCELLED')
   cancelled,
   @JsonValue('unknown')

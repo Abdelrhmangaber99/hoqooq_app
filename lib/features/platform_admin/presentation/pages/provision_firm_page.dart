@@ -6,8 +6,9 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_dropdown_field.dart';
 import '../../../../core/widgets/app_text_field.dart';
-import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/auth/permission_labels.dart';
+import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../di/injection.dart';
 import '../../domain/firm_admin_permissions.dart';
 import '../../domain/platform_admin_contract.dart';
@@ -24,7 +25,6 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
   final _contact = TextEditingController();
   final _name = TextEditingController();
   final _email = TextEditingController();
-  final _password = TextEditingController();
   String? _planId;
   String _cycle = 'MONTHLY';
   // A Firm Admin is an account type, not necessarily a lawyer. Sending
@@ -35,9 +35,7 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
   static const String _classification = 'OTHER';
   bool _saving = false;
   late final Future<_ProvisioningData> _provisioningDataFuture;
-  // Permissions start empty. The Super Admin explicitly selects every
-  // capability granted to a Firm Admin; no hidden full-access template.
-  final _permissions = <String>{};
+  List<String> _firmAdminPermissions = const [];
   @override
   void initState() {
     super.initState();
@@ -46,7 +44,7 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
 
   @override
   void dispose() {
-    for (final c in [_firm, _contact, _name, _email, _password]) {
+    for (final c in [_firm, _contact, _name, _email]) {
       c.dispose();
     }
     super.dispose();
@@ -62,21 +60,24 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
       _planId ??= (plans.first as Map<String, dynamic>)['id'] as String;
     }
     final permissionKeys =
-        PlatformAdminContract.permissionCodes(responses[1].data)
+        normalizePermissionCodes(
+              PlatformAdminContract.permissionCodes(responses[1].data),
+            )
             // Platform-management permissions cannot be delegated to a Firm
             // Admin. More importantly, never manufacture a code the backend
             // catalog did not return: its provisioning validation rejects it.
             .where(isFirmAdminGrantablePermission)
             .toList()
           ..sort();
-    return _ProvisioningData(plans: plans, permissionKeys: permissionKeys);
+    _firmAdminPermissions = permissionKeys;
+    return _ProvisioningData(plans: plans);
   }
 
   Future<void> _submit() async {
     if (!_key.currentState!.validate() || _planId == null) {
       return;
     }
-    if (_permissions.isEmpty) {
+    if (_firmAdminPermissions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -87,33 +88,61 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
       return;
     }
     setState(() => _saving = true);
+    final dio = getIt<Dio>();
     try {
-      await getIt<Dio>().post(
+      // Exactly the fields `ProvisionTenantDto` declares — no more. The
+      // backend validates with `forbidNonWhitelisted`, so a single undeclared
+      // key rejects the entire request ("property X should not exist",
+      // surfaced here as the localized "unsupported field" message).
+      // `adminPassword` and `permissionKeys` used to be sent here and made
+      // provisioning impossible: the invited admin sets their own password
+      // through the activation link, and the permission set is replaced below
+      // through the endpoint that actually owns it.
+      final response = await dio.post(
         '/tenants/provision',
         data: {
           'firmName': _firm.text.trim(),
           'firmContactEmail': _contact.text.trim(),
           'adminFullName': _name.text.trim(),
           'adminEmail': _email.text.trim(),
-          if (_password.text.isNotEmpty) 'adminPassword': _password.text,
           'adminJobClassification': _classification,
-          'permissionKeys': _permissions.toList(),
           'planId': _planId,
           'billingCycle': _cycle,
         },
       );
+
+      // The firm and its admin exist from here on, so a failure in the
+      // permission step below must not be reported as a failed provision.
+      final firmId = await _resolveProvisionedFirmId(dio, response.data);
+      var permissionsApplied = false;
+      if (firmId != null) {
+        try {
+          // `SetFirmAdminPermissionsDto` replaces the Firm Admin's whole
+          // non-platform set with the codes the catalog actually returned
+          // (platform/system codes are filtered out — the backend forbids
+          // granting them to a tenant).
+          await dio.patch(
+            '/tenants/$firmId/firm-admin/permissions',
+            data: {'permissionKeys': _firmAdminPermissions},
+          );
+          permissionsApplied = true;
+        } on DioException {
+          permissionsApplied = false;
+        }
+      }
+      if (!permissionsApplied && mounted) {
+        context.showErrorSnackBar(
+          context.tr('firm_admin_permissions_not_applied'),
+        );
+      }
       if (mounted) {
         context.pop(true);
       }
     } on DioException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.response?.data?['message']?.toString() ??
-                  'Could not provision this firm.',
-            ),
-          ),
+        context.showErrorSnackBar(
+          e.response?.data?['message']?.toString() ??
+              context.tr('could_not_provision_firm'),
         );
       }
     } finally {
@@ -121,6 +150,41 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
         setState(() => _saving = false);
       }
     }
+  }
+
+  /// `POST /tenants/provision` is documented with a bare `201` and no response
+  /// body schema, so the new firm's id is taken from whatever the server
+  /// actually returned when that carries one, and otherwise looked up in the
+  /// firm registry by the exact name and contact email just submitted (the
+  /// same list the Firms screen renders). An ambiguous match is refused rather
+  /// than guessed — a replaced permission set on the wrong firm would be worse
+  /// than one left at the backend's default.
+  Future<String?> _resolveProvisionedFirmId(Dio dio, Object? body) async {
+    final fromBody =
+        _idIn(body) ??
+        _idIn(body is Map ? body['firm'] : null) ??
+        _idIn(body is Map ? body['tenant'] : null);
+    if (fromBody != null) return fromBody;
+
+    final response = await dio.get('/tenants');
+    final name = _firm.text.trim();
+    final contact = _contact.text.trim();
+    final matches = (response.data as List<dynamic>)
+        .whereType<Map<String, dynamic>>()
+        .where((firm) => firm['name']?.toString().trim() == name)
+        .where(
+          (firm) =>
+              contact.isEmpty ||
+              firm['contactEmail']?.toString().trim() == contact,
+        )
+        .toList();
+    return matches.length == 1 ? _idIn(matches.single) : null;
+  }
+
+  static String? _idIn(Object? value) {
+    if (value is! Map) return null;
+    final id = value['id'];
+    return id is String && id.isNotEmpty ? id : null;
   }
 
   @override
@@ -174,13 +238,10 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
                   validator: _required,
                 ),
                 const SizedBox(height: AppSpacing.m),
-                AppTextField(
-                  label: '${context.tr('temporary_password')} (optional)',
-                  controller: _password,
-                  isPassword: true,
-                  validator: (v) => v != null && v.isNotEmpty && v.length < 8
-                      ? 'Use at least 8 characters or leave it empty'
-                      : null,
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  context.tr('firm_admin_invitation_note'),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: AppSpacing.l),
                 AppDropdownField<String>(
@@ -196,28 +257,6 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
                     return p['name'] as String? ?? id;
                   },
                   onChanged: (v) => setState(() => _planId = v),
-                ),
-                const SizedBox(height: AppSpacing.m),
-                ExpansionTile(
-                  title: Text(context.tr('firm_admin_permissions')),
-                  subtitle: Text(
-                    '${_permissions.length} ${context.tr('permissions_selected')}',
-                  ),
-                  children: data.permissionKeys
-                      .map(
-                        (permission) => CheckboxListTile(
-                          title: Text(permissionLabel(context, permission)),
-                          value: _permissions.contains(permission),
-                          onChanged: (selected) => setState(() {
-                            if (selected ?? false) {
-                              _permissions.add(permission);
-                            } else {
-                              _permissions.remove(permission);
-                            }
-                          }),
-                        ),
-                      )
-                      .toList(),
                 ),
                 const SizedBox(height: AppSpacing.m),
                 AppDropdownField<String>(
@@ -240,13 +279,13 @@ class _ProvisionFirmPageState extends State<ProvisionFirmPage> {
       },
     ),
   );
-  String? _required(String? value) =>
-      value == null || value.trim().isEmpty ? 'This field is required' : null;
+  String? _required(String? value) => value == null || value.trim().isEmpty
+      ? context.tr('field_required')
+      : null;
 }
 
 class _ProvisioningData {
-  const _ProvisioningData({required this.plans, required this.permissionKeys});
+  const _ProvisioningData({required this.plans});
 
   final List<dynamic> plans;
-  final List<String> permissionKeys;
 }

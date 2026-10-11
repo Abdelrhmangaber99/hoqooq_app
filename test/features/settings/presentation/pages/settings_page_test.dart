@@ -22,9 +22,7 @@ User _firmAdminUser() => User(
   id: 'u1',
   email: 'a@b.com',
   fullName: 'A B',
-  isSuperAdmin: false,
   status: 'ACTIVE',
-  mfaEnabled: false,
   createdAt: DateTime(2026, 1, 1),
   updatedAt: DateTime(2026, 1, 1),
   accountType: 'FIRM_ADMIN',
@@ -100,6 +98,7 @@ void main() {
 
     registerFallbackValue(RequestOptions(path: '/'));
     registerFallbackValue(FormData());
+    registerFallbackValue(ThemeMode.system);
   });
 
   setUp(() async {
@@ -281,6 +280,7 @@ void main() {
 
           when(
             () => authRepository.updateProfile(
+              userId: 'u1',
               fullName: 'Updated Name',
               avatarUrl: 'https://cdn.example.com/avatar.png',
             ),
@@ -324,21 +324,16 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('switching theme mode invokes profileCubit.setThemeMode', (
+    testWidgets('no longer offers a theme switch — the app is light-only', (
       tester,
     ) async {
       await withLargeSurface(tester, () async {
         await openPreferencesPanel(tester);
 
-        await tester.tap(find.text('Dark'));
-        await tester.pumpAndSettle();
-
-        verify(() => profileCubit.setThemeMode(ThemeMode.dark)).called(1);
-
-        await tester.tap(find.text('Light'));
-        await tester.pumpAndSettle();
-
-        verify(() => profileCubit.setThemeMode(ThemeMode.light)).called(1);
+        expect(find.text('Light'), findsNothing);
+        expect(find.text('Dark'), findsNothing);
+        expect(find.text('System'), findsNothing);
+        verifyNever(() => profileCubit.setThemeMode(any()));
       });
     });
 

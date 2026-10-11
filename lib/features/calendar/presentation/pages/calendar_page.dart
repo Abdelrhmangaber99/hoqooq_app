@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
@@ -12,6 +13,10 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
+import '../../../cases/domain/entities/court.dart';
+import '../../../cases/presentation/case_display_helpers.dart';
+import '../../../hearings/domain/entities/hearing.dart';
+import '../../../hearings/presentation/hearing_display_helpers.dart';
 import '../../domain/entities/timeline_item.dart';
 import '../bloc/calendar_bloc.dart';
 import '../timeline_display_helpers.dart';
@@ -93,6 +98,7 @@ class CalendarPage extends StatelessWidget {
                                 context,
                                 visibleItems,
                                 state.selectedDate,
+                                state.hearingsById,
                               ),
                             ),
                           ],
@@ -147,10 +153,16 @@ class CalendarPage extends StatelessWidget {
             child: Row(
               children: [
                 Flexible(
-                  child: Text(
-                    '${_getMonthName(selectedDate.month)} ',
-                    style: AppTypography.h1,
-                    overflow: TextOverflow.ellipsis,
+                  // Wrapping the existing Text keeps the header's width
+                  // behaviour unchanged (no extra icon to overflow narrow
+                  // headers) while making the month itself the picker trigger.
+                  child: GestureDetector(
+                    onTap: () => _showMonthPicker(context, selectedDate),
+                    child: Text(
+                      '${_getMonthName(selectedDate.month)} ',
+                      style: AppTypography.h1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
                 DropdownButton<int>(
@@ -226,6 +238,86 @@ class CalendarPage extends StatelessWidget {
       'December',
     ];
     return months[month - 1];
+  }
+
+  /// Tapping the header month opens a month picker for the current year —
+  /// the mobile analogue of the web calendar's prev/next month arrows.
+  /// Selecting a month dispatches [ChangeMonthRequested], which re-fetches
+  /// the timeline for that month.
+  Future<void> _showMonthPicker(
+    BuildContext context,
+    DateTime selectedDate,
+  ) async {
+    final bloc = context.read<CalendarBloc>();
+    var year = selectedDate.year;
+    final selection = await showDialog<({int year, int month})>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setPickerState) => AlertDialog(
+          title: Row(
+            children: [
+              IconButton(
+                onPressed: () => setPickerState(() => year--),
+                icon: const Icon(Icons.chevron_left_rounded),
+              ),
+              Expanded(
+                child: Text('$year', textAlign: TextAlign.center),
+              ),
+              IconButton(
+                onPressed: () => setPickerState(() => year++),
+                icon: const Icon(Icons.chevron_right_rounded),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 300,
+            child: GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 3,
+              childAspectRatio: 1.9,
+              children: [
+                for (var month = 1; month <= 12; month++)
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        backgroundColor:
+                            month == selectedDate.month &&
+                                year == selectedDate.year
+                            ? AppColors.brass500
+                            : null,
+                        foregroundColor:
+                            month == selectedDate.month &&
+                                year == selectedDate.year
+                            ? Colors.white
+                            : AppColors.ink700,
+                        side: const BorderSide(color: AppColors.paperLine),
+                      ),
+                      onPressed: () => Navigator.of(
+                        dialogContext,
+                      ).pop((year: year, month: month)),
+                      child: Text(
+                        _getMonthName(month),
+                        style: AppTypography.labelMedium,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.tr('cancel')),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (selection != null) {
+      bloc.add(ChangeMonthRequested(selection.year, selection.month));
+    }
   }
 
   Widget _buildSegment(
@@ -429,6 +521,7 @@ class CalendarPage extends StatelessWidget {
     BuildContext context,
     List<TimelineItem> items,
     DateTime selectedDate,
+    Map<String, Hearing> hearingsById,
   ) {
     final dayItems = items.where((item) {
       final date = timelineItemDate(item);
@@ -459,8 +552,11 @@ class CalendarPage extends StatelessWidget {
                     itemCount: dayItems.length,
                     separatorBuilder: (_, _) =>
                         const SizedBox(height: AppSpacing.m),
-                    itemBuilder: (context, index) =>
-                        _buildEventItem(context, dayItems[index]),
+                    itemBuilder: (context, index) => _buildEventItem(
+                      context,
+                      dayItems[index],
+                      hearingsById,
+                    ),
                   ),
           ),
         ],
@@ -468,7 +564,11 @@ class CalendarPage extends StatelessWidget {
     );
   }
 
-  Widget _buildEventItem(BuildContext context, TimelineItem item) {
+  Widget _buildEventItem(
+    BuildContext context,
+    TimelineItem item,
+    Map<String, Hearing> hearingsById,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.m),
       decoration: BoxDecoration(
@@ -488,10 +588,13 @@ class CalendarPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(timelineItemTitle(item), style: AppTypography.labelLarge),
+                Text(
+                  _eventTitle(context, item, hearingsById),
+                  style: AppTypography.labelLarge,
+                ),
                 const SizedBox(height: 4),
                 Text(
-                  timelineItemSubtitle(context, item),
+                  _eventSubtitle(context, item, hearingsById),
                   style: AppTypography.bodySmall,
                 ),
               ],
@@ -500,6 +603,49 @@ class CalendarPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// A timeline HEARING item has no title and no court of its own — resolve
+  /// the case number from the joined hearing (falling back to the generic
+  /// "جلسة" label) rather than ever showing a raw id.
+  String _eventTitle(
+    BuildContext context,
+    TimelineItem item,
+    Map<String, Hearing> hearingsById,
+  ) {
+    if (item is TimelineHearingItem) {
+      final hearing = hearingsById[item.id];
+      final caseSummary = hearing?.caseSummary ?? item.caseSummary;
+      if (caseSummary != null) {
+        return caseSummaryCourtReference(caseSummary);
+      }
+      return context.tr('hearing');
+    }
+    return timelineItemTitle(item);
+  }
+
+  /// Hearing entries show the scheduled time and the court name (the point of
+  /// the entry) plus its status, instead of the bare id the timeline carries.
+  String _eventSubtitle(
+    BuildContext context,
+    TimelineItem item,
+    Map<String, Hearing> hearingsById,
+  ) {
+    if (item is TimelineHearingItem) {
+      final locale = Localizations.localeOf(context).languageCode;
+      final parts = <String>[];
+      if (item.date != null) {
+        parts.add(DateFormat.jm(locale).format(item.date!.toLocal()));
+      }
+      final court = hearingsById[item.id]?.court;
+      final courtName = court?.labelFor(locale);
+      if (courtName != null && courtName.trim().isNotEmpty) {
+        parts.add(courtName);
+      }
+      parts.add(hearingStatusLabel(context, item.status));
+      return parts.join(' • ');
+    }
+    return timelineItemSubtitle(context, item);
   }
 
   bool _canDisplayTimelineItem(TimelineItem item) => switch (item) {

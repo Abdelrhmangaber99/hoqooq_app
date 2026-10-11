@@ -10,6 +10,8 @@ _CaseSummary _$CaseSummaryFromJson(Map<String, dynamic> json) => _CaseSummary(
   id: json['id'] as String,
   tenantId: json['tenantId'] as String,
   caseNumber: json['caseNumber'] as String,
+  courtCaseNumber: json['courtCaseNumber'] as String?,
+  courtCaseYear: (json['courtCaseYear'] as num?)?.toInt(),
   status: $enumDecode(
     _$CaseStatusEnumMap,
     json['status'],
@@ -39,6 +41,8 @@ Map<String, dynamic> _$CaseSummaryToJson(_CaseSummary instance) =>
       'id': instance.id,
       'tenantId': instance.tenantId,
       'caseNumber': instance.caseNumber,
+      'courtCaseNumber': instance.courtCaseNumber,
+      'courtCaseYear': instance.courtCaseYear,
       'status': _$CaseStatusEnumMap[instance.status]!,
       'clientId': instance.clientId,
       'caseTypeId': instance.caseTypeId,

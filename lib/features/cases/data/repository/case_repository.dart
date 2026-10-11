@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../../core/network/api_result.dart';
 import '../../../../core/network/dio_error_mapper.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
@@ -38,6 +39,13 @@ class CaseRepository implements ICaseRepository {
       );
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      // A response that doesn't match the entity shape (missing/odd enum value,
+      // absent required key) must fail as an `ApiResult`, never as a thrown
+      // exception: an uncaught decode error escapes the calling bloc's event
+      // handler before it can emit, which pins the screen on its loading
+      // spinner instead of showing an error.
+      return Left(const ServerFailure());
     }
   }
 
@@ -48,6 +56,13 @@ class CaseRepository implements ICaseRepository {
       return Right(LegalCase.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      // A response that doesn't match the entity shape (missing/odd enum value,
+      // absent required key) must fail as an `ApiResult`, never as a thrown
+      // exception: an uncaught decode error escapes the calling bloc's event
+      // handler before it can emit, which pins the screen on its loading
+      // spinner instead of showing an error.
+      return Left(const ServerFailure());
     }
   }
 
@@ -59,6 +74,13 @@ class CaseRepository implements ICaseRepository {
       return Right(LegalCase.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      // A response that doesn't match the entity shape (missing/odd enum value,
+      // absent required key) must fail as an `ApiResult`, never as a thrown
+      // exception: an uncaught decode error escapes the calling bloc's event
+      // handler before it can emit, which pins the screen on its loading
+      // spinner instead of showing an error.
+      return Left(const ServerFailure());
     }
   }
 
@@ -70,6 +92,13 @@ class CaseRepository implements ICaseRepository {
       return Right(LegalCase.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      // A response that doesn't match the entity shape (missing/odd enum value,
+      // absent required key) must fail as an `ApiResult`, never as a thrown
+      // exception: an uncaught decode error escapes the calling bloc's event
+      // handler before it can emit, which pins the screen on its loading
+      // spinner instead of showing an error.
+      return Left(const ServerFailure());
     }
   }
 
@@ -83,6 +112,13 @@ class CaseRepository implements ICaseRepository {
       return Right(LegalCase.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      // A response that doesn't match the entity shape (missing/odd enum value,
+      // absent required key) must fail as an `ApiResult`, never as a thrown
+      // exception: an uncaught decode error escapes the calling bloc's event
+      // handler before it can emit, which pins the screen on its loading
+      // spinner instead of showing an error.
+      return Left(const ServerFailure());
     }
   }
 
@@ -99,6 +135,13 @@ class CaseRepository implements ICaseRepository {
       return const Right(null);
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      // A response that doesn't match the entity shape (missing/odd enum value,
+      // absent required key) must fail as an `ApiResult`, never as a thrown
+      // exception: an uncaught decode error escapes the calling bloc's event
+      // handler before it can emit, which pins the screen on its loading
+      // spinner instead of showing an error.
+      return Left(const ServerFailure());
     }
   }
 
@@ -109,6 +152,13 @@ class CaseRepository implements ICaseRepository {
       return const Right(null);
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      // A response that doesn't match the entity shape (missing/odd enum value,
+      // absent required key) must fail as an `ApiResult`, never as a thrown
+      // exception: an uncaught decode error escapes the calling bloc's event
+      // handler before it can emit, which pins the screen on its loading
+      // spinner instead of showing an error.
+      return Left(const ServerFailure());
     }
   }
 }

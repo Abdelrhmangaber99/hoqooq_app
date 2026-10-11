@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -20,6 +21,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -53,6 +55,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 384),
                         child: _LoginForm(
+                          formKey: _formKey,
                           showMobileLogo: !showBrandPanel,
                           emailController: _emailController,
                           passwordController: _passwordController,
@@ -79,6 +82,7 @@ class _LoginPageState extends State<LoginPage> {
 
 class _LoginForm extends StatelessWidget {
   const _LoginForm({
+    required this.formKey,
     required this.showMobileLogo,
     required this.emailController,
     required this.passwordController,
@@ -88,6 +92,7 @@ class _LoginForm extends StatelessWidget {
     required this.onRememberChanged,
   });
 
+  final GlobalKey<FormState> formKey;
   final bool showMobileLogo;
   final TextEditingController emailController;
   final TextEditingController passwordController;
@@ -103,114 +108,146 @@ class _LoginForm extends StatelessWidget {
         if (authState is AuthAuthenticated) {
           context.go(AppRouter.home);
         } else if (authState is AuthError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(authState.message)));
+          context.showErrorSnackBar(authState.message);
         }
       },
-      builder: (context, authState) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (showMobileLogo) ...[
-            const Center(child: _Logo(size: 54)),
-            const SizedBox(height: 28),
-          ],
-          Text(context.tr('welcome_back'), style: AppTypography.h2),
-          const SizedBox(height: 6),
-          Text(
-            context.tr('sign_in_to_workspace'),
-            style: AppTypography.bodyMedium.copyWith(color: AppColors.ink400),
-          ),
-          const SizedBox(height: 28),
-          AppTextField(
-            label: context.tr('email_address'),
-            hint: 'example@lawfirm.com',
-            controller: emailController,
-            prefixIcon: Icons.mail_outline_rounded,
-            keyboardType: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 18),
-          AppTextField(
-            label: context.tr('password'),
-            hint: '••••••••••••',
-            controller: passwordController,
-            prefixIcon: Icons.lock_outline_rounded,
-            obscureText: obscurePassword,
-            suffixIcon: IconButton(
-              icon: Icon(
-                obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: AppColors.ink300,
-                size: 19,
-              ),
-              onPressed: onTogglePassword,
+      builder: (context, authState) => Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (showMobileLogo) ...[
+              const Center(child: _Logo(size: 54)),
+              const SizedBox(height: 28),
+            ],
+            Text(context.tr('welcome_back'), style: AppTypography.h2),
+            const SizedBox(height: 6),
+            Text(
+              context.tr('sign_in_to_workspace'),
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.ink400),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Checkbox(
-                      value: rememberMe,
-                      activeColor: AppColors.brass500,
-                      visualDensity: VisualDensity.compact,
-                      onChanged: onRememberChanged,
-                    ),
-                    Flexible(
-                      child: Text(
-                        context.tr('remember_me'),
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.ink500,
+            const SizedBox(height: 28),
+            AppTextField(
+              label: context.tr('email_address'),
+              hint: 'example@lawfirm.com',
+              controller: emailController,
+              prefixIcon: Icons.mail_outline_rounded,
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) => _emailValidator(context, value),
+            ),
+            const SizedBox(height: 18),
+            AppTextField(
+              label: context.tr('password'),
+              hint: '••••••••••••',
+              controller: passwordController,
+              prefixIcon: Icons.lock_outline_rounded,
+              obscureText: obscurePassword,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: AppColors.ink300,
+                  size: 19,
+                ),
+                onPressed: onTogglePassword,
+              ),
+              validator: (value) => _passwordValidator(context, value),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: rememberMe,
+                        activeColor: AppColors.brass500,
+                        visualDensity: VisualDensity.compact,
+                        onChanged: onRememberChanged,
+                      ),
+                      Flexible(
+                        child: Text(
+                          context.tr('remember_me'),
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.ink500,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: TextButton(
-                  onPressed: () {
-                    if (authState is AuthLoading) return;
-                    context.push(AppRouter.forgotPassword);
-                  },
-                  child: Text(
-                    context.tr('forgot_password'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          AppButton(
-            text: context.tr('sign_in'),
-            isLoading: authState is AuthLoading,
-            icon: Icons.login_rounded,
-            onPressed: () => context.read<AuthBloc>().add(
-              LoginRequested(
-                emailController.text.trim(),
-                passwordController.text,
+                Flexible(
+                  child: TextButton(
+                    onPressed: () {
+                      if (authState is AuthLoading) return;
+                      context.push(AppRouter.forgotPassword);
+                    },
+                    child: Text(
+                      context.tr('forgot_password'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            AppButton(
+              text: context.tr('sign_in'),
+              isLoading: authState is AuthLoading,
+              icon: Icons.login_rounded,
+              onPressed: () {
+                if (authState is AuthLoading) return;
+                // Validate locally first. The backend answers a blank or
+                // malformed field with `class-validator`'s own English
+                // sentence, which is not worth a round trip (and used to
+                // surface on the sign-in screen in Arabic mode).
+                if (!(formKey.currentState?.validate() ?? false)) return;
+                context.read<AuthBloc>().add(
+                  LoginRequested(
+                    emailController.text.trim(),
+                    passwordController.text,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 26),
+            Text(
+              context.tr('invite_only_access'),
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.ink300,
+                height: 1.5,
               ),
             ),
-          ),
-          const SizedBox(height: 26),
-          Text(
-            context.tr('invite_only_access'),
-            textAlign: TextAlign.center,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.ink300,
-              height: 1.5,
-            ),
-          ),
-        ],
+            const SizedBox(height: 30),
+            const _PoweredByEthereal(),
+          ],
+        ),
       ),
     );
+  }
+
+  String? _emailValidator(BuildContext context, String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return context.tr('field_required');
+    // The backend owns the authoritative email rule; this only catches the
+    // obviously malformed value that would otherwise return a 400.
+    if (!text.contains('@') || text.endsWith('@')) {
+      return context.tr('invalid_email');
+    }
+    return null;
+  }
+
+  String? _passwordValidator(BuildContext context, String? value) {
+    if (value == null || value.isEmpty) return context.tr('field_required');
+    // LoginDto enforces @MinLength(6); checking it here keeps the backend's
+    // English validation sentence off the screen.
+    if (value.length < 6) return context.tr('error_password_min_length');
+    return null;
   }
 }
 
@@ -344,6 +381,137 @@ class _ArabesquePainter extends CustomPainter {
         canvas.drawCircle(center, 23, paint);
       }
     }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Vendor credit shown under the sign-in form: "POWERED BY Ethereal / SOFTWARE
+/// SOLUTIONS". Drawn with widgets rather than shipped as an image so it stays
+/// crisp at any density and needs no extra asset in the bundle.
+class _PoweredByEthereal extends StatelessWidget {
+  const _PoweredByEthereal();
+
+  /// Ethereal's teal, from the supplied lockup.
+  static const _teal = Color(0xFF12A594);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Divider(color: AppColors.paperLine, height: 1),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                'POWERED BY',
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.ink300,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 3,
+                ),
+              ),
+            ),
+            const Expanded(
+              child: Divider(color: AppColors.paperLine, height: 1),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _EtherealMark(size: 32),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Ethereal',
+                  style: AppTypography.h3.copyWith(
+                    color: AppColors.ink800,
+                    height: 1,
+                  ),
+                ),
+                Text(
+                  'SOFTWARE SOLUTIONS',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: _teal,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The Ethereal mark: a deep-navy tile with the teal swoosh. Painted, not
+/// loaded, so there is no binary asset to keep in sync.
+class _EtherealMark extends StatelessWidget {
+  const _EtherealMark({this.size = 32});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: size,
+    height: size,
+    child: CustomPaint(painter: _EtherealMarkPainter()),
+  );
+}
+
+class _EtherealMarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bg = Paint()..color = const Color(0xFF16233A);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Offset.zero & size,
+        Radius.circular(size.width * 0.24),
+      ),
+      bg,
+    );
+    final teal = Paint()
+      ..color = _PoweredByEthereal._teal
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.16
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width * 0.28, size.height * 0.72)
+        ..cubicTo(
+          size.width * 0.28,
+          size.height * 0.34,
+          size.width * 0.72,
+          size.height * 0.34,
+          size.width * 0.72,
+          size.height * 0.52,
+        ),
+      teal,
+    );
+    final white = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.125
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(size.width * 0.28, size.height * 0.28),
+      Offset(size.width * 0.70, size.height * 0.28),
+      white,
+    );
   }
 
   @override

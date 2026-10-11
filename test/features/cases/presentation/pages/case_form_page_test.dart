@@ -47,9 +47,7 @@ void main() {
     id: 'u1',
     email: 'admin@firm.com',
     fullName: 'Firm Admin',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     tenant: const TenantRef(id: 't1', name: 'Firm'),
@@ -59,6 +57,7 @@ void main() {
     id: 'c1',
     tenantId: 't1',
     caseNumber: 'CASE-2026-00001',
+    title: 'Existing case',
     status: CaseStatus.active,
     caseTypeId: 'ct1',
     priority: CasePriority.high,
@@ -70,11 +69,12 @@ void main() {
       name: 'Carlos Hernandez',
     ),
     courtName: 'District Court',
+    governorateId: 'gov-1',
     team: const [],
   );
 
-
   setUpAll(() async {
+    registerFallbackValue(const LoadCaseFormReferenceDataRequested());
     preloadedEn = AppLocalizations(const Locale('en'));
     await preloadedEn.load();
   });
@@ -132,7 +132,6 @@ void main() {
     expect(find.textContaining('CASE-2026-00001'), findsOneWidget);
   });
 
-
   testWidgets('shows a loading indicator while reference data loads', (
     tester,
   ) async {
@@ -146,6 +145,26 @@ void main() {
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('updates without requiring the existing court to be reselected', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildTestable(existingCase: legalCase));
+    await tester.pumpAndSettle();
+    clearInteractions(bloc);
+
+    await tester.ensureVisible(find.text('Save Changes'));
+    await tester.tap(find.text('Save Changes'));
+    await tester.pump();
+
+    final event =
+        verify(() => bloc.add(captureAny())).captured.single
+            as UpdateCaseSubmitted;
+    expect(event.id, 'c1');
+    expect(event.request.toJson(), isNot(contains('governorateId')));
+    expect(event.request.toJson(), isNot(contains('defaultCourtId')));
+    expect(event.request.toJson(), isNot(contains('circuitId')));
   });
 
   testWidgets('renders the create-mode form with empty fields and a client/'

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CaseTypeLookup {
 
- String get id; String get name;
+ String get id; String get name; String get labelEn; String get labelAr;
 /// Create a copy of CaseTypeLookup
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $CaseTypeLookupCopyWith<CaseTypeLookup> get copyWith => _$CaseTypeLookupCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CaseTypeLookup&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CaseTypeLookup&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.labelEn, labelEn) || other.labelEn == labelEn)&&(identical(other.labelAr, labelAr) || other.labelAr == labelAr));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode => Object.hash(runtimeType,id,name,labelEn,labelAr);
 
 @override
 String toString() {
-  return 'CaseTypeLookup(id: $id, name: $name)';
+  return 'CaseTypeLookup(id: $id, name: $name, labelEn: $labelEn, labelAr: $labelAr)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $CaseTypeLookupCopyWith<$Res>  {
   factory $CaseTypeLookupCopyWith(CaseTypeLookup value, $Res Function(CaseTypeLookup) _then) = _$CaseTypeLookupCopyWithImpl;
 @useResult
 $Res call({
- String id, String name
+ String id, String name, String labelEn, String labelAr
 });
 
 
@@ -65,10 +65,12 @@ class _$CaseTypeLookupCopyWithImpl<$Res>
 
 /// Create a copy of CaseTypeLookup
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? labelEn = null,Object? labelAr = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,labelEn: null == labelEn ? _self.labelEn : labelEn // ignore: cast_nullable_to_non_nullable
+as String,labelAr: null == labelAr ? _self.labelAr : labelAr // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -154,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String labelEn,  String labelAr)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CaseTypeLookup() when $default != null:
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.labelEn,_that.labelAr);case _:
   return orElse();
 
 }
@@ -175,10 +177,10 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String labelEn,  String labelAr)  $default,) {final _that = this;
 switch (_that) {
 case _CaseTypeLookup():
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.labelEn,_that.labelAr);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +197,10 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String labelEn,  String labelAr)?  $default,) {final _that = this;
 switch (_that) {
 case _CaseTypeLookup() when $default != null:
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.labelEn,_that.labelAr);case _:
   return null;
 
 }
@@ -209,12 +211,14 @@ return $default(_that.id,_that.name);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _CaseTypeLookup implements CaseTypeLookup {
-  const _CaseTypeLookup({required this.id, required this.name});
+class _CaseTypeLookup extends CaseTypeLookup {
+  const _CaseTypeLookup({required this.id, required this.name, this.labelEn = '', this.labelAr = ''}): super._();
   factory _CaseTypeLookup.fromJson(Map<String, dynamic> json) => _$CaseTypeLookupFromJson(json);
 
 @override final  String id;
 @override final  String name;
+@override@JsonKey() final  String labelEn;
+@override@JsonKey() final  String labelAr;
 
 /// Create a copy of CaseTypeLookup
 /// with the given fields replaced by the non-null parameter values.
@@ -229,16 +233,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CaseTypeLookup&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CaseTypeLookup&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.labelEn, labelEn) || other.labelEn == labelEn)&&(identical(other.labelAr, labelAr) || other.labelAr == labelAr));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode => Object.hash(runtimeType,id,name,labelEn,labelAr);
 
 @override
 String toString() {
-  return 'CaseTypeLookup(id: $id, name: $name)';
+  return 'CaseTypeLookup(id: $id, name: $name, labelEn: $labelEn, labelAr: $labelAr)';
 }
 
 
@@ -249,7 +253,7 @@ abstract mixin class _$CaseTypeLookupCopyWith<$Res> implements $CaseTypeLookupCo
   factory _$CaseTypeLookupCopyWith(_CaseTypeLookup value, $Res Function(_CaseTypeLookup) _then) = __$CaseTypeLookupCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name
+ String id, String name, String labelEn, String labelAr
 });
 
 
@@ -266,10 +270,12 @@ class __$CaseTypeLookupCopyWithImpl<$Res>
 
 /// Create a copy of CaseTypeLookup
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? labelEn = null,Object? labelAr = null,}) {
   return _then(_CaseTypeLookup(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,labelEn: null == labelEn ? _self.labelEn : labelEn // ignore: cast_nullable_to_non_nullable
+as String,labelAr: null == labelAr ? _self.labelAr : labelAr // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

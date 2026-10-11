@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/cache_busted_url.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
@@ -19,6 +21,7 @@ import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../../profile/presentation/bloc/profile_cubit.dart';
 import '../../../subscriptions/presentation/bloc/subscription_cubit.dart';
 import '../../../subscriptions/presentation/bloc/subscription_state.dart';
+import '../../../subscriptions/presentation/widgets/firm_logo_image.dart';
 import '../bloc/settings_cubit.dart';
 
 /// Settings — firm profile (gated by `firm.profile.manage` for edits),
@@ -85,7 +88,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
-    if (_subscriptionCubit.state is SubscriptionInitial) {
+    if (_subscriptionCubit.state is! SubscriptionLoaded) {
       _subscriptionCubit.fetchSubscription();
     }
     _initUserControllers();
@@ -144,6 +147,15 @@ class _SettingsPageState extends State<SettingsPage> {
     await _subscriptionCubit.uploadFirmLogo(path);
   }
 
+  Future<void> _pickAndSetAvatar() async {
+    final result = await FilePicker.pickFiles(type: FileType.image);
+    final path = result?.files.single.path;
+    if (path == null) return;
+    setState(() {
+      _avatarUrlController.text = path;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -169,23 +181,10 @@ class _SettingsPageState extends State<SettingsPage> {
               }
             },
             builder: (context, state) {
-              if (state is SubscriptionLoading ||
-                  state is SubscriptionInitial) {
-                return const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                );
-              }
-              if (state is SubscriptionError) {
-                return ErrorView(
-                  message: state.message,
-                  onRetry: () => _subscriptionCubit.fetchSubscription(),
-                );
-              }
-              final loaded = state as SubscriptionLoaded;
               return LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth >= 900;
-                  final panel = _buildPanel(context, loaded);
+                  final panel = _buildPanel(context, state);
                   if (isWide) {
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,7 +352,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return _sidebarItem(title, selected: false, onTap: onTap);
   }
 
-  Widget _buildPanel(BuildContext context, SubscriptionLoaded state) {
+  Widget _buildPanel(BuildContext context, SubscriptionState subState) {
     return Container(
       margin: const EdgeInsets.fromLTRB(
         0,
@@ -365,13 +364,39 @@ class _SettingsPageState extends State<SettingsPage> {
       decoration: _panelDecoration,
       child: SingleChildScrollView(
         child: switch (_section) {
-          _SettingsSection.firmInfo => _buildFirmInfoPanel(context, state),
+          _SettingsSection.firmInfo =>
+            _buildFirmInfoSection(context, subState),
           _SettingsSection.personalInfo => _buildPersonalInfoPanel(context),
           _SettingsSection.preferences => _buildPreferencesPanel(context),
-          _SettingsSection.changePassword => _buildChangePasswordPanel(context),
+          _SettingsSection.changePassword =>
+            _buildChangePasswordPanel(context),
         },
       ),
     );
+  }
+
+  Widget _buildFirmInfoSection(
+    BuildContext context,
+    SubscriptionState state,
+  ) {
+    if (state is SubscriptionLoading || state is SubscriptionInitial) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+    if (state is SubscriptionError) {
+      return ErrorView(
+        message: state.message,
+        onRetry: () => _subscriptionCubit.fetchSubscription(),
+      );
+    }
+    if (state is SubscriptionLoaded) {
+      return _buildFirmInfoPanel(context, state);
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildFirmInfoPanel(BuildContext context, SubscriptionLoaded state) {
@@ -395,21 +420,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 border: Border.all(color: AppColors.paperLine),
               ),
               clipBehavior: Clip.antiAlias,
-              child: logoUrl != null && logoUrl.isNotEmpty
-                  ? Image.network(
-                      _bustedUrl(logoUrl, firm['updatedAt']),
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.business_outlined,
-                        size: 28,
-                        color: AppColors.textHint,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.business_outlined,
-                      size: 28,
-                      color: AppColors.textHint,
-                    ),
+              // `logoUrl` is a MinIO object key, not a URL — rendering it as a
+              // network image 404'd and always showed the placeholder.
+              // FirmLogoImage fetches the real bytes through the
+              // authenticated dio client instead.
+              child: FirmLogoImage(
+                logoKey: logoUrl,
+                version: firm['updatedAt'],
+              ),
             ),
             const SizedBox(width: AppSpacing.m),
             Expanded(
@@ -584,7 +602,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       child:
                           user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
                           ? Image.network(
-                              _bustedUrl(user.avatarUrl!, user.updatedAt),
+                              cacheBustedUrl(user.avatarUrl!, user.updatedAt),
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Center(
                                 child: Text(
@@ -640,17 +658,37 @@ class _SettingsPageState extends State<SettingsPage> {
                   controller: _emailController,
                 ),
                 const SizedBox(height: AppSpacing.m),
-                AppTextField(
-                  label: context.tr('avatar_url'),
-                  controller: _avatarUrlController,
-                  keyboardType: TextInputType.url,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: AppTextField(
+                        label: context.tr('avatar_url'),
+                        controller: _avatarUrlController,
+                        keyboardType: TextInputType.url,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 22),
+                      child: OutlinedButton.icon(
+                        onPressed: _pickAndSetAvatar,
+                        icon: const Icon(Icons.image_outlined, size: 16),
+                        label: Text(
+                          context.tr('choose_photo'),
+                          style: AppTypography.bodySmall,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.l),
                 if (errorKey != null) ...[
                   _inlineBanner(
-                    message: errorKey == 'full_name_required'
-                        ? context.tr('full_name_required')
-                        : errorKey,
+                    // The state carries either a localization key
+                    // (`full_name_required`) or the failure's own text; both
+                    // resolve to the active locale here.
+                    message: localizedErrorKeyOrMessage(context, errorKey),
                     background: AppColors.rust100,
                     foreground: AppColors.rust600,
                     icon: Icons.error_outline,
@@ -700,7 +738,6 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildPreferencesPanel(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
       builder: (context, profileState) {
-        final currentTheme = profileState.themeMode;
         final isArabic = profileState.locale.languageCode == 'ar';
 
         return Column(
@@ -708,35 +745,9 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Text(context.tr('preferences'), style: AppTypography.h2),
             const SizedBox(height: AppSpacing.l),
-            Text(context.tr('appearance'), style: AppTypography.h3),
-            const SizedBox(height: AppSpacing.s),
-            Wrap(
-              spacing: AppSpacing.s,
-              children: [
-                _themeOption(
-                  context,
-                  label: context.tr('theme_light'),
-                  icon: Icons.light_mode_outlined,
-                  selected: currentTheme == ThemeMode.light,
-                  onTap: () => _profileCubit.setThemeMode(ThemeMode.light),
-                ),
-                _themeOption(
-                  context,
-                  label: context.tr('theme_dark'),
-                  icon: Icons.dark_mode_outlined,
-                  selected: currentTheme == ThemeMode.dark,
-                  onTap: () => _profileCubit.setThemeMode(ThemeMode.dark),
-                ),
-                _themeOption(
-                  context,
-                  label: context.tr('theme_system'),
-                  icon: Icons.settings_brightness_outlined,
-                  selected: currentTheme == ThemeMode.system,
-                  onTap: () => _profileCubit.setThemeMode(ThemeMode.system),
-                ),
-              ],
-            ),
-            const Divider(height: AppSpacing.xl, color: AppColors.paperLine),
+            // The Light/Dark/System picker was removed: the app ships a single
+            // light theme (see `main.dart`), so an appearance choice here
+            // would be a control that does nothing. Language stays.
             Text(context.tr('app_language'), style: AppTypography.h3),
             const SizedBox(height: AppSpacing.s),
             Container(
@@ -791,25 +802,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _themeOption(
-    BuildContext context, {
-    required String label,
-    required IconData icon,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return ChoiceChip(
-      selected: selected,
-      avatar: Icon(
-        icon,
-        size: 16,
-        color: selected ? AppColors.brass800 : AppColors.ink600,
-      ),
-      label: Text(label),
-      onSelected: (_) => onTap(),
-    );
-  }
-
   Widget _buildChangePasswordPanel(BuildContext context) {
     return _ChangePasswordForm(settingsCubit: _settingsCubit);
   }
@@ -841,11 +833,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  String _bustedUrl(String url, dynamic updatedAt) {
-    if (updatedAt == null) return url;
-    final separator = url.contains('?') ? '&' : '?';
-    return '$url${separator}v=${Uri.encodeComponent(updatedAt.toString())}';
-  }
 }
 
 class _ChangePasswordForm extends StatefulWidget {

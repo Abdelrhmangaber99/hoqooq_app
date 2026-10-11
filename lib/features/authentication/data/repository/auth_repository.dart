@@ -99,6 +99,29 @@ class AuthRepository implements IAuthRepository {
   }
 
   @override
+  ApiResult<AuthResponse?> activateAccount({
+    required String token,
+    required String password,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/activate',
+        data: {'token': token, 'password': password},
+      );
+      if (response.data != null &&
+          response.data is Map<String, dynamic> &&
+          (response.data as Map<String, dynamic>).containsKey('accessToken')) {
+        return Right(
+          AuthResponse.fromJson(response.data as Map<String, dynamic>),
+        );
+      }
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(mapDioError(e));
+    }
+  }
+
+  @override
   ApiResult<void> changePassword({
     required String oldPassword,
     required String newPassword,
@@ -117,19 +140,32 @@ class AuthRepository implements IAuthRepository {
 
   @override
   ApiResult<User> updateProfile({
+    required String userId,
     String? fullName,
     String? phone,
     String? avatarUrl,
   }) async {
     try {
-      final data = <String, dynamic>{};
-      if (fullName != null) data['fullName'] = fullName;
-      if (phone != null) data['phone'] = phone;
-      if (avatarUrl != null) data['avatarUrl'] = avatarUrl;
-      final response = await _dio.patch('/users/me', data: data);
+      // Blank values are omitted rather than sent as empty strings. The
+      // backend validates `avatarUrl` as a URL, so sending `''` made the whole
+      // save fail with a validation error whenever the avatar field was left
+      // empty — including for every user who has no photo yet.
+      final data = <String, dynamic>{
+        if (fullName != null && fullName.trim().isNotEmpty)
+          'fullName': fullName,
+        if (phone != null && phone.trim().isNotEmpty) 'phone': phone,
+        if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+          'avatarUrl': avatarUrl,
+      };
+      final response = await _patchProfile(data);
       return Right(User.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
     }
+  }
+
+  /// The deployed API exposes profile editing only at `PATCH /users/me`.
+  Future<Response<dynamic>> _patchProfile(Map<String, dynamic> data) async {
+    return _dio.patch('/users/me', data: data);
   }
 }

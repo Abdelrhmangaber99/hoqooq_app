@@ -46,7 +46,7 @@
   "court_not_selected": "Court not selected",
   "platform_admin": "Platform administration",
   "invite_only_access": "Access is by invitation only. Contact platform administration to create a workspace.",
-  "hoqooq_brand": "Hoqooq",
+  "hoqooq_brand": "Lexora",
   "brand_quote": "We simplify legal work so you can focus on justice.",
   "lexora": "Lexora",
   "legal_case_management": "LEGAL CASE MANAGEMENT",
@@ -205,7 +205,8 @@
   "suspended": "Suspended",
   "scheduled": "Scheduled",
   "completed": "Completed",
-  "adjourned": "Adjourned",
+  "adjourned": "Postponed",
+  "missed": "Missed",
   "cancelled": "Cancelled",
   "pending": "Pending",
   "in_progress": "In Progress",
@@ -353,6 +354,7 @@
   "department_optional": "Department (optional)",
   "hire_date": "Hire date",
   "lawyer_specializations": "Lawyer specializations",
+  "specialization_general": "General practice (all case types)",
   "base_permissions": "Base permissions",
   "employee_permissions_explanation": "Choose what this employee may access. Classification alone grants no access."
   ,"employee_position": "Employee position",
@@ -367,7 +369,6 @@
   "delete": "Delete"
   ,"permissions_selected": "permissions selected",
   "case_title": "Case title",
-  "client_type": "Client type",
   "client_name": "Client name",
   "individual": "Individual",
   "company": "Company",
@@ -669,5 +670,79 @@
   ,"employee_option_hr": "Human Resources"
   ,"employee_option_administration": "Administration"
   ,"employee_option_general": "General"
+  ,"select_all": "Select all"
+  ,"choose_photo": "Choose photo"
+  ,"error_server": "Server error occurred"
+  ,"error_cache": "Cache error occurred"
+  ,"error_network": "No internet connection"
+  ,"error_unauthorized": "Unauthorized access"
+  ,"error_forbidden": "You don't have permission to do this"
+  ,"error_subscription_inactive": "Subscription inactive or expired"
+  ,"error_invalid_request": "Invalid request"
+  ,"error_invalid_credentials": "Invalid credentials"
+  ,"error_session_expired": "Token expired"
+  ,"error_insufficient_permissions": "Insufficient permissions"
+  ,"error_not_found": "Not found"
+  ,"error_unprocessable": "Unprocessable entity"
+  ,"error_too_many_requests": "Too many requests. Please try again later."
+  ,"error_generic": "Something went wrong. Please try again."
+  ,"error_missing_permission": "You are missing this permission:"
+  ,"error_platform_permission_required": "This action needs platform-level permission that a firm account does not have."
+  ,"error_platform_accounts_blocked": "Platform accounts cannot access firm legal data."
+  ,"error_account_inactive": "This account is inactive. Ask a firm admin to activate it."
+  ,"error_firm_inactive": "This firm is inactive. Contact platform administration."
+  ,"error_own_firm_only": "You can only manage accounts in your own firm."
+  ,"error_platform_permissions_not_grantable": "Platform-level permissions cannot be granted to a firm account."
+  ,"error_cannot_grant_unheld_permission": "You cannot grant a permission you do not hold yourself."
+  ,"error_firm_account_required": "A firm admin account is required for this action."
+  ,"error_super_admin_status_locked": "The Super Admin account status cannot be changed here."
+  ,"error_lawyer_specializations_only": "Only lawyers may have case-type specializations."
+  ,"error_lawyer_specialization_required": "A lawyer must have at least one specialization."
+  ,"error_invalid_specializations": "One or more selected specializations are invalid."
+  ,"error_invalid_permissions": "One or more selected permissions are invalid."
+  ,"error_email_already_exists": "This email address already belongs to an existing account. Activate that employee instead of creating a new one."
+  ,"error_employee_open_assignments": "This employee still has open assignments"
+  ,"error_subscription_not_found": "No subscription was found for this firm"
+  ,"could_not_provision_firm": "Could not provision this firm."
+  ,"temporary_password_min_length": "Use at least 8 characters or leave it empty"
+  ,"could_not_update_profile": "Could not update your profile. Please try again."
+  ,"activate_account": "Activate account"
+  ,"activation_help": "Set a new password to activate your account."
+  ,"account_activated_success": "Account activated successfully! You can now log in."
+  ,"invalid_activation_link": "This activation link is invalid or has expired."
+  ,"activation_failed": "Could not activate account. Please try again."
+  ,"deactivate_account": "Deactivate account"
+  ,"employee_activated_successfully": "Employee account activated successfully"
+  ,"employee_deactivated_successfully": "Employee account deactivated successfully"
+  ,"account_status": "Account status"
+  ,"error_invalid_credentials_or_mfa": "Invalid credentials or authenticator code."
+  ,"error_invalid_mfa_code": "The authenticator code is invalid."
+  ,"error_mfa_required": "Authenticator setup and verification are required."
+  ,"error_incorrect_old_password": "Your current password is incorrect."
+  ,"error_invitation_already_used": "This invitation has already been used."
+  ,"error_invalid_activation_link": "This activation link is invalid or has expired."
+  ,"error_invalid_reset_link": "This reset link is invalid or has expired."
+  ,"error_cannot_change_own_permissions": "You cannot change your own permissions."
+  ,"error_assignee_inactive": "The selected account is invalid or inactive."
+  ,"error_value_too_short": "A value is shorter than the allowed minimum."
+  ,"error_value_too_long": "A value is longer than the allowed maximum."
+  ,"error_unexpected_field": "The request contained an unsupported field."
+  ,"error_firm_status_change_failed": "Could not change the firm status."
+  ,"error_account_status_change_failed": "Could not change the account status."
+  ,"error_subscription_change_failed": "Could not change the subscription status."
+  ,"error_plan_update_failed": "Could not update the plan."
+  ,"error_password_min_length": "Password must be at least 6 characters."
+  ,"view_details": "View details"
+  ,"client_not_found": "Client details were not found"
+  ,"reports": "Reports"
+  ,"schedule_hearing": "Schedule hearing"
+  ,"select_case": "Select a case"
+  ,"case_payment_status_breakdown": "Case payment status breakdown"
+  ,"top_outstanding_cases": "Top cases by outstanding amount"
+  ,"firm_admin_invitation_note": "The Firm Admin receives an email invitation to set their password and activate the account."
+  ,"firm_admin_permissions_not_applied": "Firm and admin created, but the permission set could not be applied."
 }
+
+
+
 

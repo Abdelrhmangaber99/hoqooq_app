@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -85,6 +86,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
   DateTime? _openingDate;
   DateTime? _closingDate;
   bool _showRequiredSelectionErrors = false;
+  bool _courtSelectionChanged = false;
   final List<_OpponentDraft> _opponents = [];
   bool _didLoadInitialCourts = false;
   bool _isLoadingLawyers = false;
@@ -117,7 +119,14 @@ class _CaseFormViewState extends State<_CaseFormView> {
       text: c?.description ?? c?.outcomeSummary ?? '',
     );
     _status = c?.status ?? CaseStatus.draft;
-    _priority = c?.priority ?? CasePriority.normal;
+    // The deployed backend's Case payload carries no `priority` key at all, so
+    // a stored case decodes to `CasePriority.unknown` — a value the priority
+    // dropdown deliberately leaves out of its items. Passing it as
+    // `DropdownButton.value` fails the framework assertion and takes the whole
+    // Edit screen down, so an absent priority is edited as `normal`.
+    _priority = c == null || c.priority == CasePriority.unknown
+        ? CasePriority.normal
+        : c.priority;
     _caseTypeId = c?.caseTypeId;
     _governorateId = c?.governorateId;
     _courtName = c?.courtName;
@@ -166,7 +175,11 @@ class _CaseFormViewState extends State<_CaseFormView> {
     final matches = caseTypeId == null
         ? const <_PrimaryLawyerOption>[]
         : _lawyers
-              .where((lawyer) => lawyer.specializations.contains(caseTypeId))
+              .where(
+                (lawyer) =>
+                    lawyer.isGeneralSpecialization ||
+                    lawyer.specializations.contains(caseTypeId),
+              )
               .toList();
     final selectedId = _primaryLawyerId;
     if (selectedId != null &&
@@ -246,12 +259,9 @@ class _CaseFormViewState extends State<_CaseFormView> {
                 original.courtCaseYear
             ? int.tryParse(_courtCaseYearController.text.trim())
             : null,
-        governorateId: _governorateId != original.governorateId
-            ? _governorateId
-            : null,
-        defaultCourtId: _selectedCourtId,
-        circuitId: _circuitId != original.circuitId ? _circuitId : null,
-        courtName: _courtName != original.courtName ? _courtName : null,
+        governorateId: _courtSelectionChanged ? _governorateId : null,
+        defaultCourtId: _courtSelectionChanged ? _selectedCourtId : null,
+        circuitId: _courtSelectionChanged ? _circuitId : null,
         openingDate: _openingDate != original.openingDate ? _openingDate : null,
         description:
             _outcomeSummaryController.text.trim() !=
@@ -261,7 +271,6 @@ class _CaseFormViewState extends State<_CaseFormView> {
                   : _outcomeSummaryController.text.trim())
             : null,
         agreedFee: double.tryParse(_agreedFeeController.text.trim()),
-        priority: _priority != original.priority ? _priority : null,
         primaryLawyerId: _primaryLawyerId != original.primaryLawyerId
             ? _primaryLawyerId
             : null,
@@ -387,13 +396,14 @@ class _CaseFormViewState extends State<_CaseFormView> {
     }
     if (state is! CaseFormReady) return;
     if (state.submitError != null) {
-      final message = state.submitError!.contains(
-        'Primary Lawyer specialization does not match',
-      )
+      final message =
+          state.submitError!.contains(
+            'Primary Lawyer specialization does not match',
+          )
           ? context.tr('primary_lawyer_ineligible')
           : state.submitError!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(content: Text(localizedErrorMessage(context, message))),
       );
     }
     if (!_didLoadInitialCourts && _governorateId != null) {
@@ -409,9 +419,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
         if (court.name == _courtName) {
           setState(() => _selectedCourtId = court.id);
           _circuitsRequestedForCourtId = court.id;
-          context.read<CaseFormBloc>().add(
-            LoadCaseCircuitsRequested(court.id),
-          );
+          context.read<CaseFormBloc>().add(LoadCaseCircuitsRequested(court.id));
           break;
         }
       }
@@ -463,6 +471,10 @@ class _CaseFormViewState extends State<_CaseFormView> {
                       AppTextField(
                         label: context.tr('case_title'),
                         controller: _titleController,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? context.tr('field_required')
+                            : null,
                       ),
                       if (_isEditMode)
                         _ReadOnlyValueField(
@@ -478,12 +490,15 @@ class _CaseFormViewState extends State<_CaseFormView> {
                         AppDropdownField<String?>(
                           label: context.tr('case_type'),
                           value: _caseTypeId,
-                          items: [null, ...state.caseTypes.map((item) => item.id)],
+                          items: [
+                            null,
+                            ...state.caseTypes.map((item) => item.id),
+                          ],
                           labelOf: (id) => id == null
                               ? context.tr('select')
                               : state.caseTypes
-                                  .firstWhere((item) => item.id == id)
-                                  .labelFor(locale.languageCode),
+                                    .firstWhere((item) => item.id == id)
+                                    .labelFor(locale.languageCode),
                           onChanged: (value) => setState(() {
                             _caseTypeId = value;
                             if (!_matchingLawyers.any(
@@ -579,14 +594,27 @@ class _CaseFormViewState extends State<_CaseFormView> {
               AppDropdownField<String?>(
                 label: context.tr('governorate'),
                 value: _governorateId,
-                items: [null, ...state.governorates.map((item) => item.id)],
-                labelOf: (id) => id == null
-                    ? context.tr('select')
-                    : state.governorates
-                        .firstWhere((item) => item.id == id)
-                        .labelFor(locale.languageCode),
+                items: [
+                  null,
+                  if (_governorateId != null &&
+                      !state.governorates.any(
+                        (item) => item.id == _governorateId,
+                      ))
+                    _governorateId,
+                  ...state.governorates.map((item) => item.id),
+                ],
+                labelOf: (id) {
+                  if (id == null) return context.tr('select');
+                  for (final item in state.governorates) {
+                    if (item.id == id) {
+                      return item.labelFor(locale.languageCode);
+                    }
+                  }
+                  return id;
+                },
                 onChanged: (value) {
                   setState(() {
+                    _courtSelectionChanged = true;
                     _governorateId = value;
                     _courtName = null;
                     _selectedCourtId = null;
@@ -606,7 +634,9 @@ class _CaseFormViewState extends State<_CaseFormView> {
                 items: [null, ...state.courts.map((item) => item.id)],
                 labelOf: (id) => id == null
                     ? context.tr('select')
-                    : state.courts.firstWhere((item) => item.id == id).labelFor(locale.languageCode),
+                    : state.courts
+                          .firstWhere((item) => item.id == id)
+                          .labelFor(locale.languageCode),
                 onChanged: _governorateId == null
                     ? (_) {}
                     : (value) {
@@ -616,6 +646,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
                                 (item) => item.id == value,
                               );
                         setState(() {
+                          _courtSelectionChanged = true;
                           _selectedCourtId = value;
                           _courtName = selected?.name;
                           _circuitId = null;
@@ -631,15 +662,28 @@ class _CaseFormViewState extends State<_CaseFormView> {
               AppDropdownField<String?>(
                 label: context.tr('circuit'),
                 value: _circuitId,
-                items: [null, ...state.circuits.map((item) => item.id)],
-                labelOf: (id) => id == null
-                    ? context.tr('none')
-                    : state.circuits
-                        .firstWhere((item) => item.id == id)
-                        .labelFor(locale.languageCode),
+                items: [
+                  null,
+                  if (_circuitId != null &&
+                      !state.circuits.any((item) => item.id == _circuitId))
+                    _circuitId,
+                  ...state.circuits.map((item) => item.id),
+                ],
+                labelOf: (id) {
+                  if (id == null) return context.tr('none');
+                  for (final item in state.circuits) {
+                    if (item.id == id) {
+                      return item.labelFor(locale.languageCode);
+                    }
+                  }
+                  return id;
+                },
                 onChanged: _selectedCourtId == null
                     ? (_) {}
-                    : (value) => setState(() => _circuitId = value),
+                    : (value) => setState(() {
+                        _courtSelectionChanged = true;
+                        _circuitId = value;
+                      }),
               ),
             ],
           ),
@@ -695,9 +739,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
         items: [null, ..._matchingLawyers.map((item) => item.userId)],
         labelOf: (id) => id == null
             ? context.tr('select')
-            : _matchingLawyers
-                .firstWhere((item) => item.userId == id)
-                .name,
+            : _matchingLawyers.firstWhere((item) => item.userId == id).name,
         onChanged: (value) => setState(() => _primaryLawyerId = value),
       );
     }
@@ -820,9 +862,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
                   )
                   ? context.tr('primary_lawyer_ineligible')
                   : state.submitError!;
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(message)));
+              context.showErrorSnackBar(message);
             }
             if (state is CaseFormReady &&
                 !_didLoadInitialCourts &&
@@ -893,6 +933,10 @@ class _CaseFormViewState extends State<_CaseFormView> {
                               AppTextField(
                                 label: context.tr('case_title'),
                                 controller: _titleController,
+                                validator: (value) =>
+                                    value == null || value.trim().isEmpty
+                                    ? context.tr('field_required')
+                                    : null,
                               ),
                               const SizedBox(height: AppSpacing.m),
                               AppTextField(
@@ -923,6 +967,10 @@ class _CaseFormViewState extends State<_CaseFormView> {
                               AppTextField(
                                 label: context.tr('case_title'),
                                 controller: _titleController,
+                                validator: (value) =>
+                                    value == null || value.trim().isEmpty
+                                    ? context.tr('field_required')
+                                    : null,
                               ),
                               const SizedBox(height: AppSpacing.m),
                               AppTextField(
@@ -1178,15 +1226,25 @@ class _CaseFormViewState extends State<_CaseFormView> {
                               value: _governorateId,
                               items: [
                                 null,
+                                if (_governorateId != null &&
+                                    !state.governorates.any(
+                                      (g) => g.id == _governorateId,
+                                    ))
+                                  _governorateId,
                                 ...state.governorates.map((g) => g.id),
                               ],
-                              labelOf: (id) => id == null
-                                  ? context.tr('none')
-                                  : state.governorates
-                                        .firstWhere((g) => g.id == id)
-                                        .labelFor(locale.languageCode),
+                              labelOf: (id) {
+                                if (id == null) return context.tr('none');
+                                for (final item in state.governorates) {
+                                  if (item.id == id) {
+                                    return item.labelFor(locale.languageCode);
+                                  }
+                                }
+                                return id;
+                              },
                               onChanged: (v) {
                                 setState(() {
+                                  _courtSelectionChanged = true;
                                   _governorateId = v;
                                   _courtName = null;
                                   _selectedCourtId = null;
@@ -1232,6 +1290,7 @@ class _CaseFormViewState extends State<_CaseFormView> {
                                         (court) => court.id == v,
                                       );
                                 setState(() {
+                                  _courtSelectionChanged = true;
                                   _selectedCourtId = v;
                                   _courtName = selected?.name;
                                   _circuitId = null;
@@ -1262,19 +1321,30 @@ class _CaseFormViewState extends State<_CaseFormView> {
                                   value: _circuitId,
                                   items: [
                                     null,
+                                    if (_circuitId != null &&
+                                        !state.circuits.any(
+                                          (circuit) => circuit.id == _circuitId,
+                                        ))
+                                      _circuitId,
                                     ...state.circuits.map(
                                       (circuit) => circuit.id,
                                     ),
                                   ],
-                                  labelOf: (id) => id == null
-                                      ? context.tr('none')
-                                      : state.circuits
-                                            .firstWhere(
-                                              (circuit) => circuit.id == id,
-                                            )
-                                            .labelFor(locale.languageCode),
-                                  onChanged: (value) =>
-                                      setState(() => _circuitId = value),
+                                  labelOf: (id) {
+                                    if (id == null) return context.tr('none');
+                                    for (final item in state.circuits) {
+                                      if (item.id == id) {
+                                        return item.labelFor(
+                                          locale.languageCode,
+                                        );
+                                      }
+                                    }
+                                    return id;
+                                  },
+                                  onChanged: (value) => setState(() {
+                                    _courtSelectionChanged = true;
+                                    _circuitId = value;
+                                  }),
                                 ),
                             ],
                             if (state.isLoadingCourts) ...[
@@ -1375,23 +1445,32 @@ class _PrimaryLawyerOption {
   const _PrimaryLawyerOption({
     required this.userId,
     required this.name,
+    this.isGeneralSpecialization = false,
     required this.specializations,
   });
 
   final String userId;
   final String name;
+  final bool isGeneralSpecialization;
   final Set<String> specializations;
 
   factory _PrimaryLawyerOption.fromJson(Map<String, dynamic> json) {
     final user = json['user'] is Map
         ? Map<String, dynamic>.from(json['user'] as Map)
         : const <String, dynamic>{};
+    final isGeneral = json['isGeneralSpecialization'] == true;
+    final specId = json['specializationId']?.toString();
+    final legacySpecs =
+        (json['specializations'] as List?)?.whereType<String>() ?? const [];
+    final specializations = <String>{
+      ...legacySpecs,
+      if (specId != null && specId.isNotEmpty) specId,
+    };
     return _PrimaryLawyerOption(
       userId: json['userId']?.toString() ?? user['id']?.toString() ?? '',
       name: user['fullName']?.toString() ?? '',
-      specializations: Set<String>.from(
-        json['specializations'] as List? ?? const [],
-      ),
+      isGeneralSpecialization: isGeneral,
+      specializations: specializations,
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:hqooq/core/localization/app_localizations.dart';
 import 'package:hqooq/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:hqooq/features/authentication/presentation/pages/login_page.dart';
@@ -61,6 +62,11 @@ void main() {
     final ar = AppLocalizations(const Locale('ar'));
     await ar.load();
     localizationsCache = {const Locale('en'): en, const Locale('ar'): ar};
+  });
+
+  setUpAll(() {
+    // `is AuthEvent`, which is what `any<AuthEvent>()` looks for.
+    registerFallbackValue(LogoutRequested());
   });
 
   setUp(() {
@@ -170,5 +176,98 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Invalid email or password'), findsOneWidget);
+  });
+
+  testWidgets('blank credentials are rejected locally, without a request', (
+    tester,
+  ) async {
+    whenListen(
+      authBloc,
+      const Stream<AuthState>.empty(),
+      initialState: AuthInitial(),
+    );
+
+    await tester.pumpWidget(
+      buildTestable(
+        bloc: authBloc,
+        locale: const Locale('en'),
+        localizationsCache: localizationsCache,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Sign In'));
+    await tester.pump();
+
+    // The backend answers a blank field with class-validator's own English
+    // sentence, so the form stops the submission before it leaves the app.
+    expect(find.text('This field is required'), findsNWidgets(2));
+    verifyNever(
+      () => authBloc.add(any<AuthEvent>(that: isA<LoginRequested>())),
+    );
+  });
+
+  testWidgets('a short password is rejected locally, without a request', (
+    tester,
+  ) async {
+    whenListen(
+      authBloc,
+      const Stream<AuthState>.empty(),
+      initialState: AuthInitial(),
+    );
+
+    await tester.pumpWidget(
+      buildTestable(
+        bloc: authBloc,
+        locale: const Locale('en'),
+        localizationsCache: localizationsCache,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'admin@demo.local',
+    );
+    await tester.enterText(find.byType(TextFormField).last, '123');
+    await tester.tap(find.text('Sign In'));
+    await tester.pump();
+
+    expect(
+      find.text('Password must be at least 6 characters.'),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => authBloc.add(any<AuthEvent>(that: isA<LoginRequested>())),
+    );
+  });
+
+  testWidgets('valid credentials dispatch LoginRequested', (tester) async {
+    whenListen(
+      authBloc,
+      const Stream<AuthState>.empty(),
+      initialState: AuthInitial(),
+    );
+
+    await tester.pumpWidget(
+      buildTestable(
+        bloc: authBloc,
+        locale: const Locale('en'),
+        localizationsCache: localizationsCache,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'admin@demo.local',
+    );
+    await tester.enterText(find.byType(TextFormField).last, 'Password123!');
+    await tester.tap(find.text('Sign In'));
+    await tester.pump();
+
+    verify(
+      () => authBloc.add(any<AuthEvent>(that: isA<LoginRequested>())),
+    ).called(1);
   });
 }

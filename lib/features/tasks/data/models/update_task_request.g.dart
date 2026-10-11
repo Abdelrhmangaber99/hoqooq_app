@@ -15,7 +15,7 @@ Map<String, dynamic> _$UpdateTaskRequestToJson(_UpdateTaskRequest instance) =>
     <String, dynamic>{'status': ?_$TaskStatusEnumMap[instance.status]};
 
 const _$TaskStatusEnumMap = {
-  TaskStatus.newTask: 'NEW',
+  TaskStatus.newTask: 'TODO',
   TaskStatus.inProgress: 'IN_PROGRESS',
   TaskStatus.waiting: 'WAITING',
   TaskStatus.completed: 'COMPLETED',

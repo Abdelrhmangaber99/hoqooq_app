@@ -63,13 +63,12 @@ class ServiceProcessCompletionBloc
       (failure) async => emit(
         current.copyWith(isSubmitting: false, submitError: failure.message),
       ),
-      (document) async {
+      (_) async {
         final completion = await _services.complete(
           event.process.id,
           CompleteServiceProcessRequest(
             status: event.status,
             resultNotes: event.resultNotes,
-            documentId: document.id,
           ),
         );
         completion.fold(

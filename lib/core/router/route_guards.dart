@@ -25,7 +25,8 @@ class RouteGuards {
     // the recovery routes.
     final isPublicRecoveryRoute =
         state.uri.path == AppRouter.forgotPassword ||
-        state.uri.path == AppRouter.resetPassword;
+        state.uri.path == AppRouter.resetPassword ||
+        state.uri.path == AppRouter.activate;
 
     // Cold start with unresolved session state visiting a protected route:
     // Route to splash to allow SessionRestoreRequested to resolve the session,
@@ -72,11 +73,32 @@ class RouteGuards {
     }
 
     if (isAuthenticated &&
+        !sessionState.user.isSuperAdmin &&
+        state.uri.path.startsWith(AppRouter.cases) &&
+        !currentUserHasPerm(PermissionCodes.caseView)) {
+      return AppRouter.home;
+    }
+
+    if (isAuthenticated &&
         state.uri.path == '${AppRouter.cases}/new' &&
         !sessionState.user.isSuperAdmin &&
-        (!sessionState.user.isFirmAdmin ||
-            !currentUserHasPerm(PermissionCodes.caseCreate))) {
+        !currentUserHasPerm(PermissionCodes.caseCreate)) {
       return AppRouter.cases;
+    }
+
+    if (isAuthenticated &&
+        !sessionState.user.isSuperAdmin &&
+        state.uri.path.startsWith(AppRouter.clients) &&
+        !currentUserHasPerm(PermissionCodes.caseView) &&
+        !currentUserHasPerm(PermissionCodes.clientView)) {
+      return AppRouter.home;
+    }
+
+    if (isAuthenticated &&
+        !sessionState.user.isSuperAdmin &&
+        state.uri.path.startsWith(AppRouter.calendar) &&
+        !currentUserHasPerm(PermissionCodes.calendarRead)) {
+      return AppRouter.home;
     }
 
     if (isAuthenticated &&
@@ -101,6 +123,21 @@ class RouteGuards {
         state.uri.path == AppRouter.tasksNew &&
         !currentUserHasPerm(PermissionCodes.taskCreate)) {
       return AppRouter.tasks;
+    }
+
+    if (isAuthenticated &&
+        !sessionState.user.isSuperAdmin &&
+        state.uri.path.startsWith(AppRouter.finance) &&
+        !currentUserHasPerm(PermissionCodes.financeFirmRead)) {
+      return AppRouter.home;
+    }
+
+    if (isAuthenticated &&
+        !sessionState.user.isSuperAdmin &&
+        state.uri.path.startsWith(AppRouter.reports) &&
+        !currentUserHasPerm(PermissionCodes.financeFirmRead) &&
+        !currentUserHasPerm(PermissionCodes.reportOperationalRead)) {
+      return AppRouter.home;
     }
 
     if (isAuthenticated &&

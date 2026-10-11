@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hqooq/core/errors/failures.dart';
 import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
 import 'package:hqooq/features/authentication/domain/entities/user.dart';
 import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
@@ -22,9 +21,7 @@ void main() {
           id: 'current-user',
           email: 'current@firm.com',
           fullName: 'Current User',
-          isSuperAdmin: false,
           status: 'ACTIVE',
-          mfaEnabled: false,
           createdAt: DateTime(2026, 1, 1),
           updatedAt: DateTime(2026, 1, 1),
           tenant: const TenantRef(id: 't1', name: 'Current Firm'),
@@ -45,65 +42,55 @@ void main() {
 
   group('getUsers', () {
     test(
-      'GETs /users, parses the full shape, and keeps current-tenant users',
+      'uses the tenant employee directory and includes the current user',
       () async {
-        when(() => dio.get('/users')).thenAnswer(
-          (_) async => okResponse('/users', [
+        when(() => dio.get('/employees')).thenAnswer(
+          (_) async => okResponse('/employees', [
             {
-              'id': 'u1',
-              'email': 'lawyer@firm.com',
-              'fullName': 'Jane Doe',
-              'isSuperAdmin': false,
-              'status': 'ACTIVE',
-              'mfaEnabled': false,
+              'id': 'employee-1',
+              'userId': 'u1',
               'createdAt': '2026-01-01T00:00:00.000Z',
               'updatedAt': '2026-01-01T00:00:00.000Z',
-              'roles': <Map<String, dynamic>>[],
-              'tenant': {'id': 't1', 'name': 'Reynolds & Associates'},
-            },
-            {
-              'id': 'foreign-user',
-              'email': 'foreign@other-firm.com',
-              'fullName': 'Foreign User',
-              'isSuperAdmin': false,
-              'status': 'ACTIVE',
-              'mfaEnabled': false,
-              'createdAt': '2026-01-01T00:00:00.000Z',
-              'updatedAt': '2026-01-01T00:00:00.000Z',
-              'roles': <Map<String, dynamic>>[],
-              'tenant': {'id': 't2', 'name': 'Other Firm'},
+              'user': {
+                'id': 'u1',
+                'email': 'lawyer@firm.com',
+                'fullName': 'Jane Doe',
+              },
             },
           ]),
         );
 
         final result = await repository.getUsers();
 
-        verify(() => dio.get('/users')).called(1);
+        verify(() => dio.get('/employees')).called(1);
         result.fold((_) => fail('expected Right'), (users) {
-          expect(users, hasLength(1));
-          expect(users.first.fullName, 'Jane Doe');
+          expect(users, hasLength(2));
+          expect(users.map((user) => user.fullName), contains('Jane Doe'));
+          expect(users.map((user) => user.fullName), contains('Current User'));
         });
       },
     );
 
-    test('maps a 401 to UnauthorizedFailure', () async {
-      when(() => dio.get('/users')).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: '/users'),
-          response: Response(
-            requestOptions: RequestOptions(path: '/users'),
-            statusCode: 401,
+    test(
+      'keeps the current active user when the directory is unavailable',
+      () async {
+        when(() => dio.get('/employees')).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/employees'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/employees'),
+              statusCode: 401,
+            ),
+            type: DioExceptionType.badResponse,
           ),
-          type: DioExceptionType.badResponse,
-        ),
-      );
+        );
 
-      final result = await repository.getUsers();
+        final result = await repository.getUsers();
 
-      result.fold(
-        (failure) => expect(failure, isA<UnauthorizedFailure>()),
-        (_) => fail('expected Left'),
-      );
-    });
+        result.fold((_) => fail('expected Right'), (users) {
+          expect(users.single.fullName, 'Current User');
+        });
+      },
+    );
   });
 }

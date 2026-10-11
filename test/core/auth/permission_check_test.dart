@@ -17,9 +17,7 @@ void main() {
     id: 'u1',
     email: 'lawyer@firm.com',
     fullName: 'Jane Doe',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     permissions: const ['cases.create'],
@@ -51,6 +49,17 @@ void main() {
 
     expect(currentUserHasPerm('cases.delete'), isFalse);
   });
+
+  test(
+    'true when the session is a Firm Admin regardless of user permissions list',
+    () {
+      when(
+        () => sessionCubit.state,
+      ).thenReturn(SessionAuthenticated(user, isFirmAdmin: true));
+
+      expect(currentUserHasPerm('any.custom.permission'), isTrue);
+    },
+  );
 
   test('false (secure default) when there is no authenticated session', () {
     when(() => sessionCubit.state).thenReturn(const SessionUnknown());

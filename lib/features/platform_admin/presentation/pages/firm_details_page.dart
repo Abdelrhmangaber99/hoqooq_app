@@ -1,18 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../di/injection.dart';
 import '../../../../core/localization/app_localizations.dart';
-import '../../../../core/auth/permission_labels.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../subscriptions/presentation/bloc/subscription_cubit.dart';
 import '../../../subscriptions/presentation/bloc/subscription_state.dart';
-import '../../domain/firm_admin_permissions.dart';
 import '../../domain/platform_admin_contract.dart';
 
 class FirmDetailsPage extends StatefulWidget {
-  const FirmDetailsPage({super.key, required this.firmId});
+  const FirmDetailsPage({super.key, required this.firmId, this.initialFirm});
   final String firmId;
+  final Map<String, dynamic>? initialFirm;
   @override
   State<FirmDetailsPage> createState() => _FirmDetailsPageState();
 }
@@ -26,83 +28,111 @@ class _FirmDetailsPageState extends State<FirmDetailsPage> {
   }
 
   Future<_FirmWorkspace> _load() async {
-    // The overview is the authoritative payload: firm status, employees,
-    // and the current subscription. If it fails, the whole load fails.
-    final overview = (await getIt<Dio>().get('/tenants/${widget.firmId}')).data;
+    final dio = getIt<Dio>();
+    Object? overview;
+    Object? overviewError;
+    try {
+      overview = (await dio.get('/tenants/${widget.firmId}')).data;
+    } catch (error) {
+      overviewError = error;
+    }
 
-    // The other three only enrich the page (account list, permission
-    // catalog, plan catalog) and are caught individually. Bundling all four
-    // into one atomic `Future.wait` meant a single rejected call failed the
-    // entire reload — the page fell back to its error state, and a
-    // *successful* mutation reported "could not be reloaded" even though
-    // the data it had just fetched was correct.
-    Future<Response<dynamic>> tolerant(String path) => getIt<Dio>()
-        .get(path)
-        .catchError(
-          (_) => Response<dynamic>(
-            requestOptions: RequestOptions(path: path),
-            data: const <dynamic>[],
-          ),
+    // The plan catalog only enriches the page and is caught individually.
+    // Bundling it into one atomic `Future.wait` with the overview meant a
+    // single rejected call failed the entire reload — the page fell back to
+    // its error state, and a *successful* mutation reported "could not be
+    // reloaded" even though the data it had just fetched was correct.
+    Future<Response<dynamic>> tolerant(String path) async {
+      try {
+        return await dio.get(path);
+      } catch (_) {
+        return Response<dynamic>(
+          requestOptions: RequestOptions(path: path),
+          data: const <dynamic>[],
         );
+      }
+    }
 
-    final aux = await Future.wait<Response<dynamic>>([
-      tolerant('/users'),
-      tolerant('/permissions'),
-      tolerant('/subscriptions/plans'),
-    ]);
-
-    final accounts = ((aux[0].data as List?) ?? const <dynamic>[])
-        .whereType<Map<String, dynamic>>()
-        .where((user) => (user['tenant'] as Map?)?['id'] == widget.firmId)
-        .toList();
+    final plansResponse = await tolerant('/subscriptions/plans');
+    Object? platformUsersData;
+    try {
+      final usersResponse = await dio.get('/users');
+      platformUsersData = usersResponse.data;
+    } catch (_) {
+      // Older deployments may not expose the platform roster route.
+    }
+    var firm = PlatformAdminContract.overviewFirm(overview);
+    if (firm.isEmpty && widget.initialFirm != null) {
+      firm = PlatformAdminContract.normalizeTenant(widget.initialFirm);
+    }
+    if (firm.isEmpty) {
+      final tenants = await tolerant('/tenants');
+      firm = PlatformAdminContract.collection(tenants.data).firstWhere(
+        (tenant) => tenant['id']?.toString() == widget.firmId,
+        orElse: () => const <String, dynamic>{},
+      );
+    }
+    if (firm.isEmpty) {
+      if (overviewError != null) throw overviewError;
+      throw StateError('Firm ${widget.firmId} was not found');
+    }
+    var overviewUsers = [
+      ...PlatformAdminContract.overviewEmployees(overview),
+      if (PlatformAdminContract.overviewAdmin(overview) case final admin?)
+        admin,
+    ];
+    // The deployed registry carries the Firm Admin on the firm itself; use it
+    // when the overview is unavailable (it is also the only readable source,
+    // since a Super Admin has no `GET /users` and is refused `GET /employees`).
+    if (overviewUsers.isEmpty && firm['firmAdmin'] is Map) {
+      overviewUsers = [Map<String, dynamic>.from(firm['firmAdmin'] as Map)];
+    }
+    if (overviewUsers.isEmpty) {
+      overviewUsers = PlatformAdminContract.usersForFirm(
+        platformUsersData,
+        widget.firmId,
+      );
+    }
+    if (overviewUsers.isEmpty) {
+      try {
+        final employees = await dio.get(
+          '/employees',
+          queryParameters: {'tenantId': widget.firmId},
+        );
+        overviewUsers = PlatformAdminContract.overviewEmployees({
+          'employees': employees.data is List ? employees.data : const [],
+        });
+      } catch (_) {
+        // Keep the firm overview visible when the fallback is unavailable.
+      }
+    }
+    final initialUsers = widget.initialFirm?['_employees'] is List
+        ? (widget.initialFirm!['_employees'] as List)
+              .whereType<Map<String, dynamic>>()
+              .toList()
+        : const <Map<String, dynamic>>[];
+    final usersById = <String, Map<String, dynamic>>{};
+    for (final user in [...overviewUsers, ...initialUsers]) {
+      final nested = user['user'] is Map ? user['user'] as Map : null;
+      final id = (user['userId'] ?? nested?['id'] ?? user['id'])?.toString();
+      usersById[id ?? 'row-${usersById.length}'] = user;
+    }
     return _FirmWorkspace(
-      firm: PlatformAdminContract.overviewFirm(overview),
-      users: PlatformAdminContract.overviewEmployees(overview),
-      accounts: accounts,
-      subscription: PlatformAdminContract.overviewSubscription(overview),
-      plans: ((aux[2].data as List?) ?? const <dynamic>[])
-          .whereType<Map<String, dynamic>>()
-          .toList(),
-      permissionKeys: PlatformAdminContract.permissionCodes(
-        aux[1].data,
-      ).where(isFirmAdminGrantablePermission).toList(),
+      firm: firm,
+      users: usersById.values.toList(),
+      subscription:
+          PlatformAdminContract.overviewSubscription(overview) ??
+          PlatformAdminContract.currentSubscription(firm),
+      plans: PlatformAdminContract.collection(plansResponse.data),
     );
   }
 
-  Future<void> _editFirmAdminPermissions(_FirmWorkspace workspace) async {
-    final admin = workspace.firmAdmin;
-    if (admin == null) {
-      _showMessage(context.tr('firm_admin_not_found'));
-      return;
-    }
-    final saved = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => _FirmAdminPermissionDialog(
-        firmId: widget.firmId,
-        permissionKeys: workspace.permissionKeys,
-        selectedPermissionKeys: Set<String>.from(
-          (admin['permissions'] as List<dynamic>? ?? const <dynamic>[])
-              .whereType<String>(),
-        ),
-      ),
-    );
-    if (saved != true || !mounted) return;
-    // Same reload path as every other mutation here: the refreshed account
-    // list carries the server's newly saved permission set, so reopening
-    // the dialog shows the selection that was actually persisted instead
-    // of the previous one.
-    final refreshed = await _reloadWorkspace();
-    if (mounted && refreshed) {
-      _showMessage(context.tr('firm_admin_permissions_updated'));
-    }
-  }
-
+  /// Success and failure copy both pass through here, so the message is run
+  /// through [localizedErrorMessage] — it translates this app's own English
+  /// failure defaults and leaves already-localized text untouched.
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    context.showErrorSnackBar(message);
   }
 
   /// True while a platform mutation and its follow-up reload is in flight.
@@ -177,19 +207,6 @@ class _FirmDetailsPageState extends State<FirmDetailsPage> {
       ),
       successMessage: 'Firm status changed to $nextStatus.',
       failureMessage: 'Could not change firm status.',
-    );
-  }
-
-  Future<void> _changeUserStatus(Map<String, dynamic> user) async {
-    final current = user['status']?.toString() ?? 'ACTIVE';
-    final next = current == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    await _runAndReload(
-      () => getIt<Dio>().patch(
-        '/users/${user['id']}/status',
-        data: {'status': next},
-      ),
-      successMessage: 'Account status changed to $next.',
-      failureMessage: 'Could not change account status.',
     );
   }
 
@@ -290,8 +307,52 @@ class _FirmDetailsPageState extends State<FirmDetailsPage> {
         final workspace = snap.data!;
         final f = workspace.firm;
         final s = workspace.subscription;
-        final firmStatus = f['status']?.toString() ?? 'INACTIVE';
+        final firmStatus = (f['status']?.toString() ?? 'INACTIVE')
+            .toUpperCase();
         final subscriptionStatus = s?['status']?.toString();
+        // Employee account status is managed by the firm itself. A Super Admin
+        // keeps only the Firm Admin's own account control (and the firm's
+        // status above), never the status of the firm's rank-and-file staff.
+        // The overview identifies the Firm Admin by the firm's `ownerUserId`,
+        // which is the Firm Admin's user id set at provisioning.
+        final registryAdminId = f['firmAdmin'] is Map
+            ? (f['firmAdmin'] as Map)['id']?.toString()
+            : null;
+        final firmAdminUserId = f['ownerUserId']?.toString() ?? registryAdminId;
+        bool isFirmAdminAccount(Map<String, dynamic> user) {
+          final nested = user['user'] is Map ? user['user'] as Map : null;
+          final accountType = (user['accountType'] ?? nested?['accountType'])
+              ?.toString();
+          if (accountType == 'FIRM_ADMIN') return true;
+          if (firmAdminUserId == null || firmAdminUserId.isEmpty) return false;
+          final userId = user['userId']?.toString();
+          final nestedId = nested?['id']?.toString();
+          final employeeId = user['id']?.toString();
+          return userId == firmAdminUserId ||
+              nestedId == firmAdminUserId ||
+              employeeId == firmAdminUserId;
+        }
+
+        var firmAdminUser = workspace.users
+            .cast<Map<String, dynamic>?>()
+            .firstWhere(
+              (u) => u != null && isFirmAdminAccount(u),
+              orElse: () => null,
+            );
+        firmAdminUser ??= workspace.users.isEmpty
+            ? null
+            : workspace.users.first;
+        final firmAdminNested = firmAdminUser?['user'] is Map
+            ? firmAdminUser!['user'] as Map
+            : null;
+        final firmAdminName =
+            (firmAdminNested?['fullName'] ?? firmAdminUser?['fullName'])
+                ?.toString();
+        final ownerId = f['ownerUserId']?.toString() ?? registryAdminId;
+        final ownerDisplay = firmAdminName != null && firmAdminName.isNotEmpty
+            ? '$firmAdminName (${ownerId ?? '—'})'
+            : (ownerId ?? '—');
+
         return ListView(
           padding: const EdgeInsets.all(AppSpacing.m),
           children: [
@@ -308,7 +369,7 @@ class _FirmDetailsPageState extends State<FirmDetailsPage> {
                     const SizedBox(height: 12),
                     Text('Status: ${f['status'] ?? '—'}'),
                     Text('Email: ${f['contactEmail'] ?? '—'}'),
-                    Text('Owner: ${f['ownerUserId'] ?? '—'}'),
+                    Text('Owner: $ownerDisplay'),
                     const Divider(),
                     Text('Plan: ${(s?['plan'] as Map?)?['name'] ?? '—'}'),
                     Text('Subscription: ${s?['status'] ?? '—'}'),
@@ -322,14 +383,6 @@ class _FirmDetailsPageState extends State<FirmDetailsPage> {
               const LinearProgressIndicator(minHeight: 2),
               const SizedBox(height: AppSpacing.m),
             ],
-            FilledButton.icon(
-              onPressed: _mutating || workspace.firmAdmin == null
-                  ? null
-                  : () => _editFirmAdminPermissions(workspace),
-              icon: const Icon(Icons.admin_panel_settings_outlined),
-              label: Text(context.tr('manage_firm_admin_permissions')),
-            ),
-            const SizedBox(height: AppSpacing.s),
             OutlinedButton.icon(
               onPressed: _mutating ? null : () => _changeFirmStatus(firmStatus),
               icon: Icon(
@@ -383,40 +436,99 @@ class _FirmDetailsPageState extends State<FirmDetailsPage> {
             if (workspace.users.isEmpty)
               Text(context.tr('no_employees_found'))
             else
-              ...workspace.users.map(
-                (user) => Card(
+              ...workspace.users.map((user) {
+                final nested = user['user'] is Map ? user['user'] as Map : null;
+                final fullName = (nested?['fullName'] ?? user['fullName'])
+                    ?.toString();
+                final email =
+                    (nested?['email'] ?? user['email'])?.toString() ?? '';
+                final rawJob =
+                    (user['jobClassification'] ??
+                            nested?['jobClassification'] ??
+                            user['position'])
+                        ?.toString() ??
+                    '';
+                final jobClassification = rawJob.contains('_')
+                    ? rawJob
+                          .split('_')
+                          .where((value) => value.isNotEmpty)
+                          .map(
+                            (value) =>
+                                '${value[0]}${value.substring(1).toLowerCase()}',
+                          )
+                          .join(' ')
+                    : rawJob;
+                final status =
+                    (nested?['status'] ?? user['status'])?.toString() ??
+                    'ACTIVE';
+                final isAdmin =
+                    isFirmAdminAccount(user) || identical(user, firmAdminUser);
+
+                return Card(
                   child: ListTile(
-                    leading: const Icon(Icons.person_outline),
-                    title: Text(
-                      user['fullName']?.toString() ??
-                          context.tr('unnamed_employee'),
+                    onTap: isAdmin
+                        ? () => context.push(
+                            AppRouter.firmAdminDetails(widget.firmId),
+                            extra: {'firm': f, 'admin': user},
+                          )
+                        : null,
+                    leading: Icon(
+                      isAdmin
+                          ? Icons.admin_panel_settings_outlined
+                          : Icons.person_outline,
+                    ),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            (fullName != null && fullName.isNotEmpty)
+                                ? fullName
+                                : context.tr('unnamed_employee'),
+                          ),
+                        ),
+                        if (isAdmin)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Firm Admin',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ),
+                      ],
                     ),
                     subtitle: Text(
                       [
-                            user['email'] ?? '',
-                            user['jobClassification'] ?? '',
-                            user['status'] ?? '',
-                          ]
-                          .where((value) => value.toString().isNotEmpty)
-                          .join(' · '),
+                        email,
+                        jobClassification,
+                        status,
+                      ].where((value) => value.isNotEmpty).join(' · '),
                     ),
                     isThreeLine: true,
-                    trailing: IconButton(
-                      tooltip: user['status'] == 'ACTIVE'
-                          ? 'Deactivate account'
-                          : 'Activate account',
-                      onPressed: _mutating
-                          ? null
-                          : () => _changeUserStatus(user),
-                      icon: Icon(
-                        user['status'] == 'ACTIVE'
-                            ? Icons.person_off_outlined
-                            : Icons.person_add_alt_outlined,
-                      ),
-                    ),
+                    // The deployed API exposes tenant status management but
+                    // no per-user status endpoint. Do not issue a guaranteed
+                    // 404/500 from this screen; use the firm status control
+                    // above until that backend capability is deployed.
+                    trailing: isAdmin
+                        ? const Icon(Icons.chevron_right_rounded)
+                        : null,
                   ),
-                ),
-              ),
+                );
+              }),
           ],
         );
       },
@@ -428,25 +540,14 @@ class _FirmWorkspace {
   const _FirmWorkspace({
     required this.firm,
     required this.users,
-    required this.accounts,
     required this.subscription,
     required this.plans,
-    required this.permissionKeys,
   });
 
   final Map<String, dynamic> firm;
   final List<Map<String, dynamic>> users;
-  final List<Map<String, dynamic>> accounts;
   final Map<String, dynamic>? subscription;
   final List<Map<String, dynamic>> plans;
-  final List<String> permissionKeys;
-
-  Map<String, dynamic>? get firmAdmin {
-    for (final user in accounts) {
-      if (user['accountType'] == 'FIRM_ADMIN') return user;
-    }
-    return null;
-  }
 }
 
 class _SubscriptionPlanDialog extends StatefulWidget {
@@ -518,116 +619,6 @@ class _SubscriptionPlanDialogState extends State<_SubscriptionPlanDialog> {
           billingCycle: _billingCycle,
         )),
         child: const Text('Save'),
-      ),
-    ],
-  );
-}
-
-class _FirmAdminPermissionDialog extends StatefulWidget {
-  const _FirmAdminPermissionDialog({
-    required this.firmId,
-    required this.permissionKeys,
-    required this.selectedPermissionKeys,
-  });
-
-  final String firmId;
-  final List<String> permissionKeys;
-  final Set<String> selectedPermissionKeys;
-
-  @override
-  State<_FirmAdminPermissionDialog> createState() =>
-      _FirmAdminPermissionDialogState();
-}
-
-class _FirmAdminPermissionDialogState
-    extends State<_FirmAdminPermissionDialog> {
-  late final Set<String> _selected = {...widget.selectedPermissionKeys};
-  bool _saving = false;
-  String? _error;
-
-  Future<void> _save() async {
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-    try {
-      await getIt<Dio>().patch(
-        '/tenants/${widget.firmId}/firm-admin/permissions',
-        data: {'permissionKeys': _selected.toList()..sort()},
-      );
-      if (mounted) Navigator.pop(context, true);
-    } on DioException catch (error) {
-      if (!mounted) return;
-      final data = error.response?.data;
-      setState(() {
-        _saving = false;
-        _error = data is Map<String, dynamic>
-            ? data['message']?.toString()
-            : context.tr('could_not_update_permissions');
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text(context.tr('firm_admin_permissions')),
-    content: SizedBox(
-      width: 520,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.tr('firm_admin_permissions_explanation'),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: AppSpacing.s),
-          Text('${_selected.length} ${context.tr('permissions_selected')}'),
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.s),
-            Text(_error!, style: const TextStyle(color: AppColors.error)),
-          ],
-          const SizedBox(height: AppSpacing.s),
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: widget.permissionKeys.length,
-              itemBuilder: (_, index) {
-                final permission = widget.permissionKeys[index];
-                return CheckboxListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(permissionLabel(context, permission)),
-                  value: _selected.contains(permission),
-                  onChanged: _saving
-                      ? null
-                      : (checked) => setState(() {
-                          if (checked ?? false) {
-                            _selected.add(permission);
-                          } else {
-                            _selected.remove(permission);
-                          }
-                        }),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: _saving ? null : () => Navigator.pop(context, false),
-        child: Text(context.tr('cancel')),
-      ),
-      FilledButton(
-        onPressed: _saving ? null : _save,
-        child: _saving
-            ? const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Text(context.tr('save_changes')),
       ),
     ],
   );

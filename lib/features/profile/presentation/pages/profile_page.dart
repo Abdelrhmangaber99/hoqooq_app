@@ -7,14 +7,16 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/cache_busted_url.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../authentication/presentation/bloc/auth_bloc.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../bloc/profile_cubit.dart';
 
-/// Profile & preferences: session user identity, appearance
-/// (Light/Dark/System — one ThemeBloc, no second provider), language
-/// EN/AR with immediate RTL, and sign-out.
+/// Profile & preferences: session user identity, language EN/AR with
+/// immediate RTL, and sign-out. The Light/Dark/System appearance picker was
+/// removed — the app ships a single light theme, so there is nothing left to
+/// choose (see `main.dart`).
 ///
 /// v1 mock content (working-hours card, notification toggles, biometric /
 /// two-factor placeholders, privacy/terms links) was removed per the v2
@@ -41,11 +43,6 @@ class ProfilePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildUserInfo(context),
-                  const SizedBox(height: AppSpacing.l),
-                  _buildSectionHeader(context.tr('appearance').toUpperCase()),
-                  _buildSettingsGroup([
-                    const _ThemePicker(),
-                  ]),
                   const SizedBox(height: AppSpacing.l),
                   _buildSectionHeader(
                       context.tr('app_language').toUpperCase()),
@@ -100,7 +97,9 @@ class ProfilePage extends StatelessWidget {
                   ? ClipRRect(
                       borderRadius: AppRadius.medium,
                       child: Image.network(
-                        user.avatarUrl!,
+                        // Versioned so a re-saved photo at the same URL is
+                        // refetched instead of served from the image cache.
+                        cacheBustedUrl(user.avatarUrl!, user.updatedAt),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Center(
                           child: Text(
@@ -254,82 +253,6 @@ class ProfilePage extends StatelessWidget {
       icon: Icons.logout,
       onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
       style: AppButtonStyle.secondary,
-    );
-  }
-}
-
-/// Light / Dark / System — driven by the app's single [ProfileCubit]
-/// (which wraps the shared ThemeBloc). Segmented control mirrors the
-/// reference design's three-way appearance choice; there is no second
-/// theme state anywhere.
-class _ThemePicker extends StatelessWidget {
-  const _ThemePicker();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ProfileCubit, ProfileState>(
-      builder: (context, state) {
-        Widget option(ThemeMode mode, IconData icon, String label) {
-          final selected = state.themeMode == mode;
-          return Expanded(
-            child: InkWell(
-              onTap: () =>
-                  context.read<ProfileCubit>().setThemeMode(mode),
-              borderRadius: AppRadius.small,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.brass100
-                      : Colors.transparent,
-                  borderRadius: AppRadius.small,
-                  border: selected
-                      ? Border.all(color: AppColors.brass500)
-                      : Border.all(color: Colors.transparent),
-                ),
-                child: Column(
-                  children: [
-                    Icon(
-                      icon,
-                      size: 18,
-                      color: selected
-                          ? AppColors.brass800
-                          : AppColors.textHint,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      label,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: selected
-                            ? AppColors.brass800
-                            : AppColors.textHint,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: Row(
-            children: [
-              option(ThemeMode.light, Icons.light_mode_outlined,
-                  context.tr('theme_light')),
-              const SizedBox(width: AppSpacing.s),
-              option(ThemeMode.dark, Icons.dark_mode_outlined,
-                  context.tr('theme_dark')),
-              const SizedBox(width: AppSpacing.s),
-              option(ThemeMode.system, Icons.settings_suggest_outlined,
-                  context.tr('theme_system')),
-            ],
-          ),
-        );
-      },
     );
   }
 }

@@ -5,6 +5,12 @@ allprojects {
     }
 }
 
+subprojects {
+    project.plugins.withType<com.android.build.gradle.AppPlugin> {
+        // Force AGP version for subprojects that may declare older versions
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

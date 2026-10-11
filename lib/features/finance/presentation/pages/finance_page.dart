@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -16,6 +17,9 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
+import '../../../cases/domain/entities/legal_case.dart';
+import '../../../cases/domain/repository/i_case_repository.dart';
+import '../../../cases/presentation/case_display_helpers.dart';
 import '../../data/models/create_payment_request.dart';
 import '../../domain/entities/case_finance_detail.dart';
 import '../../domain/entities/case_finance_status.dart';
@@ -36,6 +40,19 @@ class FinancePage extends StatefulWidget {
 
 class _FinancePageState extends State<FinancePage> {
   String _selectedTab = 'ALL';
+
+  /// `GET /finance/summary` rows carry only `caseId`/`caseNumber`, so the
+  /// case's real name (title, else type) is resolved from `GET /cases`. The
+  /// ledger opens by id either way; the list just reads as names, not numbers.
+  late final Future<Map<String, LegalCase>> _casesById = _loadCasesById();
+
+  Future<Map<String, LegalCase>> _loadCasesById() async {
+    final result = await getIt<ICaseRepository>().getCases();
+    return result.fold(
+      (_) => const {},
+      (cases) => {for (final legalCase in cases) legalCase.id: legalCase},
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +90,14 @@ class _FinancePageState extends State<FinancePage> {
                   ),
                 );
               } else if (state is FinanceSummaryLoaded) {
-                return _buildContent(context, state.summary);
+                return FutureBuilder<Map<String, LegalCase>>(
+                  future: _casesById,
+                  builder: (context, casesSnapshot) => _buildContent(
+                    context,
+                    state.summary,
+                    casesSnapshot.data ?? const {},
+                  ),
+                );
               }
               return const SizedBox();
             },
@@ -83,7 +107,11 @@ class _FinancePageState extends State<FinancePage> {
     );
   }
 
-  Widget _buildContent(BuildContext context, FinanceSummary summary) {
+  Widget _buildContent(
+    BuildContext context,
+    FinanceSummary summary,
+    Map<String, LegalCase> casesById,
+  ) {
     final filteredCases = summary.cases.where((c) {
       if (_selectedTab == 'PAID') return c.status == CaseFinanceStatus.paid;
       if (_selectedTab == 'PARTIAL') {
@@ -178,7 +206,12 @@ class _FinancePageState extends State<FinancePage> {
               separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s),
               itemBuilder: (context, index) {
                 final item = filteredCases[index];
-                return _buildCaseFinanceTile(context, item, currencyFmt);
+                return _buildCaseFinanceTile(
+                  context,
+                  item,
+                  currencyFmt,
+                  casesById[item.caseId],
+                );
               },
             ),
         ],
@@ -263,7 +296,11 @@ class _FinancePageState extends State<FinancePage> {
     BuildContext context,
     CaseFinanceSummaryRow item,
     NumberFormat fmt,
+    LegalCase? legalCase,
   ) {
+    final caseName = legalCase == null
+        ? '${context.tr('case_number_prefix')}${item.caseNumber}'
+        : caseDisplayName(legalCase);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -272,19 +309,32 @@ class _FinancePageState extends State<FinancePage> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Flexible(
-              child: Text(
-                '${context.tr('case_number_prefix')}${item.caseNumber}',
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.h3,
-              ),
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    caseName,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.h3,
+                  ),
+                ),
+                const Spacer(),
+                AppBadge(
+                  label: caseFinanceStatusLabel(context, item.status),
+                  variant: _statusBadgeVariant(item.status),
+                ),
+              ],
             ),
-            const Spacer(),
-            AppBadge(
-              label: caseFinanceStatusLabel(context, item.status),
-              variant: _statusBadgeVariant(item.status),
+            const SizedBox(height: 2),
+            Text(
+              '${context.tr('case_number_prefix')}'
+              '${legalCase == null ? item.caseNumber : legalCaseCourtReference(legalCase)}',
+              style: AppTypography.bodySmall.copyWith(
+                fontFamily: AppTypography.monoFont,
+              ),
             ),
           ],
         ),
@@ -424,9 +474,7 @@ class _CaseLedgerSheetContentState extends State<_CaseLedgerSheetContent> {
               );
               widget.onRefreshParent();
             } else if (state is PaymentFormError) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
+              context.showErrorSnackBar(state.message);
             }
           },
           child: Padding(

@@ -10,16 +10,14 @@ import 'package:mocktail/mocktail.dart';
 class MockAuthRepository extends Mock implements IAuthRepository {}
 
 User _user({String name = 'A B', String? avatarUrl}) => User(
-      id: 'u1',
-      email: 'a@b.com',
-      fullName: name,
-      isSuperAdmin: false,
-      status: 'ACTIVE',
-      mfaEnabled: false,
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-      avatarUrl: avatarUrl,
-    );
+  id: 'u1',
+  email: 'a@b.com',
+  fullName: name,
+  status: 'ACTIVE',
+  createdAt: DateTime(2026, 1, 1),
+  updatedAt: DateTime(2026, 1, 1),
+  avatarUrl: avatarUrl,
+);
 
 void main() {
   late MockAuthRepository repository;
@@ -41,15 +39,20 @@ void main() {
         confirmPassword: 'longenough1',
       );
 
-      expect(cubit.state, isA<PasswordChangeError>().having(
-        (s) => s.messageKey,
-        'key',
-        'password_required',
-      ));
-      verifyNever(() => repository.changePassword(
-            oldPassword: any(named: 'oldPassword'),
-            newPassword: any(named: 'newPassword'),
-          ));
+      expect(
+        cubit.state,
+        isA<PasswordChangeError>().having(
+          (s) => s.messageKey,
+          'key',
+          'password_required',
+        ),
+      );
+      verifyNever(
+        () => repository.changePassword(
+          oldPassword: any(named: 'oldPassword'),
+          newPassword: any(named: 'newPassword'),
+        ),
+      );
     });
 
     test('short new password fails without a network call', () async {
@@ -59,15 +62,20 @@ void main() {
         confirmPassword: 'short',
       );
 
-      expect(cubit.state, isA<PasswordChangeError>().having(
-        (s) => s.messageKey,
-        'key',
-        'password_min_length|8',
-      ));
-      verifyNever(() => repository.changePassword(
-            oldPassword: any(named: 'oldPassword'),
-            newPassword: any(named: 'newPassword'),
-          ));
+      expect(
+        cubit.state,
+        isA<PasswordChangeError>().having(
+          (s) => s.messageKey,
+          'key',
+          'password_min_length|8',
+        ),
+      );
+      verifyNever(
+        () => repository.changePassword(
+          oldPassword: any(named: 'oldPassword'),
+          newPassword: any(named: 'newPassword'),
+        ),
+      );
     });
 
     test('mismatched confirmation fails without a network call', () async {
@@ -77,25 +85,32 @@ void main() {
         confirmPassword: 'longenough2',
       );
 
-      expect(cubit.state, isA<PasswordChangeError>().having(
-        (s) => s.messageKey,
-        'key',
-        'password_mismatch',
-      ));
-      verifyNever(() => repository.changePassword(
-            oldPassword: any(named: 'oldPassword'),
-            newPassword: any(named: 'newPassword'),
-          ));
+      expect(
+        cubit.state,
+        isA<PasswordChangeError>().having(
+          (s) => s.messageKey,
+          'key',
+          'password_mismatch',
+        ),
+      );
+      verifyNever(
+        () => repository.changePassword(
+          oldPassword: any(named: 'oldPassword'),
+          newPassword: any(named: 'newPassword'),
+        ),
+      );
     });
   });
 
   group('successful change', () {
     test('emits Loading then Success and passes the typed values to the '
         'existing /auth/change-password repository call', () async {
-      when(() => repository.changePassword(
-            oldPassword: 'current1',
-            newPassword: 'longenough1',
-          )).thenAnswer((_) async => const Right(null));
+      when(
+        () => repository.changePassword(
+          oldPassword: 'current1',
+          newPassword: 'longenough1',
+        ),
+      ).thenAnswer((_) async => const Right(null));
 
       await cubit.submitPasswordChange(
         currentPassword: 'current1',
@@ -104,17 +119,21 @@ void main() {
       );
 
       expect(cubit.state, isA<PasswordChangeSuccess>());
-      verify(() => repository.changePassword(
-            oldPassword: 'current1',
-            newPassword: 'longenough1',
-          )).called(1);
+      verify(
+        () => repository.changePassword(
+          oldPassword: 'current1',
+          newPassword: 'longenough1',
+        ),
+      ).called(1);
     });
 
     test('no state ever retains the submitted passwords', () async {
-      when(() => repository.changePassword(
-            oldPassword: any(named: 'oldPassword'),
-            newPassword: any(named: 'newPassword'),
-          )).thenAnswer((_) async => const Right(null));
+      when(
+        () => repository.changePassword(
+          oldPassword: any(named: 'oldPassword'),
+          newPassword: any(named: 'newPassword'),
+        ),
+      ).thenAnswer((_) async => const Right(null));
 
       await cubit.submitPasswordChange(
         currentPassword: 'secret-current',
@@ -123,63 +142,79 @@ void main() {
       );
 
       expect(cubit.state, isA<PasswordChangeSuccess>());
-      expect(
-        cubit.state.toString(),
-        isNot(contains('secret-current')),
-      );
+      expect(cubit.state.toString(), isNot(contains('secret-current')));
       expect(cubit.state.toString(), isNot(contains('secret-new-1')));
     });
   });
 
   group('server failures', () {
-    test('wrong current password (401) maps to the wrong-current key',
-        () async {
-      when(() => repository.changePassword(
+    test(
+      'wrong current password (401) maps to the wrong-current key',
+      () async {
+        when(
+          () => repository.changePassword(
             oldPassword: any(named: 'oldPassword'),
             newPassword: any(named: 'newPassword'),
-          )).thenAnswer(
-          (_) async => const Left(UnauthorizedFailure('Wrong password')));
+          ),
+        ).thenAnswer(
+          (_) async => const Left(UnauthorizedFailure('Wrong password')),
+        );
 
-      await cubit.submitPasswordChange(
-        currentPassword: 'wrong-current',
-        newPassword: 'longenough1',
-        confirmPassword: 'longenough1',
-      );
+        await cubit.submitPasswordChange(
+          currentPassword: 'wrong-current',
+          newPassword: 'longenough1',
+          confirmPassword: 'longenough1',
+        );
 
-      expect(cubit.state, isA<PasswordChangeError>().having(
-        (s) => s.messageKey,
-        'key',
-        'password_change_wrong_current',
-      ));
-      expect(cubit.state.toString(), isNot(contains('wrong-current')));
-    });
+        expect(
+          cubit.state,
+          isA<PasswordChangeError>().having(
+            (s) => s.messageKey,
+            'key',
+            'password_change_wrong_current',
+          ),
+        );
+        expect(cubit.state.toString(), isNot(contains('wrong-current')));
+      },
+    );
 
-    test('server validation failure (400) maps to the validation key',
-        () async {
-      when(() => repository.changePassword(
+    test(
+      'server validation failure (400) maps to the validation key',
+      () async {
+        when(
+          () => repository.changePassword(
             oldPassword: any(named: 'oldPassword'),
             newPassword: any(named: 'newPassword'),
-          )).thenAnswer((_) async =>
-          const Left(ValidationFailure('password must contain a digit')));
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const Left(ValidationFailure('password must contain a digit')),
+        );
 
-      await cubit.submitPasswordChange(
-        currentPassword: 'current1',
-        newPassword: 'longenough1',
-        confirmPassword: 'longenough1',
-      );
+        await cubit.submitPasswordChange(
+          currentPassword: 'current1',
+          newPassword: 'longenough1',
+          confirmPassword: 'longenough1',
+        );
 
-      expect(cubit.state, isA<PasswordChangeError>().having(
-        (s) => s.messageKey,
-        'key',
-        'password_change_validation_error',
-      ));
-    });
+        expect(
+          cubit.state,
+          isA<PasswordChangeError>().having(
+            (s) => s.messageKey,
+            'key',
+            'password_change_validation_error',
+          ),
+        );
+      },
+    );
 
     test('network failure maps to the network key', () async {
-      when(() => repository.changePassword(
-            oldPassword: any(named: 'oldPassword'),
-            newPassword: any(named: 'newPassword'),
-          )).thenAnswer((_) async => const Left(NetworkFailure()));
+      when(
+        () => repository.changePassword(
+          oldPassword: any(named: 'oldPassword'),
+          newPassword: any(named: 'newPassword'),
+        ),
+      ).thenAnswer((_) async => const Left(NetworkFailure()));
 
       await cubit.submitPasswordChange(
         currentPassword: 'current1',
@@ -187,19 +222,24 @@ void main() {
         confirmPassword: 'longenough1',
       );
 
-      expect(cubit.state, isA<PasswordChangeError>().having(
-        (s) => s.messageKey,
-        'key',
-        'network_error_message',
-      ));
+      expect(
+        cubit.state,
+        isA<PasswordChangeError>().having(
+          (s) => s.messageKey,
+          'key',
+          'network_error_message',
+        ),
+      );
     });
 
     test('a following retry can succeed after a failure', () async {
       var callCount = 0;
-      when(() => repository.changePassword(
-            oldPassword: any(named: 'oldPassword'),
-            newPassword: any(named: 'newPassword'),
-          )).thenAnswer((_) async {
+      when(
+        () => repository.changePassword(
+          oldPassword: any(named: 'oldPassword'),
+          newPassword: any(named: 'newPassword'),
+        ),
+      ).thenAnswer((_) async {
         callCount++;
         return callCount == 1
             ? const Left(UnauthorizedFailure())
@@ -223,67 +263,111 @@ void main() {
   });
 
   group('profile update', () {
-    test('empty full name returns false and emits ProfileUpdateError', () async {
-      final ok = await cubit.submitProfileUpdate(fullName: '  ');
-      expect(ok, isFalse);
-      expect(cubit.state, isA<ProfileUpdateError>().having(
-        (s) => s.messageKey,
-        'key',
-        'full_name_required',
-      ));
-      verifyNever(() => repository.updateProfile(
+    test(
+      'empty full name returns false and emits ProfileUpdateError',
+      () async {
+        final ok = await cubit.submitProfileUpdate(fullName: '  ');
+        expect(ok, isFalse);
+        expect(
+          cubit.state,
+          isA<ProfileUpdateError>().having(
+            (s) => s.messageKey,
+            'key',
+            'full_name_required',
+          ),
+        );
+        verifyNever(
+          () => repository.updateProfile(
+            userId: any(named: 'userId'),
             fullName: any(named: 'fullName'),
             phone: any(named: 'phone'),
             avatarUrl: any(named: 'avatarUrl'),
-          ));
-    });
+          ),
+        );
+      },
+    );
 
-    test('successful update updates SessionCubit and emits ProfileUpdateSuccess',
-        () async {
-      final updatedUser = _user(name: 'Updated Name', avatarUrl: 'https://example.com/avatar.png');
-      when(() => repository.updateProfile(
+    test(
+      'successful update updates SessionCubit and emits ProfileUpdateSuccess',
+      () async {
+        final updatedUser = _user(
+          name: 'Updated Name',
+          avatarUrl: 'https://example.com/avatar.png',
+        );
+        // The update is addressed to the session user's own id — the backend
+        // exposes it at PATCH /users/{id}, not PATCH /users/me.
+        when(
+          () => repository.updateProfile(
+            userId: 'u1',
             fullName: 'Updated Name',
             phone: '123456',
             avatarUrl: 'https://example.com/avatar.png',
-          )).thenAnswer((_) async => Right(updatedUser));
+          ),
+        ).thenAnswer((_) async => Right(updatedUser));
 
-      final ok = await cubit.submitProfileUpdate(
-        fullName: 'Updated Name',
-        phone: '123456',
-        avatarUrl: 'https://example.com/avatar.png',
-      );
+        final ok = await cubit.submitProfileUpdate(
+          fullName: 'Updated Name',
+          phone: '123456',
+          avatarUrl: 'https://example.com/avatar.png',
+        );
 
-      expect(ok, isTrue);
-      expect(cubit.state, isA<ProfileUpdateSuccess>().having(
-        (s) => s.user.fullName,
-        'fullName',
-        'Updated Name',
-      ));
-      // SessionCubit was immediately updated
-      expect(
-        (sessionCubit.state as SessionAuthenticated).user.fullName,
-        'Updated Name',
-      );
-    });
+        expect(ok, isTrue);
+        expect(
+          cubit.state,
+          isA<ProfileUpdateSuccess>().having(
+            (s) => s.user.fullName,
+            'fullName',
+            'Updated Name',
+          ),
+        );
+        // SessionCubit was immediately updated
+        expect(
+          (sessionCubit.state as SessionAuthenticated).user.fullName,
+          'Updated Name',
+        );
+      },
+    );
 
     test('failed update maps error and preserves current session', () async {
-      when(() => repository.updateProfile(
-            fullName: any(named: 'fullName'),
-            phone: any(named: 'phone'),
-            avatarUrl: any(named: 'avatarUrl'),
-          )).thenAnswer(
-          (_) async => const Left(ServerFailure('Server error')));
+      when(
+        () => repository.updateProfile(
+          userId: any(named: 'userId'),
+          fullName: any(named: 'fullName'),
+          phone: any(named: 'phone'),
+          avatarUrl: any(named: 'avatarUrl'),
+        ),
+      ).thenAnswer((_) async => const Left(ServerFailure('Server error')));
 
-      final ok = await cubit.submitProfileUpdate(
-        fullName: 'New Name',
-      );
+      final ok = await cubit.submitProfileUpdate(fullName: 'New Name');
 
       expect(ok, isFalse);
       expect(cubit.state, isA<ProfileUpdateError>());
-      expect(
-        (sessionCubit.state as SessionAuthenticated).user.fullName,
-        'A B',
-      );
+      expect((sessionCubit.state as SessionAuthenticated).user.fullName, 'A B');
     });
+
+    test(
+      'an unknown failure without a message falls back to a message key',
+      () async {
+        when(
+          () => repository.updateProfile(
+            userId: any(named: 'userId'),
+            fullName: any(named: 'fullName'),
+            phone: any(named: 'phone'),
+            avatarUrl: any(named: 'avatarUrl'),
+          ),
+        ).thenAnswer((_) async => const Left(ServerFailure('')));
+
+        await cubit.submitProfileUpdate(fullName: 'New Name');
+
+        expect(
+          cubit.state,
+          isA<ProfileUpdateError>().having(
+            (s) => s.messageKey,
+            'key',
+            'could_not_update_profile',
+          ),
+        );
+      },
+    );
   });
 }

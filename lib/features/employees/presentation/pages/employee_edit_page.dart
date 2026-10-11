@@ -6,10 +6,12 @@ import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/auth/permission_labels.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/network/dio_error_mapper.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/select_all_tile.dart';
 import '../../../../di/injection.dart';
 
 class EmployeeEditPage extends StatefulWidget {
@@ -51,7 +53,8 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
   ];
 
   late Future<_EmployeeEditData> _data;
-  final Set<String> _specializations = {};
+  bool _isGeneralSpecialization = true;
+  String? _selectedSpecializationId;
   final Set<String> _permissions = {};
   String? _position;
   String? _department;
@@ -90,8 +93,9 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
         getIt<Dio>().get('/permissions'),
         getIt<Dio>().get('/employees/${widget.employeeId}/permissions'),
       ]);
-      permissionCatalog = List<String>.from(
-        (responses[0].data as Map)['codes'] as List? ?? const [],
+      permissionCatalog = normalizePermissionCodes(
+        ((responses[0].data as Map)['codes'] as List? ?? const [])
+            .whereType<String>(),
       );
       grantedPermissions = List<String>.from(
         (responses[1].data as Map)['grantedPermissions'] as List? ?? const [],
@@ -113,9 +117,18 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
     _hireDate =
         DateTime.tryParse(data.employee['hireDate']?.toString() ?? '') ??
         DateTime.now();
-    _specializations.addAll(
-      List<String>.from(data.employee['specializations'] as List? ?? const []),
-    );
+    final isGeneral = data.employee['isGeneralSpecialization'] == true;
+    final specId = data.employee['specializationId']?.toString();
+    if (isGeneral) {
+      _isGeneralSpecialization = true;
+      _selectedSpecializationId = null;
+    } else if (specId != null && specId.isNotEmpty) {
+      _isGeneralSpecialization = false;
+      _selectedSpecializationId = specId;
+    } else {
+      _isGeneralSpecialization = true;
+      _selectedSpecializationId = null;
+    }
     _permissions.addAll(data.grantedPermissions);
   }
 
@@ -123,14 +136,20 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
     setState(() => _saving = true);
     try {
       if (_canEdit) {
+        final patchData = <String, dynamic>{
+          if (_position != null) 'position': _position,
+          if (_department != null) 'department': _department,
+          'hireDate': _dateValue(_hireDate),
+        };
+        if (_isGeneralSpecialization) {
+          patchData['generalSpecialization'] = true;
+        } else if (_selectedSpecializationId != null) {
+          patchData['specializationId'] = _selectedSpecializationId;
+          patchData['generalSpecialization'] = false;
+        }
         await getIt<Dio>().patch(
           '/employees/${widget.employeeId}',
-          data: {
-            'position': _position,
-            'department': _department,
-            'hireDate': _dateValue(_hireDate),
-            'specializations': _specializations.toList(),
-          },
+          data: patchData,
         );
       }
       if (_canManagePermissions) {
@@ -142,9 +161,7 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
       if (mounted) Navigator.pop(context, true);
     } on DioException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(mapDioError(error).message)));
+        context.showErrorSnackBar(mapDioError(error).message);
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -172,7 +189,12 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
           final message = snapshot.error is DioException
               ? mapDioError(snapshot.error as DioException).message
               : context.tr('could_not_load_employee');
-          return Center(child: Text(message, textAlign: TextAlign.center));
+          return Center(
+            child: Text(
+              localizedErrorMessage(context, message),
+              textAlign: TextAlign.center,
+            ),
+          );
         }
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -180,7 +202,13 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
         final data = snapshot.data!;
         _initialize(data);
         final user = data.employee['user'] as Map?;
+        final isLawyerClassification =
+            user?['jobClassification'] == 'LAWYER' ||
+            data.employee['jobClassification'] == 'LAWYER';
         final hasLawyerSpecializations =
+            isLawyerClassification ||
+            data.employee['isGeneralSpecialization'] == true ||
+            data.employee['specializationId'] != null ||
             (data.employee['specializations'] as List?)?.isNotEmpty == true;
         final hasLawyerPosition = const {
           'MANAGING_PARTNER',
@@ -189,6 +217,15 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
           'ASSOCIATE',
           'JUNIOR_LAWYER',
         }.contains(_position);
+        final basePermissions = _permissionCodes(data, excludeFinance: true);
+        final caseFinancePermissions = _permissionCodes(
+          data,
+          caseFinanceOnly: true,
+        );
+        final firmFinancePermissions = _permissionCodes(
+          data,
+          firmFinanceOnly: true,
+        );
         return ListView(
           padding: const EdgeInsets.all(AppSpacing.m),
           children: [
@@ -227,22 +264,45 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
                 ),
                 Wrap(
                   spacing: AppSpacing.s,
-                  children: data.caseTypes.map((item) {
-                    final selected = _specializations.contains(item.id);
-                    return FilterChip(
-                      label: Text(
-                        item.labelFor(
-                          Localizations.localeOf(context).languageCode,
+                  runSpacing: AppSpacing.s,
+                  children: [
+                    ChoiceChip(
+                      label: Text(context.tr('specialization_general')),
+                      selected: _isGeneralSpecialization,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() {
+                            _isGeneralSpecialization = true;
+                            _selectedSpecializationId = null;
+                          });
+                        }
+                      },
+                    ),
+                    ...data.caseTypes.map((item) {
+                      final isSelected =
+                          !_isGeneralSpecialization &&
+                          _selectedSpecializationId == item.id;
+                      return ChoiceChip(
+                        label: Text(
+                          item.labelFor(
+                            Localizations.localeOf(context).languageCode,
+                          ),
                         ),
-                      ),
-                      selected: selected,
-                      onSelected: (value) => setState(() {
-                        value
-                            ? _specializations.add(item.id)
-                            : _specializations.remove(item.id);
-                      }),
-                    );
-                  }).toList(),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _isGeneralSpecialization = false;
+                              _selectedSpecializationId = item.id;
+                            } else {
+                              _isGeneralSpecialization = true;
+                              _selectedSpecializationId = null;
+                            }
+                          });
+                        },
+                      );
+                    }),
+                  ],
                 ),
               ] else if (hasLawyerPosition) ...[
                 const SizedBox(height: AppSpacing.m),
@@ -263,7 +323,12 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
                 context.tr('base_permissions'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              ..._permissionCodes(data, excludeFinance: true).map(
+              SelectAllTile(
+                keys: basePermissions,
+                selected: _permissions,
+                onChanged: (all) => _togglePermissions(basePermissions, all),
+              ),
+              ...basePermissions.map(
                 (code) => CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   dense: true,
@@ -276,17 +341,19 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
                   }),
                 ),
               ),
-              // Case-level finance permissions, selectable independently of
-              // every other group (PRD v2.0 BR-028): an employee can hold
-              // finance.case.view + finance.payment.record with no
-              // document.view, and vice versa.
-              if (_permissionCodes(data, caseFinanceOnly: true).isNotEmpty) ...[
+              if (caseFinancePermissions.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.m),
                 Text(
                   context.tr('case_finance_permissions'),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                ..._permissionCodes(data, caseFinanceOnly: true).map(
+                SelectAllTile(
+                  keys: caseFinancePermissions,
+                  selected: _permissions,
+                  onChanged: (all) =>
+                      _togglePermissions(caseFinancePermissions, all),
+                ),
+                ...caseFinancePermissions.map(
                   (code) => CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     dense: true,
@@ -300,15 +367,19 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
                   ),
                 ),
               ],
-              // Firm-wide finance is a single explicit grant — distinct from
-              // the case-level group above.
-              if (_permissionCodes(data, firmFinanceOnly: true).isNotEmpty) ...[
+              if (firmFinancePermissions.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.m),
                 Text(
                   context.tr('firm_finance_permission'),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                ..._permissionCodes(data, firmFinanceOnly: true).map(
+                SelectAllTile(
+                  keys: firmFinancePermissions,
+                  selected: _permissions,
+                  onChanged: (all) =>
+                      _togglePermissions(firmFinancePermissions, all),
+                ),
+                ...firmFinancePermissions.map(
                   (code) => CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     dense: true,
@@ -359,9 +430,14 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
     onChanged: onChanged,
   );
 
-  /// Filters the server-provided permission catalog for the permission
-  /// sections. The catalog itself is authoritative (server decides what this
-  /// admin may manage); this only slices it into groups for display.
+  void _togglePermissions(Iterable<String> codes, bool select) => setState(() {
+    if (select) {
+      _permissions.addAll(codes);
+    } else {
+      _permissions.removeAll(codes);
+    }
+  });
+
   static List<String> _permissionCodes(
     _EmployeeEditData data, {
     bool excludeFinance = false,

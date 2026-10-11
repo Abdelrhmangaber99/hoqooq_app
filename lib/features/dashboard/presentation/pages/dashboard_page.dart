@@ -13,6 +13,9 @@ import '../../../../core/utils/money.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_view.dart';
+import '../../../cases/domain/entities/court.dart';
+import '../../../cases/domain/entities/legal_case.dart';
+import '../../../cases/presentation/case_display_helpers.dart';
 import '../../../hearings/domain/entities/hearing.dart';
 import '../../../hearings/presentation/hearing_display_helpers.dart';
 import '../bloc/dashboard_bloc.dart';
@@ -543,34 +546,47 @@ class _HearingsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Panel(
-      title: context.tr('upcoming_hearings'),
-      action: TextButton(
-        onPressed: () => context.go(AppRouter.hearings),
-        child: Text(context.tr('view_all')),
-      ),
-      padding: EdgeInsets.zero,
-      child: hearings.isEmpty
-          ? EmptyState(
-              icon: Icons.event_busy_outlined,
-              message: context.tr('no_hearings_found'),
-            )
-          : Column(
-              children: [
-                for (var i = 0; i < hearings.length; i++) ...[
-                  if (i > 0) const Divider(height: 1),
-                  _HearingRow(hearing: hearings[i]),
-                ],
-              ],
-            ),
+    // The hearings payload nests only the internal generated `caseNumber`;
+    // the cases index supplies the judicial reference (court number + year).
+    return FutureBuilder<Map<String, LegalCase>>(
+      future: loadCasesById(),
+      builder: (context, casesSnapshot) {
+        final casesById =
+            casesSnapshot.data ?? const <String, LegalCase>{};
+        return _Panel(
+          title: context.tr('upcoming_hearings'),
+          action: TextButton(
+            onPressed: () => context.go(AppRouter.hearings),
+            child: Text(context.tr('view_all')),
+          ),
+          padding: EdgeInsets.zero,
+          child: hearings.isEmpty
+              ? EmptyState(
+                  icon: Icons.event_busy_outlined,
+                  message: context.tr('no_hearings_found'),
+                )
+              : Column(
+                  children: [
+                    for (var i = 0; i < hearings.length; i++) ...[
+                      if (i > 0) const Divider(height: 1),
+                      _HearingRow(
+                        hearing: hearings[i],
+                        casesById: casesById,
+                      ),
+                    ],
+                  ],
+                ),
+        );
+      },
     );
   }
 }
 
 class _HearingRow extends StatelessWidget {
-  const _HearingRow({required this.hearing});
+  const _HearingRow({required this.hearing, required this.casesById});
 
   final Hearing hearing;
+  final Map<String, LegalCase> casesById;
 
   @override
   Widget build(BuildContext context) {
@@ -584,24 +600,52 @@ class _HearingRow extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Time and date of the hearing — never the bare id.
           SizedBox(
-            width: 105,
-            child: Text(
-              DateFormat.yMd(locale).add_Hm().format(hearing.scheduledAt),
-              style: AppTypography.bodySmall.copyWith(
-                fontFamily: AppTypography.monoFont,
-                color: AppColors.ink700,
-              ),
+            width: 96,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DateFormat.jm(locale).format(hearing.scheduledAt.toLocal()),
+                  style: AppTypography.labelMedium.copyWith(
+                    fontFamily: AppTypography.monoFont,
+                    color: AppColors.ink800,
+                  ),
+                ),
+                Text(
+                  DateFormat.yMd(locale).format(hearing.scheduledAt.toLocal()),
+                  style: AppTypography.bodySmall.copyWith(
+                    fontFamily: AppTypography.monoFont,
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(width: AppSpacing.s),
           Expanded(
-            child: Text(
-              hearing.caseSummary?.caseNumber ?? hearing.caseId,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodySmall.copyWith(
-                fontFamily: AppTypography.monoFont,
-                color: AppColors.ink700,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hearing.court?.labelFor(locale) ??
+                      context.tr('court_not_selected'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.labelLarge.copyWith(
+                    color: AppColors.ink700,
+                  ),
+                ),
+                if (hearing.caseSummary != null)
+                  Text(
+                    courtReferenceForSummary(casesById, hearing.caseSummary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodySmall.copyWith(
+                      fontFamily: AppTypography.monoFont,
+                    ),
+                  ),
+              ],
             ),
           ),
           Container(

@@ -7,6 +7,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/cache_busted_url.dart';
 import '../../../features/authentication/presentation/bloc/auth_bloc.dart';
 import '../../../features/authentication/presentation/bloc/session_cubit.dart';
 import '../../../features/subscriptions/presentation/bloc/subscription_cubit.dart';
@@ -25,6 +26,13 @@ class MainLayout extends StatelessWidget {
           builder: (context, subState) {
             final user = sessionState is SessionAuthenticated ? sessionState.user : null;
             final isSuperAdmin = user?.isSuperAdmin ?? false;
+            // A re-saved photo keeps the same URL, and Flutter's image cache is
+            // keyed by URL — version the avatar so the header updates as soon
+            // as the profile save lands.
+            final avatarUrl = user?.avatarUrl;
+            final versionedAvatarUrl = avatarUrl == null || avatarUrl.isEmpty
+                ? null
+                : cacheBustedUrl(avatarUrl, user?.updatedAt);
 
             String? firmName = user?.tenant?.name;
             if (subState is SubscriptionLoaded) {
@@ -35,13 +43,33 @@ class MainLayout extends StatelessWidget {
                 ? _superAdminItems(context)
                 : _firmItems(
                     context,
+                    showCases:
+                        user?.isFirmAdmin == true ||
+                        user?.hasPerm(PermissionCodes.caseView) == true,
+                    showClients:
+                        user?.isFirmAdmin == true ||
+                        user?.hasPerm(PermissionCodes.caseView) == true ||
+                        user?.hasPerm(PermissionCodes.clientView) == true,
+                    showHearings:
+                        user?.isFirmAdmin == true ||
+                        user?.hasPerm(PermissionCodes.hearingView) == true,
+                    showTasks:
+                        user?.isFirmAdmin == true ||
+                        user?.hasPerm(PermissionCodes.taskView) == true,
+                    showCalendar:
+                        user?.isFirmAdmin == true ||
+                        user?.hasPerm(PermissionCodes.calendarRead) == true,
+                    showFinance:
+                        user?.isFirmAdmin == true ||
+                        user?.hasPerm(PermissionCodes.financeFirmRead) == true,
+                    showReports:
+                        user?.isFirmAdmin == true ||
+                        user?.hasPerm(PermissionCodes.financeFirmRead) == true ||
+                        user?.hasPerm(PermissionCodes.reportOperationalRead) ==
+                            true,
                     showEmployees:
                         user?.isFirmAdmin == true ||
                         user?.hasPerm(PermissionCodes.employeeRead) == true,
-                    showHearings: user?.hasPerm(PermissionCodes.hearingView) == true,
-                    showTasks: user?.hasPerm(PermissionCodes.taskView) == true,
-                    showFinance: user?.isFirmAdmin == true ||
-                        user?.hasPerm(PermissionCodes.financeFirmRead) == true,
                   );
 
             final location = GoRouterState.of(context).uri.path;
@@ -58,7 +86,7 @@ class MainLayout extends StatelessWidget {
                           items: items,
                           location: location,
                           userName: user?.fullName ?? '',
-                          avatarUrl: user?.avatarUrl,
+                          avatarUrl: versionedAvatarUrl,
                           workspaceName: firmName,
                           isSuperAdmin: isSuperAdmin,
                         ),
@@ -67,7 +95,7 @@ class MainLayout extends StatelessWidget {
                             children: [
                               _TopBar(
                                 userName: user?.fullName ?? '',
-                                avatarUrl: user?.avatarUrl,
+                                avatarUrl: versionedAvatarUrl,
                               ),
                               Expanded(child: child),
                             ],
@@ -110,7 +138,7 @@ class MainLayout extends StatelessWidget {
                       items: items,
                       location: location,
                       userName: user?.fullName ?? '',
-                      avatarUrl: user?.avatarUrl,
+                      avatarUrl: versionedAvatarUrl,
                       workspaceName: firmName,
                       isSuperAdmin: isSuperAdmin,
                       isDrawer: true,
@@ -133,31 +161,49 @@ class MainLayout extends StatelessWidget {
 
   List<_NavItem> _firmItems(
     BuildContext context, {
-    required bool showEmployees,
+    required bool showCases,
+    required bool showClients,
     required bool showHearings,
     required bool showTasks,
+    required bool showCalendar,
     required bool showFinance,
+    required bool showReports,
+    required bool showEmployees,
   }) => [
     _NavItem(context.tr('home'), Icons.dashboard_outlined, AppRouter.home),
-    _NavItem(
-      context.tr('cases'),
-      Icons.business_center_outlined,
-      AppRouter.cases,
-    ),
+    if (showCases)
+      _NavItem(
+        context.tr('cases'),
+        Icons.business_center_outlined,
+        AppRouter.cases,
+      ),
+    if (showClients)
+      _NavItem(
+        context.tr('clients'),
+        Icons.people_alt_outlined,
+        AppRouter.clients,
+      ),
     if (showHearings)
       _NavItem(context.tr('hearings'), Icons.gavel_rounded, AppRouter.hearings),
     if (showTasks)
       _NavItem(context.tr('tasks'), Icons.task_alt_outlined, AppRouter.tasks),
-    _NavItem(
-      context.tr('calendar'),
-      Icons.calendar_month_outlined,
-      AppRouter.calendar,
-    ),
+    if (showCalendar)
+      _NavItem(
+        context.tr('calendar'),
+        Icons.calendar_month_outlined,
+        AppRouter.calendar,
+      ),
     if (showFinance)
       _NavItem(
         context.tr('finance'),
         Icons.account_balance_wallet_outlined,
         AppRouter.finance,
+      ),
+    if (showReports)
+      _NavItem(
+        context.tr('reports'),
+        Icons.bar_chart_outlined,
+        AppRouter.reports,
       ),
     if (showEmployees)
       _NavItem(
@@ -393,7 +439,8 @@ class _Avatar extends StatelessWidget {
         ? 'H'
         : name.trim().characters.first.toUpperCase();
 
-    if (avatarUrl != null && avatarUrl!.isNotEmpty) {
+    final resolvedUrl = resolveImageUrl(avatarUrl);
+    if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
       return Container(
         width: size,
         height: size,
@@ -403,7 +450,7 @@ class _Avatar extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: Image.network(
-          avatarUrl!,
+          resolvedUrl,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => Center(
             child: Text(

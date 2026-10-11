@@ -8,7 +8,7 @@ import 'package:json_annotation/json_annotation.dart';
 enum TaskPriority {
   @JsonValue('LOW')
   low,
-  @JsonValue('NORMAL')
+  @JsonValue('MEDIUM')
   normal,
   @JsonValue('HIGH')
   high,

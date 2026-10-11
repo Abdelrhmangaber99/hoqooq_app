@@ -3,7 +3,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -110,9 +112,7 @@ class _CompletionViewState extends State<_CompletionView> {
                 context.pop(true);
               } else if (state is ServiceProcessCompletionReady &&
                   state.submitError != null) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(state.submitError!)));
+                context.showErrorSnackBar(state.submitError);
               }
             },
             builder: (context, state) {
@@ -130,6 +130,36 @@ class _CompletionViewState extends State<_CompletionView> {
                 padding: const EdgeInsets.all(AppSpacing.m),
                 child: Column(
                   children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.m),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              widget.process.targetName,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: AppSpacing.s),
+                            Text(
+                              '${context.tr('service_method')}: '
+                              '${widget.process.serviceMethod?.labelFor(locale) ?? '—'}',
+                            ),
+                            Text(
+                              '${context.tr('scheduled_at')}: '
+                              '${DateFormat.yMMMd(locale.languageCode).add_jm().format(widget.process.scheduledAt.toLocal())}',
+                            ),
+                            if (widget.process.recipientDetails?.trim().isNotEmpty ==
+                                true)
+                              Text(
+                                '${context.tr('recipient_details')}: '
+                                '${widget.process.recipientDetails}',
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.m),
                     AppDropdownField<ServiceStatus>(
                       label: context.tr('completion_result'),
                       value: _status,

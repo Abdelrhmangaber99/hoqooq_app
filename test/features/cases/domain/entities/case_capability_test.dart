@@ -7,9 +7,7 @@ void main() {
     id: 'u1',
     email: 'admin@firm.test',
     fullName: 'Firm Admin',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026),
     updatedAt: DateTime(2026),
     permissions: permissions,
@@ -56,15 +54,21 @@ void main() {
     expect(codes, isNot(contains('finance.firm.read')));
   });
 
-  test('finance capabilities sit in their own group, selectable independently',
-      () {
-    final financeDefs = CaseCapabilities.definitions
-        .where((item) => item.group == CaseCapabilityGroup.finance)
-        .map((item) => item.code);
+  test(
+    'finance capabilities sit in their own group, selectable independently',
+    () {
+      final financeDefs = CaseCapabilities.definitions
+          .where((item) => item.group == CaseCapabilityGroup.finance)
+          .map((item) => item.code);
 
-    expect(
-      financeDefs,
-      equals(['finance.case.view', 'finance.payment.record', 'finance.manage']),
-    );
-  });
+      expect(
+        financeDefs,
+        equals([
+          'finance.case.view',
+          'finance.payment.record',
+          'finance.manage',
+        ]),
+      );
+    },
+  );
 }

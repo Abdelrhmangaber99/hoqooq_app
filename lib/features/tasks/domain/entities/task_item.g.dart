@@ -68,14 +68,14 @@ Map<String, dynamic> _$TaskItemToJson(_TaskItem instance) => <String, dynamic>{
 
 const _$TaskPriorityEnumMap = {
   TaskPriority.low: 'LOW',
-  TaskPriority.normal: 'NORMAL',
+  TaskPriority.normal: 'MEDIUM',
   TaskPriority.high: 'HIGH',
   TaskPriority.urgent: 'URGENT',
   TaskPriority.unknown: 'unknown',
 };
 
 const _$TaskStatusEnumMap = {
-  TaskStatus.newTask: 'NEW',
+  TaskStatus.newTask: 'TODO',
   TaskStatus.inProgress: 'IN_PROGRESS',
   TaskStatus.waiting: 'WAITING',
   TaskStatus.completed: 'COMPLETED',

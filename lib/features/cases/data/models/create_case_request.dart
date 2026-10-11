@@ -46,26 +46,25 @@ class CreateCaseRequest {
   final double? agreedFee;
   final CasePriority? priority;
 
-  Map<String, dynamic> toJson() => {
-    'caseNumber': caseNumber,
+  Map<String, dynamic> toJson() => <String, dynamic>{
     'title': title,
     'courtCaseNumber': courtCaseNumber,
     'courtCaseYear': courtCaseYear,
     'caseTypeId': caseTypeId,
     'primaryLawyerId': primaryLawyerId,
     'governorateId': governorateId,
-    if (defaultCourtId != null) 'defaultCourtId': defaultCourtId,
-    if (circuitId != null) 'circuitId': circuitId,
-    'courtName': courtName,
+    'defaultCourtId': defaultCourtId,
+    'circuitId': circuitId,
     'status': status?.name.toUpperCase(),
-    'openingDate': openingDate?.toIso8601String(),
-    'client': client.toJson(),
+    'openingDate': openingDate != null
+        ? '${openingDate!.year.toString().padLeft(4, '0')}-${openingDate!.month.toString().padLeft(2, '0')}-${openingDate!.day.toString().padLeft(2, '0')}'
+        : null,
+    'clients': [client.toJson()],
     if (opponents.isNotEmpty)
       'opponents': opponents.map((opponent) => opponent.toJson()).toList(),
     'description': description,
     'agreedFee': agreedFee,
-    'priority': priority?.name.toUpperCase(),
-  };
+  }..removeWhere((_, value) => value == null);
 }
 
 class CaseClientInput {

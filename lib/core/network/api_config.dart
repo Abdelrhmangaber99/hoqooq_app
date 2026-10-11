@@ -24,11 +24,14 @@ class ApiConfig {
 
   static const String _host = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.5:3006',
+    defaultValue: 'http://13.50.240.246:3006',
   );
 
   /// Confirmed via `app.setGlobalPrefix('api', ...)` in the backend's
   /// `src/main.ts` — baked in here so call sites keep using bare paths
   /// like `/auth/login`.
   static const String baseUrl = '$_host/api';
+
+  /// Host URL without the `/api` prefix (e.g. `http://13.50.240.246:3006`).
+  static String get host => _host;
 }

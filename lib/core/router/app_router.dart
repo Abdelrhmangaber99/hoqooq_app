@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'app_route_observer.dart';
 import 'go_router_refresh_stream.dart';
 import 'route_guards.dart';
 
@@ -9,6 +10,7 @@ import '../../features/authentication/presentation/pages/splash_page.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/authentication/presentation/pages/forgot_password_page.dart';
 import '../../features/authentication/presentation/pages/reset_password_page.dart';
+import '../../features/authentication/presentation/pages/activate_account_page.dart';
 import '../localization/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -21,6 +23,9 @@ import '../../features/cases/domain/entities/legal_case.dart';
 import '../../features/cases/presentation/pages/case_form_page.dart';
 import '../../features/cases/presentation/pages/cases_page.dart';
 import '../../features/cases/presentation/pages/case_details_page.dart';
+import '../../features/clients/presentation/pages/client_details_page.dart';
+import '../../features/clients/presentation/pages/clients_page.dart';
+import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/hearings/domain/entities/hearing.dart';
 import '../../features/hearings/presentation/pages/hearing_form_page.dart';
 import '../../features/hearings/presentation/pages/hearings_page.dart';
@@ -34,6 +39,7 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/platform_admin/presentation/pages/firms_page.dart';
 import '../../features/platform_admin/presentation/pages/provision_firm_page.dart';
 import '../../features/platform_admin/presentation/pages/firm_details_page.dart';
+import '../../features/platform_admin/presentation/pages/firm_admin_details_page.dart';
 import '../../features/employees/presentation/pages/employees_page.dart';
 import '../../features/employees/presentation/pages/employee_edit_page.dart';
 import '../../features/platform_admin/presentation/pages/create_user_page.dart';
@@ -56,6 +62,7 @@ class AppRouter {
   /// web app's `/forgot-password` and `/reset-password`.
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
+  static const String activate = '/activate';
   static const String home = '/home';
   static const String calendar = '/calendar';
   static const String calendarNew = '/calendar/new';
@@ -63,11 +70,26 @@ class AppRouter {
   static const String tasks = '/tasks';
   static const String tasksNew = '/tasks/new';
   static const String cases = '/cases';
+  static const String clients = '/clients';
+  static String clientDetails(String caseId) => '/clients/$caseId';
+  static const String reports = '/reports';
   static const String finance = '/finance';
   static const String settings = '/settings';
   static const String subscription = '/subscription';
   static const String alerts = '/alerts';
   static const String profile = '/profile';
+  static const String newHearingRoute = '/hearings/new';
+  static String newHearing({
+    required String caseId,
+    String? governorateId,
+  }) {
+    final params = <String, String>{'caseId': caseId};
+    if (governorateId != null && governorateId.isNotEmpty) {
+      params['governorateId'] = governorateId;
+    }
+    return Uri(path: newHearingRoute, queryParameters: params).toString();
+  }
+
   static const String employees = '/employees';
   static const String createEmployee = '/employees/new';
   static String editEmployee(String employeeId) =>
@@ -76,12 +98,18 @@ class AppRouter {
       '/employees/$employeeId/permissions';
   static const String firms = '/firms';
   static const String provisionFirm = '/firms/provision';
+  static String firmAdminDetails(String firmId) => '/firms/$firmId/admin';
 
   static final rootNavigatorKey = GlobalKey<NavigatorState>();
 
   static final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: splash,
+    // Lets a screen reload itself when the route above it is popped
+    // (`didPopNext`) instead of relying solely on `context.push`'s return
+    // value. The shell below registers the same observer for its own
+    // navigator, where the nested tab pages actually live.
+    observers: [appRouteObserver],
     redirect: RouteGuards.authGuard,
     refreshListenable: GoRouterRefreshStream(getIt<SessionCubit>().stream),
     errorBuilder: (context, state) =>
@@ -101,8 +129,14 @@ class AppRouter {
         builder: (context, state) =>
             ResetPasswordPage(token: state.uri.queryParameters['token'] ?? ''),
       ),
+      GoRoute(
+        path: activate,
+        builder: (context, state) =>
+            ActivateAccountPage(token: state.uri.queryParameters['token'] ?? ''),
+      ),
       ShellRoute(
         builder: (context, state, child) => MainLayout(child: child),
+        observers: [appRouteObserver],
         routes: [
           GoRoute(
             path: firms,
@@ -114,8 +148,26 @@ class AppRouter {
               ),
               GoRoute(
                 path: ':id',
-                builder: (context, state) =>
-                    FirmDetailsPage(firmId: state.pathParameters['id']!),
+                builder: (context, state) => FirmDetailsPage(
+                  firmId: state.pathParameters['id']!,
+                  initialFirm: state.extra is Map<String, dynamic>
+                      ? state.extra! as Map<String, dynamic>
+                      : null,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'admin',
+                    redirect: (context, state) =>
+                        state.extra is Map<String, dynamic> ? null : firms,
+                    builder: (context, state) {
+                      final data = state.extra! as Map<String, dynamic>;
+                      return FirmAdminDetailsPage(
+                        firm: Map<String, dynamic>.from(data['firm'] as Map),
+                        admin: Map<String, dynamic>.from(data['admin'] as Map),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -149,6 +201,21 @@ class AppRouter {
           GoRoute(
             path: hearings,
             builder: (context, state) => const HearingsPage(),
+            routes: [
+              // Scheduling a hearing from the hearings list itself (not a
+              // specific case) — the case is picked on the way in, then the
+              // shared form is seeded with it. Bounced when no case survived
+              // a cold deep-link (mirrors the edit-route guards above).
+              GoRoute(
+                path: 'new',
+                redirect: (context, state) =>
+                    state.uri.queryParameters['caseId'] == null ? hearings : null,
+                builder: (context, state) => HearingFormPage(
+                  caseId: state.uri.queryParameters['caseId']!,
+                  governorateId: state.uri.queryParameters['governorateId'],
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: tasks,
@@ -273,6 +340,22 @@ class AppRouter {
                 ],
               ),
             ],
+          ),
+          GoRoute(
+            path: clients,
+            builder: (context, state) => const ClientsPage(),
+            routes: [
+              GoRoute(
+                path: ':caseId',
+                builder: (context, state) => ClientDetailsPage(
+                  caseId: state.pathParameters['caseId']!,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: reports,
+            builder: (context, state) => const ReportsPage(),
           ),
           GoRoute(
             path: employees,

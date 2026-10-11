@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
 import '../../../../core/localization/app_localizations.dart';
+import '../../../../core/localization/error_messages.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -596,9 +597,7 @@ class _RecordPaymentDialogState extends State<_RecordPaymentDialog> {
             Navigator.of(context).pop();
             return;
           }
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          context.showErrorSnackBar(state.message);
         }
       },
       builder: (context, state) {
@@ -719,9 +718,7 @@ class _ReversePaymentDialogState extends State<_ReversePaymentDialog> {
             Navigator.of(context).pop();
             return;
           }
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          context.showErrorSnackBar(state.message);
         }
       },
       builder: (context, state) {

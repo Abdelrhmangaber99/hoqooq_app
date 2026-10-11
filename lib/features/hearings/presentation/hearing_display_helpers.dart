@@ -11,6 +11,8 @@ String hearingStatusLabel(BuildContext context, HearingStatus status) {
       return context.tr('completed');
     case HearingStatus.adjourned:
       return context.tr('adjourned');
+    case HearingStatus.missed:
+      return context.tr('missed');
     case HearingStatus.cancelled:
       return context.tr('cancelled');
     case HearingStatus.unknown:
@@ -26,6 +28,8 @@ Color hearingStatusColor(HearingStatus status) {
       return AppColors.success;
     case HearingStatus.adjourned:
       return AppColors.warning;
+    case HearingStatus.missed:
+      return AppColors.error;
     case HearingStatus.cancelled:
       return AppColors.error;
     case HearingStatus.unknown:

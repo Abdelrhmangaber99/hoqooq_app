@@ -24,9 +24,7 @@ void main() {
     id: 'u1',
     email: 'lawyer@firm.com',
     fullName: 'Jane Doe',
-    isSuperAdmin: false,
     status: 'ACTIVE',
-    mfaEnabled: false,
     createdAt: DateTime(2026, 1, 1),
     updatedAt: DateTime(2026, 1, 1),
     tenant: const TenantRef(id: 't1', name: 'Reynolds & Associates'),
@@ -238,7 +236,7 @@ void main() {
         ).thenAnswer((_) async => okResponse('/cases', caseJson()));
 
         const request = CreateCaseRequest(
-          caseNumber: 'CASE-2026-00002',
+          title: 'Contract dispute',
           caseTypeId: 'ct1',
           client: CaseClientInput(
             clientType: 'INDIVIDUAL',
@@ -251,12 +249,12 @@ void main() {
           () => dio.post('/cases', data: captureAny(named: 'data')),
         ).captured;
         final body = captured.single as Map<String, dynamic>;
-        expect(body['caseNumber'], 'CASE-2026-00002');
-        expect(body['client']['name'], 'Carlos Hernandez');
+        expect(body['title'], 'Contract dispute');
+        expect((body['clients'] as List).single['name'], 'Carlos Hernandez');
         expect(body['caseTypeId'], 'ct1');
         expect(body.containsKey('tenantId'), isFalse);
-        expect(body.containsKey('title'), isFalse);
-        expect(body.containsKey('client'), isTrue);
+        expect(body.containsKey('caseNumber'), isFalse);
+        expect(body.containsKey('client'), isFalse);
         result.fold(
           (_) => fail('expected Right'),
           (legalCase) => expect(legalCase.id, 'c1'),

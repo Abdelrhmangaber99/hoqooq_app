@@ -5,7 +5,7 @@ import 'package:json_annotation/json_annotation.dart';
 /// `enums/task-status.enum.ts` file (confirmed dead code, zero importers —
 /// that file has `TODO/IN_PROGRESS/DONE`, which does not match the API).
 enum TaskStatus {
-  @JsonValue('NEW')
+  @JsonValue('TODO')
   newTask,
   @JsonValue('IN_PROGRESS')
   inProgress,
