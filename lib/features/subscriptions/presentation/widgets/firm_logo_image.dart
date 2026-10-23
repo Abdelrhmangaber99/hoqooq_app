@@ -6,26 +6,40 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../di/injection.dart';
 
-/// Renders the current firm's logo.
+/// Renders a firm's logo.
 ///
 /// `tenant.logoUrl` is **not** a URL: `TenantsService.updateLogo` stores the
-/// MinIO object key (`branding/tenants/<id>/logo-<hex>`) and the only way to
-/// read the bytes back is `GET /tenants/my-firm/logo`. Rendering that key with
-/// `Image.network` resolved it to `http://host/branding/tenants/...`, which
-/// 404s, so a successfully uploaded logo always fell back to the placeholder.
-/// Even a correct URL to that endpoint would still need the bearer token, so
-/// this fetches the bytes through the shared `Dio` (auth interceptor attaches
-/// the JWT, refresh interceptor rotates it on 401) — the same `ResponseType`
-/// bytes approach `DocumentRepository.downloadDocument` uses.
+/// MinIO object key (`branding/tenants/<id>/logo-<hex>`) and the bytes are only
+/// readable through one of the two download routes the deployed API exposes:
+/// `GET /tenants/my-firm/logo` (the caller's own firm) or
+/// `GET /tenants/{id}/logo` (any firm, for a Super Admin — the same reason the
+/// platform registry is the only place a Super Admin can read a firm at all).
+/// Rendering the key with `Image.network` resolved it to
+/// `http://host/branding/tenants/...`, which 404s, so a successfully uploaded
+/// logo always fell back to the placeholder. Even a correct URL to either
+/// route would still need the bearer token, so this fetches the bytes through
+/// the shared `Dio` (auth interceptor attaches the JWT, refresh interceptor
+/// rotates it on 401) — the same `ResponseType` bytes approach
+/// `DocumentRepository.downloadDocument` uses.
 ///
-/// Bytes are cached in memory keyed by `logoKey|version`, so reopening the
-/// page does not refetch or flicker, while a re-upload (a fresh random
+/// Bytes are cached in memory keyed by `route|logoKey|version`, so reopening
+/// a page does not refetch or flicker, while a re-upload (a fresh random
 /// `logoKey`, or a bumped `updatedAt`) forces a fresh load.
 class FirmLogoImage extends StatefulWidget {
-  const FirmLogoImage({super.key, required this.logoKey, this.version});
+  const FirmLogoImage({
+    super.key,
+    required this.logoKey,
+    this.version,
+    this.tenantId,
+  });
 
   /// The raw `logoUrl` value stored on the firm — an object key, not a URL.
   final String? logoKey;
+
+  /// Null fetches the caller's own firm (`/tenants/my-firm/logo`); a value
+  /// fetches that firm (`/tenants/{id}/logo`), which is the Super Admin's
+  /// view of a firm in the platform registry.
+  final String? tenantId;
 
   /// Typically the firm's `updatedAt`; changing it invalidates the cache for
   /// this logo without having to depend on `logoKey` alone.
@@ -66,8 +80,12 @@ class _FirmLogoImageState extends State<FirmLogoImage> {
     _bytes = _hasLogo ? _load() : null;
   }
 
+  String get _endpoint => widget.tenantId == null
+      ? '/tenants/my-firm/logo'
+      : '/tenants/${widget.tenantId}/logo';
+
   String _keyFor(String? logoKey, Object? version) =>
-      '$logoKey|${version ?? ''}';
+      '$_endpoint|$logoKey|${version ?? ''}';
 
   Future<Uint8List> _load() async {
     final cached = _cache[_cacheKey];
@@ -75,7 +93,7 @@ class _FirmLogoImageState extends State<FirmLogoImage> {
     // Failure surfaces as an error the builder turns back into the
     // placeholder — a missing/expired logo must never break this screen.
     final response = await getIt<Dio>().get<List<int>>(
-      '/tenants/my-firm/logo',
+      _endpoint,
       options: Options(responseType: ResponseType.bytes),
     );
     final bytes = Uint8List.fromList(response.data ?? const <int>[]);

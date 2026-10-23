@@ -8,10 +8,12 @@ import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/cache_busted_url.dart';
+import '../../../core/widgets/app_avatar.dart';
 import '../../../features/authentication/presentation/bloc/auth_bloc.dart';
 import '../../../features/authentication/presentation/bloc/session_cubit.dart';
 import '../../../features/subscriptions/presentation/bloc/subscription_cubit.dart';
 import '../../../features/subscriptions/presentation/bloc/subscription_state.dart';
+import '../../../features/subscriptions/presentation/widgets/firm_logo_image.dart';
 
 class MainLayout extends StatelessWidget {
   const MainLayout({super.key, required this.child});
@@ -35,8 +37,15 @@ class MainLayout extends StatelessWidget {
                 : cacheBustedUrl(avatarUrl, user?.updatedAt);
 
             String? firmName = user?.tenant?.name;
+            // The firm's own logo, shown beside its name in the sidebar. Its
+            // `logoUrl` is a storage object key, not a URL, so it is fetched
+            // as bytes by FirmLogoImage rather than with Image.network.
+            String? firmLogoKey;
+            Object? firmLogoVersion;
             if (subState is SubscriptionLoaded) {
               firmName = subState.firm['name'] as String? ?? firmName;
+              firmLogoKey = subState.firm['logoUrl'] as String?;
+              firmLogoVersion = subState.firm['updatedAt'];
             }
 
             final items = isSuperAdmin
@@ -56,9 +65,6 @@ class MainLayout extends StatelessWidget {
                     showTasks:
                         user?.isFirmAdmin == true ||
                         user?.hasPerm(PermissionCodes.taskView) == true,
-                    showCalendar:
-                        user?.isFirmAdmin == true ||
-                        user?.hasPerm(PermissionCodes.calendarRead) == true,
                     showFinance:
                         user?.isFirmAdmin == true ||
                         user?.hasPerm(PermissionCodes.financeFirmRead) == true,
@@ -70,6 +76,12 @@ class MainLayout extends StatelessWidget {
                     showEmployees:
                         user?.isFirmAdmin == true ||
                         user?.hasPerm(PermissionCodes.employeeRead) == true,
+                    // `GET /settings` is `@RequirePermissions(settings.read)`,
+                    // which is `firm.profile.read` in v3 — so a holder of that
+                    // code may open it too, not only a Firm Admin.
+                    showSettings:
+                        user?.isFirmAdmin == true ||
+                        user?.hasPerm(PermissionCodes.firmProfileRead) == true,
                   );
 
             final location = GoRouterState.of(context).uri.path;
@@ -88,6 +100,8 @@ class MainLayout extends StatelessWidget {
                           userName: user?.fullName ?? '',
                           avatarUrl: versionedAvatarUrl,
                           workspaceName: firmName,
+                          workspaceLogoKey: firmLogoKey,
+                          workspaceLogoVersion: firmLogoVersion,
                           isSuperAdmin: isSuperAdmin,
                         ),
                         Expanded(
@@ -110,17 +124,15 @@ class MainLayout extends StatelessWidget {
                   backgroundColor: AppColors.paper,
                   appBar: AppBar(
                     toolbarHeight: 56,
-                    titleSpacing: 0,
-                    title: Row(
-                      children: [
-                        Image.asset(
-                          'assets/images/hoqooq-logo.png',
-                          width: 32,
-                          height: 32,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(context.tr('hoqooq_brand')),
-                      ],
+                    titleSpacing: 16,
+                    // The internal logo is the full horizontal lockup: mark,
+                    // wordmark and tagline. It therefore already carries the
+                    // brand name, so a separate `hoqooq_brand` label beside it
+                    // only repeated what the image says.
+                    title: Image.asset(
+                      'assets/images/app_internal_logo.jpeg',
+                      height: 30,
+                      fit: BoxFit.contain,
                     ),
                     actions: [
                       IconButton(
@@ -140,6 +152,8 @@ class MainLayout extends StatelessWidget {
                       userName: user?.fullName ?? '',
                       avatarUrl: versionedAvatarUrl,
                       workspaceName: firmName,
+                      workspaceLogoKey: firmLogoKey,
+                      workspaceLogoVersion: firmLogoVersion,
                       isSuperAdmin: isSuperAdmin,
                       isDrawer: true,
                     ),
@@ -156,7 +170,6 @@ class MainLayout extends StatelessWidget {
 
   List<_NavItem> _superAdminItems(BuildContext context) => [
     _NavItem(context.tr('firms'), Icons.business_outlined, AppRouter.firms),
-    _NavItem(context.tr('profile'), Icons.settings_outlined, AppRouter.profile),
   ];
 
   List<_NavItem> _firmItems(
@@ -165,10 +178,10 @@ class MainLayout extends StatelessWidget {
     required bool showClients,
     required bool showHearings,
     required bool showTasks,
-    required bool showCalendar,
     required bool showFinance,
     required bool showReports,
     required bool showEmployees,
+    required bool showSettings,
   }) => [
     _NavItem(context.tr('home'), Icons.dashboard_outlined, AppRouter.home),
     if (showCases)
@@ -187,12 +200,11 @@ class MainLayout extends StatelessWidget {
       _NavItem(context.tr('hearings'), Icons.gavel_rounded, AppRouter.hearings),
     if (showTasks)
       _NavItem(context.tr('tasks'), Icons.task_alt_outlined, AppRouter.tasks),
-    if (showCalendar)
-      _NavItem(
-        context.tr('calendar'),
-        Icons.calendar_month_outlined,
-        AppRouter.calendar,
-      ),
+    _NavItem(
+      context.tr('calendar'),
+      Icons.calendar_month_outlined,
+      AppRouter.calendar,
+    ),
     if (showFinance)
       _NavItem(
         context.tr('finance'),
@@ -211,13 +223,17 @@ class MainLayout extends StatelessWidget {
         Icons.manage_accounts_outlined,
         AppRouter.employees,
       ),
+    // Both of these pages existed and were routed, but had no sidebar entry —
+    // the reference web app's "الإعدادات" group is where a user reaches them,
+    // and on mobile Settings was reachable from nowhere at all.
+    if (showSettings)
+      _NavItem(context.tr('settings'), Icons.tune_outlined, AppRouter.settings),
 
     _NavItem(
       context.tr('notifications'),
       Icons.notifications_none_rounded,
       AppRouter.alerts,
     ),
-    _NavItem(context.tr('profile'), Icons.settings_outlined, AppRouter.profile),
   ];
 }
 
@@ -255,7 +271,7 @@ class _TopBar extends StatelessWidget {
           tooltip: context.tr('notifications'),
         ),
         const SizedBox(width: 8),
-        _Avatar(name: userName, avatarUrl: avatarUrl, size: 32),
+        AppAvatar(name: userName, imageUrl: avatarUrl, size: 32),
       ],
     ),
   );
@@ -269,6 +285,8 @@ class _Sidebar extends StatelessWidget {
     this.avatarUrl,
     required this.workspaceName,
     required this.isSuperAdmin,
+    this.workspaceLogoKey,
+    this.workspaceLogoVersion,
     this.isDrawer = false,
   });
 
@@ -277,6 +295,8 @@ class _Sidebar extends StatelessWidget {
   final String userName;
   final String? avatarUrl;
   final String? workspaceName;
+  final String? workspaceLogoKey;
+  final Object? workspaceLogoVersion;
   final bool isSuperAdmin;
   final bool isDrawer;
 
@@ -288,102 +308,106 @@ class _Sidebar extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
+            // Stacked, not a row: the web build puts the wordmark above the
+            // workspace badge, with 20px of padding at the top and 16 below.
             Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(color: Colors.white.withValues(alpha: .1)),
                 ),
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset(
-                    'assets/images/hoqooq-logo.png',
-                    width: 38,
-                    height: 38,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.tr('hoqooq_brand'),
-                          style: AppTypography.h3.copyWith(color: Colors.white),
-                        ),
-                        Text(
-                          isSuperAdmin
-                              ? context.tr('platform_admin')
-                              : (workspaceName ??
-                                    context.tr('legal_case_management')),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.ink300,
-                          ),
-                        ),
-                      ],
+                  // The sidebar is the workspace's identity, so it leads with
+                  // the FIRM's own uploaded logo — the product wordmark only
+                  // stands in when the firm has not uploaded one (or for a
+                  // platform account, which has no firm at all).
+                  //
+                  // `logoUrl` is a storage object key, not a URL, and reading
+                  // the bytes back needs the bearer token, so FirmLogoImage
+                  // fetches them through the authenticated `/tenants/my-firm/logo`
+                  // route — `Image.network` on the key always 404'd.
+                  if (workspaceLogoKey != null && workspaceLogoKey!.isNotEmpty)
+                    Container(
+                      width: 44,
+                      height: 44,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: FirmLogoImage(
+                        logoKey: workspaceLogoKey,
+                        version: workspaceLogoVersion,
+                      ),
+                    )
+                  else
+                    // The menu is a dark surface, so the product lockup is the
+                    // white cut. The colour source asset is an opaque JPEG and
+                    // would otherwise paint a white box on the brown menu; the
+                    // web build reaches the same result by inverting its logo
+                    // with a CSS filter.
+                    Image.asset(
+                      'assets/images/hoqooq-lockup-white.png',
+                      height: 44,
+                      fit: BoxFit.contain,
+                    ),
+                  const SizedBox(height: 12),
+                  // The workspace name is treated as a badge here rather than as
+                  // body copy, matching the brass pill the web build renders.
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.brass500.withValues(alpha: .15),
+                      border: Border.all(
+                        color: AppColors.brass500.withValues(alpha: .25),
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      isSuperAdmin
+                          ? context.tr('platform_admin')
+                          : (workspaceName ??
+                                context.tr('legal_case_management')),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.brass300,
+                        fontSize: 11,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             Expanded(
-              child: ListView.separated(
+              // Built eagerly rather than with a lazily-materialised ListView.
+              // The menu is a fixed, short list, and laying every entry out
+              // keeps the whole of it in the tree — and therefore in the
+              // semantics tree — even when it is taller than a short viewport.
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 18,
                 ),
-                itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 4),
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  final selected =
-                      location == item.route ||
-                      location.startsWith('${item.route}/');
-                  return Material(
-                    color: selected
-                        ? AppColors.brass500.withValues(alpha: .15)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    child: ListTile(
-                      dense: true,
-                      minTileHeight: 44,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: selected
-                            ? const BorderSide(
-                                color: AppColors.brass400,
-                                width: 0,
-                                strokeAlign: BorderSide.strokeAlignInside,
-                              )
-                            : BorderSide.none,
-                      ),
-                      leading: Icon(
-                        item.icon,
-                        size: 19,
-                        color: selected ? AppColors.brass300 : AppColors.ink300,
-                      ),
-                      title: Text(
-                        item.label,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: selected
-                              ? AppColors.brass300
-                              : AppColors.ink200,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                child: Column(
+                  children: [
+                    for (var i = 0; i < items.length; i++)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: i == items.length - 1 ? 0 : 4,
                         ),
+                        child: _buildNavTile(context, items[i]),
                       ),
-                      onTap: () {
-                        if (isDrawer) Navigator.of(context).pop();
-                        context.go(item.route);
-                      },
-                    ),
-                  );
-                },
+                  ],
+                ),
               ),
             ),
             Container(
@@ -395,7 +419,7 @@ class _Sidebar extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  _Avatar(name: userName, avatarUrl: avatarUrl, size: 34),
+                  AppAvatar(name: userName, imageUrl: avatarUrl, size: 34),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -425,54 +449,54 @@ class _Sidebar extends StatelessWidget {
       ),
     ),
   );
-}
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, required this.size, this.avatarUrl});
-  final String name;
-  final double size;
-  final String? avatarUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    final initial = name.trim().isEmpty
-        ? 'H'
-        : name.trim().characters.first.toUpperCase();
-
-    final resolvedUrl = resolveImageUrl(avatarUrl);
-    if (resolvedUrl != null && resolvedUrl.isNotEmpty) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: const BoxDecoration(
-          color: AppColors.brass100,
-          shape: BoxShape.circle,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Image.network(
-          resolvedUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Center(
-            child: Text(
-              initial,
-              style: AppTypography.labelLarge.copyWith(color: AppColors.brass800),
+  Widget _buildNavTile(BuildContext context, _NavItem item) {
+    final selected =
+        location == item.route || location.startsWith('${item.route}/');
+    return Material(
+      color: selected
+          ? AppColors.brass500.withValues(alpha: .15)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          // The active pill carries a 2px brass bar on its leading edge, the
+          // same `border-r-2` accent the web build draws on the selected nav
+          // item. Rendered as a sibling rather than as a border because a
+          // rounded decoration cannot take a single-sided border.
+          SizedBox(
+            width: 2,
+            height: 44,
+            child: selected
+                ? const ColoredBox(color: AppColors.brass400)
+                : null,
+          ),
+          Expanded(
+            child: ListTile(
+              dense: true,
+              minTileHeight: 44,
+              leading: Icon(
+                item.icon,
+                size: 19,
+                color: selected ? AppColors.brass300 : AppColors.ink300,
+              ),
+              title: Text(
+                item.label,
+                style: AppTypography.bodyMedium.copyWith(
+                  // The web build paints inactive items in `text-ink-300` and
+                  // the selected one in `text-brass-300`.
+                  color: selected ? AppColors.brass300 : AppColors.ink300,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+              onTap: () {
+                if (isDrawer) Navigator.of(context).pop();
+                context.go(item.route);
+              },
             ),
           ),
-        ),
-      );
-    }
-
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        color: AppColors.brass100,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        initial,
-        style: AppTypography.labelLarge.copyWith(color: AppColors.brass800),
+        ],
       ),
     );
   }

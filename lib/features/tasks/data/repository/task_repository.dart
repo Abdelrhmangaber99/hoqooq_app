@@ -44,6 +44,8 @@ class TaskRepository implements ITaskRepository {
       return Right(TaskItem.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      return const Left(ServerFailure());
     }
   }
 
@@ -54,6 +56,8 @@ class TaskRepository implements ITaskRepository {
       return Right(TaskItem.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      return const Left(ServerFailure());
     }
   }
 
@@ -67,6 +71,13 @@ class TaskRepository implements ITaskRepository {
       return Right(TaskItem.fromJson(response.data as Map<String, dynamic>));
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      // Same reasoning as `getTasks()`: a response that doesn't decode into
+      // `TaskItem` must come back as an `ApiResult`. Thrown from here it
+      // would escape the page's `_complete()` and the `CaseTasksBloc` event
+      // handler before either can clear `isSubmitting`, leaving the button
+      // spinning with no error shown.
+      return const Left(ServerFailure());
     }
   }
 
@@ -77,6 +88,8 @@ class TaskRepository implements ITaskRepository {
       return const Right(null);
     } on DioException catch (e) {
       return Left(mapDioError(e));
+    } catch (_) {
+      return const Left(ServerFailure());
     }
   }
 }

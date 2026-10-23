@@ -58,8 +58,7 @@ class RouteGuards {
       final isAllowedSuperAdminPath =
           state.uri.path == AppRouter.provisionFirm ||
           state.uri.path == AppRouter.firms ||
-          state.uri.path.startsWith('${AppRouter.firms}/') ||
-          state.uri.path == AppRouter.profile;
+          state.uri.path.startsWith('${AppRouter.firms}/');
       if (!isAllowedSuperAdminPath) {
         return AppRouter.firms;
       }
@@ -94,13 +93,11 @@ class RouteGuards {
       return AppRouter.home;
     }
 
-    if (isAuthenticated &&
-        !sessionState.user.isSuperAdmin &&
-        state.uri.path.startsWith(AppRouter.calendar) &&
-        !currentUserHasPerm(PermissionCodes.calendarRead)) {
-      return AppRouter.home;
-    }
-
+    // The Calendar itself is intentionally not permission-gated — the desktop
+    // app's own sidebar map makes it available to every employee, and its
+    // permission editor states the same. Only *creating* an event stays behind
+    // `calendar.manage`, which is the code the backend checks on
+    // `POST /calendar`.
     if (isAuthenticated &&
         state.uri.path == AppRouter.calendarNew &&
         !currentUserHasPerm(PermissionCodes.calendarManage)) {
@@ -165,6 +162,15 @@ class RouteGuards {
                   PermissionCodes.employeePermissionManage,
                 )))) {
       return AppRouter.employees;
+    }
+
+    // `GET /settings` requires `firm.profile.read`; a deep link from an
+    // account without it would otherwise open the page and fail on load.
+    if (isAuthenticated &&
+        !sessionState.user.isSuperAdmin &&
+        state.uri.path.startsWith(AppRouter.settings) &&
+        !currentUserHasPerm(PermissionCodes.firmProfileRead)) {
+      return AppRouter.home;
     }
 
     return null;

@@ -164,6 +164,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i141.IUserRepository>(
       () => _i867.UserRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
     );
+    gh.lazySingleton<_i726.SubscriptionCubit>(
+      () => _i726.SubscriptionCubit(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
+    );
     gh.lazySingleton<_i320.ICaseRepository>(
       () => _i981.CaseRepository(gh<_i361.Dio>(), gh<_i81.SessionCubit>()),
     );
@@ -237,9 +240,6 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i729.IFinanceRepository>(
       () => _i810.FinanceRepository(gh<_i361.Dio>()),
-    );
-    gh.lazySingleton<_i726.SubscriptionCubit>(
-      () => _i726.SubscriptionCubit(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i598.IAuthRepository>(
       () => _i494.AuthRepository(gh<_i361.Dio>()),

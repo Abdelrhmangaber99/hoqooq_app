@@ -33,7 +33,12 @@ class UserRepository implements IUserRepository {
 
     try {
       final response = await _dio.get('/employees');
-      final data = response.data as List<dynamic>;
+      final rawData = response.data;
+      final data = rawData is List
+          ? rawData
+          : (rawData is Map && rawData['data'] is List
+              ? rawData['data'] as List<dynamic>
+              : const <dynamic>[]);
       final fallbackDate = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
       final users = data
           .map((row) {

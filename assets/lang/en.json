@@ -46,9 +46,9 @@
   "court_not_selected": "Court not selected",
   "platform_admin": "Platform administration",
   "invite_only_access": "Access is by invitation only. Contact platform administration to create a workspace.",
-  "hoqooq_brand": "Lexora",
+  "hoqooq_brand": "hoqooq",
   "brand_quote": "We simplify legal work so you can focus on justice.",
-  "lexora": "Lexora",
+  "lexora": "hoqooq",
   "legal_case_management": "LEGAL CASE MANAGEMENT",
   "securing_your_session": "SECURING YOUR SESSION",
   "welcome_back": "Welcome\nback.",
@@ -60,7 +60,7 @@
   "or_continue_with": "or continue with",
   "google": "Google",
   "apple": "Apple",
-  "new_to_lexora": "New to Lexora?",
+  "new_to_lexora": "New to hoqooq?",
   "create_account": "Create account",
   "home": "Home",
   "calendar": "Calendar",
@@ -121,6 +121,7 @@
   "mark_all_read": "Mark all read",
   "biometric_login": "Biometric Login",
   "change_password": "Change Password",
+  "change_information": "Change Information",
   "two_factor_auth": "Two-Factor Auth",
   "privacy_policy": "Privacy Policy",
   "terms_of_service": "Terms of Service",
@@ -164,6 +165,7 @@
   "deposition": "Deposition",
   "retry": "Retry",
   "no_cases_found": "No cases found",
+  "no_shared_records_hint": "Nothing has been shared with you yet — access to cases, tasks and hearings is granted per case by your firm admin.",
   "no_clients_found": "No clients found",
   "search_cases": "Search cases...",
   "draft": "Draft",
@@ -252,6 +254,8 @@
   "no_task_assignees": "No active assignee is available. Employee access may be missing.",
   "case": "Case",
   "edit_task": "Edit Task",
+  "task_details": "Task Details",
+  "change_status": "Change status",
   "new_task": "New Task",
   "create_task": "Create Task",
   "new_event": "New Event",
@@ -547,7 +551,6 @@
   ,"profile_updated_success": "Profile updated successfully"
   ,"full_name_required": "Full name is required"
   ,"avatar_url": "Avatar URL"
-  ,"profile_image": "Profile Picture"
   ,"preferences": "Preferences"
   ,"appearance_and_language": "Appearance & Language"
   ,"theme_mode": "Theme Mode"
@@ -584,6 +587,8 @@
   ,"unknown_permission": "Unknown permission"
   ,"permission_employee_create": "Create employees"
   ,"permission_employee_read": "View employees"
+  ,"permission_employee_view": "View employees"
+  ,"permission_employee_manage": "Edit employee data and permissions"
   ,"permission_employee_edit": "Edit employees"
   ,"permission_employee_permission_manage": "Manage employee permissions"
   ,"permission_employee_status_manage": "Manage employee status"
@@ -627,14 +632,18 @@
   ,"permission_calendar_read": "View calendar"
   ,"permission_finance_payment_record": "Record payments"
   ,"permission_finance_firm_read": "View firm finances"
+  ,"permission_finance_firm_view": "View firm finances"
   ,"permission_finance_manage": "Manage finances"
   ,"permission_finance_case_view": "View case finances"
+  ,"permission_finance_view": "View case finances"
   ,"permission_notification_read": "View notifications"
   ,"permission_report_operational_read": "View operational reports"
+  ,"permission_report_view": "View reports"
   ,"permission_dashboard_read": "View dashboard"
   ,"permission_firm_profile_manage": "Manage firm profile"
   ,"permission_firm_profile_read": "View firm profile"
   ,"permission_audit_read": "View audit log"
+  ,"permission_audit_view": "View audit log"
   ,"permission_platform_firm_create": "Create firms"
   ,"permission_platform_firm_read": "View firms"
   ,"permission_platform_firm_status_manage": "Manage firm status"
@@ -671,7 +680,6 @@
   ,"employee_option_administration": "Administration"
   ,"employee_option_general": "General"
   ,"select_all": "Select all"
-  ,"choose_photo": "Choose photo"
   ,"error_server": "Server error occurred"
   ,"error_cache": "Cache error occurred"
   ,"error_network": "No internet connection"
@@ -740,9 +748,11 @@
   ,"case_payment_status_breakdown": "Case payment status breakdown"
   ,"top_outstanding_cases": "Top cases by outstanding amount"
   ,"firm_admin_invitation_note": "The Firm Admin receives an email invitation to set their password and activate the account."
-  ,"firm_admin_permissions_not_applied": "Firm and admin created, but the permission set could not be applied."
+  ,"firm_admin_permissions_not_applied": "Firm and admin created, but the permission set could not be applied.",
+  "employee_permissions_scope_note": "Case, client, opponent, hearing, document and task permissions decide WHAT the employee may do \u2014 but they only apply to the cases the employee is ADDED to: either by being set as the case\u2019s responsible lawyer, or by adding them from the \u201cTeam\u201d tab inside the case. The dashboard and the calendar are available to every employee and show only their own work.",
+  "employee_profile_save_failed": "Employee details were not saved",
+  "employee_permissions_save_failed": "Permissions were not saved",
+  "set_password_success": "The new password was set and the employee was signed out of all devices. Share it with them securely.",
+  "password_min_8": "At least 8 characters, including an uppercase letter, a lowercase letter (English), a number and a symbol",
+  "employee_has_open_assignments": "The employee cannot be deactivated before their workload is reassigned: {cases} case(s) and {tasks} open task(s)."
 }
-
-
-
-

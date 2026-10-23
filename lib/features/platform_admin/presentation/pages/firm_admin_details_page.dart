@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/network/dio_error_mapper.dart';
 import '../../../../di/injection.dart';
+import '../../domain/platform_admin_contract.dart';
 
 /// Super Admin view of a firm's Firm Admin account.
 ///
@@ -41,13 +42,57 @@ class FirmAdminDetailsPage extends StatefulWidget {
 
 class _FirmAdminDetailsPageState extends State<FirmAdminDetailsPage> {
   bool _saving = false;
+  late Map<String, dynamic> _adminData;
+
+  @override
+  void initState() {
+    super.initState();
+    _adminData = Map<String, dynamic>.from(widget.admin);
+    _fetchAdminDetails();
+  }
+
+  Future<void> _fetchAdminDetails() async {
+    final firmId = widget.firm['id']?.toString();
+    final userId = _userId();
+    if (firmId == null && userId == null) return;
+
+    try {
+      final dio = getIt<Dio>();
+      if (firmId != null) {
+        final response = await dio.get('/tenants/$firmId');
+        final data = response.data;
+        if (data is Map) {
+          final admin = PlatformAdminContract.overviewAdmin(data);
+          if (admin != null && mounted) {
+            setState(() {
+              _adminData = {..._adminData, ...admin};
+            });
+            return;
+          }
+        }
+      }
+      if (userId != null) {
+        final userResp = await dio.get('/users/$userId');
+        if (userResp.data is Map && mounted) {
+          final userData = Map<String, dynamic>.from(
+            userResp.data['data'] is Map
+                ? userResp.data['data'] as Map
+                : userResp.data as Map,
+          );
+          setState(() {
+            _adminData = {..._adminData, ...userData};
+          });
+        }
+      }
+    } catch (_) {}
+  }
 
   /// The account's **User** id. A Firm Admin appears either as a registry
   /// `firmAdmin` (`{id, email, fullName, status, phone}`) or as an employee
   /// record (`{id, userId, user}`); in the second shape `id` is the *Employee*
   /// id, so `userId`/`user.id` must win.
   String? _userId() {
-    final admin = widget.admin;
+    final admin = _adminData;
     final nested = admin['user'] is Map ? admin['user'] as Map : null;
     final id = admin['userId'] ?? nested?['id'] ?? admin['id'];
     final text = id?.toString();
@@ -58,7 +103,7 @@ class _FirmAdminDetailsPageState extends State<FirmAdminDetailsPage> {
   /// missing/unknown values are treated as `ACTIVE` rather than shown as a
   /// dash, so the action label matches the account's likely state.
   String get _status {
-    final admin = widget.admin;
+    final admin = _adminData;
     final nested = admin['user'] is Map ? admin['user'] as Map : null;
     final raw = (nested?['status'] ?? admin['status'])?.toString().trim();
     return raw == null || raw.isEmpty ? 'ACTIVE' : raw.toUpperCase();
@@ -91,7 +136,7 @@ class _FirmAdminDetailsPageState extends State<FirmAdminDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final firm = widget.firm;
-    final admin = widget.admin;
+    final admin = _adminData;
     final nested = admin['user'] is Map ? admin['user'] as Map : null;
     final name = nested?['fullName'] ?? admin['fullName'];
     final email = nested?['email'] ?? admin['email'];

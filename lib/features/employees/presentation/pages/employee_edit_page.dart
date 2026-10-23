@@ -93,9 +93,15 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
         getIt<Dio>().get('/permissions'),
         getIt<Dio>().get('/employees/${widget.employeeId}/permissions'),
       ]);
+      // The server already limits this to the codes the calling Firm Admin
+      // holds; the extra filter drops the codes the desktop app's own editor
+      // withholds (dashboard/calendar/notification/reference/firm-profile/
+      // platform/system, plus `report.view`/`audit.view`/
+      // `employee.status.manage`) so both clients offer the same checkbox set.
       permissionCatalog = normalizePermissionCodes(
         ((responses[0].data as Map)['codes'] as List? ?? const [])
-            .whereType<String>(),
+            .whereType<String>()
+            .where(isEmployeeGrantablePermission),
       );
       grantedPermissions = List<String>.from(
         (responses[1].data as Map)['grantedPermissions'] as List? ?? const [],
@@ -132,8 +138,24 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
     _permissions.addAll(data.grantedPermissions);
   }
 
+  /// Saves the profile fields and, separately, the permission grants.
+  ///
+  /// They are two independent `PATCH` calls to two different routes, so a
+  /// profile rejection (an unsupported `specializationId`, a validation error
+  /// on `hireDate`) must not silently discard the permission set the admin
+  /// just ticked — one shared `try` block meant the permissions call was never
+  /// reached, and the employee kept signing in with no access at all while the
+  /// screen flashed one unrelated error. Each half now reports its own
+  /// outcome; the screen stays open if either failed.
   Future<void> _save() async {
     setState(() => _saving = true);
+    // Raw per-call failures, localized only after both requests have settled —
+    // reading `BuildContext` inside a `catch` that follows an `await` is both
+    // a lint violation and a real hazard if the page was popped meanwhile.
+    final failures = <(String prefix, String message)>[];
+    // Every label is resolved before the first `await`.
+    final profilePrefix = context.tr('employee_profile_save_failed');
+    final permissionsPrefix = context.tr('employee_permissions_save_failed');
     try {
       if (_canEdit) {
         final patchData = <String, dynamic>{
@@ -147,22 +169,38 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
           patchData['specializationId'] = _selectedSpecializationId;
           patchData['generalSpecialization'] = false;
         }
-        await getIt<Dio>().patch(
-          '/employees/${widget.employeeId}',
-          data: patchData,
-        );
+        try {
+          await getIt<Dio>().patch(
+            '/employees/${widget.employeeId}',
+            data: patchData,
+          );
+        } on DioException catch (error) {
+          failures.add((profilePrefix, mapDioError(error).message));
+        }
       }
       if (_canManagePermissions) {
-        await getIt<Dio>().patch(
-          '/employees/${widget.employeeId}/permissions',
-          data: {'permissionKeys': _permissions.toList()..sort()},
-        );
+        try {
+          await getIt<Dio>().patch(
+            '/employees/${widget.employeeId}/permissions',
+            data: {'permissionKeys': _permissions.toList()..sort()},
+          );
+        } on DioException catch (error) {
+          failures.add((permissionsPrefix, mapDioError(error).message));
+        }
       }
-      if (mounted) Navigator.pop(context, true);
-    } on DioException catch (error) {
-      if (mounted) {
-        context.showErrorSnackBar(mapDioError(error).message);
+      if (!mounted) return;
+      if (failures.isEmpty) {
+        Navigator.pop(context, true);
+        return;
       }
+      context.showErrorSnackBar(
+        failures
+            .map(
+              (failure) =>
+                  '${failure.$1}: ${localizedErrorMessage(context, failure.$2)}',
+            )
+            .join('\n'),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -318,6 +356,32 @@ class _EmployeeEditPageState extends State<EmployeeEditPage> {
               ],
             ],
             if (_canManagePermissions) ...[
+              const SizedBox(height: AppSpacing.l),
+              // Word-for-word the explanation the desktop app shows above this
+              // same editor. Without it, a Firm Admin grants every permission
+              // and still finds an employee with an empty Cases/Tasks/Hearings
+              // board — because those codes only grant *capabilities*, while
+              // the records themselves are scoped per case by the backend and
+              // require the employee to be added to the case first.
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.m,
+                  vertical: AppSpacing.s,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.brass50,
+                  border: Border.all(color: AppColors.brass200),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  context.tr('employee_permissions_scope_note'),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.6,
+                    color: AppColors.ink700,
+                  ),
+                ),
+              ),
               const SizedBox(height: AppSpacing.l),
               Text(
                 context.tr('base_permissions'),

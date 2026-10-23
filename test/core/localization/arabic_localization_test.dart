@@ -61,7 +61,14 @@ void main() {
     final unexpected = <String>[];
     for (final entry in arabic.entries) {
       if (technicalTextKeys.contains(entry.key)) continue;
-      if ((entry.value as String).contains(RegExp(r'[A-Za-z]'))) {
+      // `{cases}`/`{tasks}`-style placeholders are substituted at runtime and
+      // are never shown to the user, so they are not English UI copy — only
+      // the surrounding text is checked.
+      final visibleText = (entry.value as String).replaceAll(
+        RegExp(r'\{[a-zA-Z0-9_]+\}'),
+        '',
+      );
+      if (visibleText.contains(RegExp(r'[A-Za-z]'))) {
         unexpected.add(entry.key);
       }
     }

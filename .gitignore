@@ -61,3 +61,12 @@ replay_pid*.log
 # Local device-automation scratch: adb UI dumps, screenshots, and captured
 # API responses (the latter can contain live access tokens).
 /.tmp_device/
+
+# Android release signing material — never commit the keystore or its passwords
+android/key.properties
+android/*.jks
+android/*.keystore
+dist/
+
+# Local scratch: screenshots, DOM probes, renderer copies — never source
+.artifacts/

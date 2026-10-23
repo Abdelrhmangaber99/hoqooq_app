@@ -167,7 +167,7 @@ void main() {
 
   group('loading / error / empty states', () {
     testWidgets('shows a spinner while the ledger loads', (tester) async {
-      stubSession(['finance.case.view']);
+      stubSession(['finance.view']);
       stubLedgerState(const CaseLedgerLoading());
 
       await tester.pumpWidget(buildTestable());
@@ -180,7 +180,7 @@ void main() {
     testWidgets('shows the shared ErrorView with retry on fetch failure', (
       tester,
     ) async {
-      stubSession(['finance.case.view']);
+      stubSession(['finance.view']);
       stubLedgerState(
         const CaseLedgerError(
           message: 'No internet connection',
@@ -197,7 +197,7 @@ void main() {
     });
 
     testWidgets('swaps retry for a lock on a forbidden fetch', (tester) async {
-      stubSession(['finance.case.view']);
+      stubSession(['finance.view']);
       stubLedgerState(
         const CaseLedgerError(
           message: 'Insufficient permissions',
@@ -217,7 +217,7 @@ void main() {
       'empty case shows agreed fee, paid 0, remaining, no history, and the '
       'record action for finance.payment.record',
       (tester) async {
-        stubSession(['finance.case.view', 'finance.payment.record']);
+        stubSession(['finance.view', 'finance.payment.record']);
         stubLedgerState(const CaseLedgerLoaded(feeDetail));
 
         await tester.pumpWidget(buildTestable());
@@ -246,7 +246,7 @@ void main() {
         // the Case Finance API has no agreed-fee route — so the tab must not
         // offer either action. It explains where the fee is set instead.
         stubSession([
-          'finance.case.view',
+          'finance.view',
           'finance.manage',
           'finance.payment.record',
         ]);
@@ -275,7 +275,7 @@ void main() {
     testWidgets('payment history shows the PRD fields for each record', (
       tester,
     ) async {
-      stubSession(['finance.case.view']);
+      stubSession(['finance.view']);
       stubLedgerState(CaseLedgerLoaded(partiallyPaidDetail));
 
       await tester.pumpWidget(buildTestable());
@@ -293,9 +293,9 @@ void main() {
 
   group('permission visibility', () {
     testWidgets(
-      'finance.case.view only: finance data renders but no write actions',
+      'finance.view only: finance data renders but no write actions',
       (tester) async {
-        stubSession(['finance.case.view']);
+        stubSession(['finance.view']);
         stubLedgerState(const CaseLedgerLoaded(feeDetail));
 
         await tester.pumpWidget(buildTestable());
@@ -311,7 +311,7 @@ void main() {
     testWidgets(
       'finance.payment.record shows Record Payment, not fee management',
       (tester) async {
-        stubSession(['finance.case.view', 'finance.payment.record']);
+        stubSession(['finance.view', 'finance.payment.record']);
         stubLedgerState(const CaseLedgerLoaded(feeDetail));
 
         await tester.pumpWidget(buildTestable());
@@ -325,7 +325,7 @@ void main() {
 
     testWidgets('finance.manage offers reversal, no fee editing, and no Record '
         'Payment on a fully-paid case', (tester) async {
-      stubSession(['finance.case.view', 'finance.manage']);
+      stubSession(['finance.view', 'finance.manage']);
       stubLedgerState(
         CaseLedgerLoaded(
           CaseFinanceDetail(
@@ -384,7 +384,7 @@ void main() {
         .first;
 
     testWidgets('amount is required and must be positive', (tester) async {
-      stubSession(['finance.case.view', 'finance.payment.record']);
+      stubSession(['finance.view', 'finance.payment.record']);
       stubLedgerState(const CaseLedgerLoaded(feeDetail));
 
       await tester.pumpWidget(buildTestable());
@@ -405,7 +405,7 @@ void main() {
     testWidgets('rejects amounts exceeding the remaining balance', (
       tester,
     ) async {
-      stubSession(['finance.case.view', 'finance.payment.record']);
+      stubSession(['finance.view', 'finance.payment.record']);
       stubLedgerState(CaseLedgerLoaded(partiallyPaidDetail));
 
       await tester.pumpWidget(buildTestable());
@@ -425,7 +425,7 @@ void main() {
     testWidgets('renders the finance tab in Arabic with RTL directionality', (
       tester,
     ) async {
-      stubSession(['finance.case.view', 'finance.payment.record']);
+      stubSession(['finance.view', 'finance.payment.record']);
       stubLedgerState(CaseLedgerLoaded(partiallyPaidDetail));
 
       await tester.pumpWidget(buildTestable(locale: const Locale('ar')));
@@ -447,7 +447,7 @@ void main() {
     testWidgets('shows the Arabic validation error inside the record dialog', (
       tester,
     ) async {
-      stubSession(['finance.case.view', 'finance.payment.record']);
+      stubSession(['finance.view', 'finance.payment.record']);
       stubLedgerState(const CaseLedgerLoaded(feeDetail));
 
       await tester.pumpWidget(buildTestable(locale: const Locale('ar')));

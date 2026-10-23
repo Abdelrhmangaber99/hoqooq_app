@@ -33,7 +33,7 @@ void main() {
   test('finance capabilities are offered and delegable like any other', () {
     final capabilities = CaseCapabilities.delegableBy(
       userWith([
-        'finance.case.view',
+        'finance.view',
         'finance.payment.record',
         'finance.manage',
       ]),
@@ -42,7 +42,7 @@ void main() {
     expect(
       capabilities,
       containsAll([
-        'finance.case.view',
+        'finance.view',
         'finance.payment.record',
         'finance.manage',
       ]),
@@ -51,7 +51,7 @@ void main() {
 
   test('firm-wide finance is not a case capability', () {
     final codes = CaseCapabilities.definitions.map((item) => item.code);
-    expect(codes, isNot(contains('finance.firm.read')));
+    expect(codes, isNot(contains('finance.firm.view')));
   });
 
   test(
@@ -64,7 +64,7 @@ void main() {
       expect(
         financeDefs,
         equals([
-          'finance.case.view',
+          'finance.view',
           'finance.payment.record',
           'finance.manage',
         ]),

@@ -606,6 +606,11 @@ class _CasesEmptyState extends StatelessWidget {
           EmptyState(
             icon: Icons.business_center_outlined,
             message: context.tr('no_cases_found'),
+            // An Employee's list is filtered to the Cases they hold a grant
+            // for, so it can legitimately be empty on a firm full of Cases.
+            hint: currentUserIsEmployee()
+                ? context.tr('no_shared_records_hint')
+                : null,
           ),
           if (canCreate)
             FilledButton.icon(

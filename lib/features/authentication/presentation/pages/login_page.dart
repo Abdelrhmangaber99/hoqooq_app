@@ -117,8 +117,8 @@ class _LoginForm extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (showMobileLogo) ...[
-              const Center(child: _Logo(size: 54)),
-              const SizedBox(height: 28),
+              const Center(child: _Logo(size: 88)),
+              const SizedBox(height: 30),
             ],
             Text(context.tr('welcome_back'), style: AppTypography.h2),
             const SizedBox(height: 6),
@@ -223,7 +223,7 @@ class _LoginForm extends StatelessWidget {
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 48),
             const _PoweredByEthereal(),
           ],
         ),
@@ -267,8 +267,8 @@ class _BrandPanel extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const _Logo(size: 66),
-                const SizedBox(height: 16),
+                const _Logo(size: 112),
+                const SizedBox(height: 20),
                 Text(
                   context.tr('hoqooq_brand'),
                   style: AppTypography.h1.copyWith(
@@ -319,14 +319,20 @@ class _BrandPanel extends StatelessWidget {
   }
 }
 
+/// The internal logo is the full horizontal lockup — mark, the wordmark
+/// "حقوق", and the platform tagline — at roughly 2.4:1 (1600x668).
+///
+/// It is rendered bare, with no surrounding card: the previous white
+/// `Container` was decorative padding around an image that already carries its
+/// own background, so removing it lets the wordmark itself define the shape.
 class _Logo extends StatelessWidget {
   const _Logo({required this.size});
   final double size;
 
   @override
   Widget build(BuildContext context) => Image.asset(
-    'assets/images/hoqooq-logo.png',
-    width: size,
+    'assets/images/app_internal_logo.jpeg',
+    width: size * 2.4,
     height: size,
     fit: BoxFit.contain,
   );
@@ -387,14 +393,21 @@ class _ArabesquePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Vendor credit shown under the sign-in form: "POWERED BY Ethereal / SOFTWARE
-/// SOLUTIONS". Drawn with widgets rather than shipped as an image so it stays
-/// crisp at any density and needs no extra asset in the bundle.
+/// Vendor credit shown under the sign-in form: a ruled "POWERED BY" eyebrow
+/// over the Ethereal lockup.
+///
+/// This mirrors the desktop client's block class for class. The numbers come
+/// from converting its Tailwind arbitrary values to logical pixels: `mt-12` is
+/// 48, `gap-4` is 16, `tracking-[0.32em]` at 10px is 3.2, `tracking-tight` is
+/// -0.025em and `tracking-[0.18em]` at 9.5px is 1.71. The two colours are the
+/// vendor's own brand values rather than anything from the parchment scale, so
+/// the credit looks the same here as it does on the web build.
+///
+/// Drawn with widgets rather than shipped as one flat image so it stays crisp
+/// at any density, and pinned to LTR because it is a Latin wordmark even when
+/// the rest of the screen is Arabic.
 class _PoweredByEthereal extends StatelessWidget {
   const _PoweredByEthereal();
-
-  /// Ethereal's teal, from the supplied lockup.
-  static const _teal = Color(0xFF12A594);
 
   @override
   Widget build(BuildContext context) {
@@ -403,117 +416,95 @@ class _PoweredByEthereal extends StatelessWidget {
       children: [
         Row(
           children: [
+            // Both rules fade out towards the outside edge and reach the page's
+            // line colour as they meet the eyebrow, same as the web build.
             const Expanded(
-              child: Divider(color: AppColors.paperLine, height: 1),
+              child: _CreditRule(transparentAt: Alignment.centerLeft),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'POWERED BY',
                 style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.ink300,
+                  color: AppColors.brandBrown.withValues(alpha: .40),
                   fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 3,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 3.2,
+                  height: 1,
                 ),
               ),
             ),
             const Expanded(
-              child: Divider(color: AppColors.paperLine, height: 1),
+              child: _CreditRule(transparentAt: Alignment.centerRight),
             ),
           ],
         ),
-        const SizedBox(height: 14),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const _EtherealMark(size: 32),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Ethereal',
-                  style: AppTypography.h3.copyWith(
-                    color: AppColors.ink800,
-                    height: 1,
+        const SizedBox(height: 16),
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // The asset is the mark alone, cropped to its own bounds with the
+              // source's off-white field keyed out, so it sits on the cream
+              // page without the white box the original square canvas painted.
+              Image.asset(
+                'assets/images/ethereal_mark.png',
+                height: 36,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(width: 12),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ethereal',
+                    style: AppTypography.h3.copyWith(
+                      color: AppColors.etherealNavy,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.45,
+                      height: 1,
+                    ),
                   ),
-                ),
-                Text(
-                  'SOFTWARE SOLUTIONS',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: _teal,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.6,
+                  const SizedBox(height: 6),
+                  Text(
+                    'SOFTWARE SOLUTIONS',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.etherealTeal,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 1.71,
+                      height: 1,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-/// The Ethereal mark: a deep-navy tile with the teal swoosh. Painted, not
-/// loaded, so there is no binary asset to keep in sync.
-class _EtherealMark extends StatelessWidget {
-  const _EtherealMark({this.size = 32});
+/// The hairline either side of the "POWERED BY" eyebrow: fully transparent at
+/// [transparentAt], reaching the page's line colour at the other end.
+class _CreditRule extends StatelessWidget {
+  const _CreditRule({required this.transparentAt});
 
-  final double size;
+  final Alignment transparentAt;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: size,
-    height: size,
-    child: CustomPaint(painter: _EtherealMarkPainter()),
-  );
-}
-
-class _EtherealMarkPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bg = Paint()..color = const Color(0xFF16233A);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Offset.zero & size,
-        Radius.circular(size.width * 0.24),
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: transparentAt,
+        end: Alignment(-transparentAt.x, 0),
+        colors: const [Colors.transparent, AppColors.brandBorder],
       ),
-      bg,
-    );
-    final teal = Paint()
-      ..color = _PoweredByEthereal._teal
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.16
-      ..strokeCap = StrokeCap.round;
-    canvas.drawPath(
-      Path()
-        ..moveTo(size.width * 0.28, size.height * 0.72)
-        ..cubicTo(
-          size.width * 0.28,
-          size.height * 0.34,
-          size.width * 0.72,
-          size.height * 0.34,
-          size.width * 0.72,
-          size.height * 0.52,
-        ),
-      teal,
-    );
-    final white = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.125
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.28, size.height * 0.28),
-      Offset(size.width * 0.70, size.height * 0.28),
-      white,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+    ),
+    child: const SizedBox(height: 1),
+  );
 }

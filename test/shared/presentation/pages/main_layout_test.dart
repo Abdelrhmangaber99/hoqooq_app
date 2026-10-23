@@ -148,12 +148,12 @@ void main() {
               builder: (_, __) => const Text('Employees Screen'),
             ),
             GoRoute(
-              path: '/alerts',
-              builder: (_, __) => const Text('Alerts Screen'),
+              path: '/settings',
+              builder: (_, __) => const Text('Settings Screen'),
             ),
             GoRoute(
-              path: '/profile',
-              builder: (_, __) => const Text('Profile Screen'),
+              path: '/alerts',
+              builder: (_, __) => const Text('Alerts Screen'),
             ),
           ],
         ),
@@ -191,12 +191,12 @@ void main() {
     expect(find.text('Finance'), findsOneWidget);
     expect(find.text('Reports'), findsOneWidget);
     expect(find.text('Employees'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
     expect(find.text('NOTIFICATIONS'), findsOneWidget);
-    expect(find.text('Profile'), findsOneWidget);
   });
 
   testWidgets(
-    'Employee with NO permissions sees only Home, Notifications, Settings',
+    'Employee with NO permissions sees Home, Calendar, Notifications',
     (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -211,12 +211,14 @@ void main() {
       expect(find.text('Clients'), findsNothing);
       expect(find.text('Hearings'), findsNothing);
       expect(find.text('Tasks'), findsNothing);
-      expect(find.text('Calendar'), findsNothing);
+      expect(find.text('Calendar'), findsOneWidget);
       expect(find.text('Finance'), findsNothing);
       expect(find.text('Reports'), findsNothing);
       expect(find.text('Employees'), findsNothing);
+      // `firm.profile.read` and Firm Admin status are both absent here.
+      expect(find.text('Settings'), findsNothing);
+      expect(find.text('Subscription'), findsNothing);
       expect(find.text('NOTIFICATIONS'), findsOneWidget);
-      expect(find.text('Profile'), findsOneWidget);
     },
   );
 
@@ -239,12 +241,55 @@ void main() {
       expect(find.text('Clients'), findsOneWidget);
       expect(find.text('Hearings'), findsOneWidget);
       expect(find.text('Tasks'), findsNothing);
-      expect(find.text('Calendar'), findsNothing);
+      expect(find.text('Calendar'), findsOneWidget);
       expect(find.text('Finance'), findsNothing);
       expect(find.text('Reports'), findsNothing);
       expect(find.text('Employees'), findsNothing);
+      expect(find.text('Settings'), findsNothing);
+      expect(find.text('Subscription'), findsNothing);
       expect(find.text('NOTIFICATIONS'), findsOneWidget);
-      expect(find.text('Profile'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'an Employee granted the deployed employee.view code sees Employees',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      // `PermissionCodes.employeeRead` is `employee.view` — the code the
+      // deployed backend actually grants. This is the exact scenario the app
+      // used to fail: the sidebar checked `employee.read`, the account held
+      // `employee.view`, and the module stayed hidden.
+      final employee = buildUser(
+        accountType: 'EMPLOYEE',
+        permissions: [PermissionCodes.employeeRead],
+      );
+      await tester.pumpWidget(buildTestApp(employee));
+      await tester.pumpAndSettle();
+
+      expect(PermissionCodes.employeeRead, 'employee.view');
+      expect(find.text('Employees'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'an Employee granted firm.profile.read sees Settings',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final employee = buildUser(
+        accountType: 'EMPLOYEE',
+        permissions: [PermissionCodes.firmProfileRead],
+      );
+      await tester.pumpWidget(buildTestApp(employee));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Subscription'), findsNothing);
     },
   );
 }

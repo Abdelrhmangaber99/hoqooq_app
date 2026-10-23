@@ -9,6 +9,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../subscriptions/presentation/widgets/firm_logo_image.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../di/injection.dart';
 import '../../../../core/localization/app_localizations.dart';
@@ -220,6 +222,22 @@ class _FirmCard extends StatelessWidget {
     final firmAdmin = firm['_firmAdmin'] is Map
         ? firm['_firmAdmin'] as Map
         : null;
+    // `logoUrl` is a MinIO object key, not a URL: rendering it with
+    // `Image.network` always 404'd, which is why a firm that had uploaded a
+    // logo still showed the placeholder. FirmLogoImage fetches the bytes
+    // through the authenticated `GET /tenants/{id}/logo` route instead.
+    final firmLogo = firm['logoUrl'] ?? firm['logo'] ?? firm['logoKey'];
+
+    final adminNested = firmAdmin?['user'] is Map ? firmAdmin!['user'] as Map : null;
+    // Exactly one field: the user payload exposes `avatarUrl` and nothing
+    // else — there is no `avatar`/`photoUrl`/`profileImage` key on the wire.
+    // The platform registry's `firmAdmin` frequently omits it, which is why
+    // AppAvatar's initials fallback is the normal rendering here, not an
+    // error state.
+    final adminAvatar = firmAdmin?['avatarUrl'] ?? adminNested?['avatarUrl'];
+
+    final adminName = (firmAdmin?['fullName'] ?? adminNested?['fullName'] ?? firmAdmin?['email'])?.toString() ?? 'Firm Admin';
+
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadius.medium,
@@ -240,9 +258,11 @@ class _FirmCard extends StatelessWidget {
                     color: AppColors.primary.withValues(alpha: .12),
                     borderRadius: AppRadius.medium,
                   ),
-                  child: const Icon(
-                    Icons.account_balance_outlined,
-                    color: AppColors.primary,
+                  clipBehavior: Clip.antiAlias,
+                  child: FirmLogoImage(
+                    logoKey: firmLogo?.toString(),
+                    version: firm['updatedAt'],
+                    tenantId: firm['id']?.toString(),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.m),
@@ -294,16 +314,15 @@ class _FirmCard extends StatelessWidget {
               const Divider(height: AppSpacing.l),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.admin_panel_settings_outlined),
-                title: Text(
-                  firmAdmin['fullName']?.toString() ??
-                      firmAdmin['email']?.toString() ??
-                      'Firm Admin',
+                leading: AppAvatar(
+                  name: adminName,
+                  imageUrl: adminAvatar?.toString(),
                 ),
+                title: Text(adminName),
                 subtitle: Text(
                   [
-                    firmAdmin['email'],
-                    firmAdmin['status'],
+                    firmAdmin['email'] ?? adminNested?['email'],
+                    firmAdmin['status'] ?? adminNested?['status'],
                   ].where((value) => value != null).join(' · '),
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded),

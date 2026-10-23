@@ -326,7 +326,7 @@ void main() {
       when(() => sessionCubit.state).thenReturn(
         SessionAuthenticated(
           user.copyWith(
-            permissions: const ['finance.case.view', 'finance.manage'],
+            permissions: const ['finance.view', 'finance.manage'],
           ),
           isFirmAdmin: false,
         ),

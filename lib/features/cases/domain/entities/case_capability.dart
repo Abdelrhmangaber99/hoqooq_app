@@ -12,8 +12,8 @@ enum CaseCapabilityGroup {
 
   /// Case-level finance capabilities (PRD v2.0 §7.8 BR-028). Selectable
   /// independently of every other group — e.g. an employee can receive
-  /// `finance.case.view` + `finance.payment.record` without `document.view`.
-  /// Firm-wide finance (`finance.firm.read`) is deliberately absent here:
+  /// `finance.view` + `finance.payment.record` without `document.view`.
+  /// Firm-wide finance (`finance.firm.view`) is deliberately absent here:
   /// it is a firm-level base permission, not a Case grant.
   finance,
 }
@@ -201,8 +201,8 @@ abstract final class CaseCapabilities {
       group: CaseCapabilityGroup.access,
     ),
     CaseCapabilityDefinition(
-      code: 'finance.case.view',
-      basePermission: 'finance.case.view',
+      code: 'finance.view',
+      basePermission: 'finance.view',
       group: CaseCapabilityGroup.finance,
     ),
     CaseCapabilityDefinition(

@@ -66,11 +66,12 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
             // Logo
             Center(
               child: Container(
-                width: 120,
-                height: 120,
+                width: 220,
+                height: 92,
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.primary.withValues(alpha: 0.1),
@@ -80,37 +81,20 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
-                    'assets/images/hoqooq-logo.png',
-                    fit: BoxFit.cover,
+                    'assets/images/app_internal_logo.jpeg',
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
             ),
             
-            const SizedBox(height: 40),
-            
-            // Title
-            RichText(
-              text: TextSpan(
-                children: [
-                  TextSpan(
-                    text: context.tr('lexora').substring(0, context.tr('lexora').length - 3),
-                    style: AppTypography.h1.copyWith(fontSize: 40),
-                  ),
-                  TextSpan(
-                    text: context.tr('lexora').substring(context.tr('lexora').length - 3),
-                    style: AppTypography.h1.copyWith(
-                      fontSize: 40,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 12),
+            // No brand-name heading here: the logo above is the full lockup
+            // and already carries the wordmark, so a text title only
+            // repeated it. Only the positioning line stays.
+            const SizedBox(height: 28),
+
             
             Text(
               context.tr('legal_case_management'),

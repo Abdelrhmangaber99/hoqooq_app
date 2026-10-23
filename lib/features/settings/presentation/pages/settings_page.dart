@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/auth/permission_check.dart';
 import '../../../../core/auth/permission_codes.dart';
@@ -12,13 +13,14 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/utils/cache_busted_url.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
 import '../../../../shared/widgets/error_view.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../../profile/presentation/bloc/profile_cubit.dart';
+import '../../../subscriptions/domain/firm_display_helpers.dart';
 import '../../../subscriptions/presentation/bloc/subscription_cubit.dart';
 import '../../../subscriptions/presentation/bloc/subscription_state.dart';
 import '../../../subscriptions/presentation/widgets/firm_logo_image.dart';
@@ -50,7 +52,13 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-enum _SettingsSection { firmInfo, personalInfo, preferences, changePassword }
+enum _SettingsSection {
+  firmInfo,
+  personalInfo,
+  preferences,
+  changePassword,
+  subscription,
+}
 
 class _SettingsPageState extends State<SettingsPage> {
   // Resolved once per page instance. These used to be getters calling
@@ -77,7 +85,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Personal profile controllers
   final _fullNameController = TextEditingController();
-  final _avatarUrlController = TextEditingController();
   final _emailController = TextEditingController();
   bool _profileSaved = false;
   bool _suppressListener = false;
@@ -102,7 +109,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (_firmSaved) setState(() => _firmSaved = false);
       });
     }
-    for (final controller in [_fullNameController, _avatarUrlController]) {
+    for (final controller in [_fullNameController]) {
       controller.addListener(() {
         if (_suppressListener) return;
         if (_profileSaved) setState(() => _profileSaved = false);
@@ -115,7 +122,6 @@ class _SettingsPageState extends State<SettingsPage> {
     if (session is SessionAuthenticated) {
       _suppressListener = true;
       _fullNameController.text = session.user.fullName;
-      _avatarUrlController.text = session.user.avatarUrl ?? '';
       _emailController.text = session.user.email;
       _suppressListener = false;
     }
@@ -127,7 +133,6 @@ class _SettingsPageState extends State<SettingsPage> {
     _firmAddressController.dispose();
     _firmEmailController.dispose();
     _fullNameController.dispose();
-    _avatarUrlController.dispose();
     _emailController.dispose();
     super.dispose();
   }
@@ -145,15 +150,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final path = result?.files.single.path;
     if (path == null) return;
     await _subscriptionCubit.uploadFirmLogo(path);
-  }
-
-  Future<void> _pickAndSetAvatar() async {
-    final result = await FilePicker.pickFiles(type: FileType.image);
-    final path = result?.files.single.path;
-    if (path == null) return;
-    setState(() {
-      _avatarUrlController.text = path;
-    });
   }
 
   @override
@@ -216,6 +212,11 @@ class _SettingsPageState extends State<SettingsPage> {
                               context,
                               _SettingsSection.changePassword,
                             ),
+                            const SizedBox(width: AppSpacing.s),
+                            _buildChip(
+                              context,
+                              _SettingsSection.subscription,
+                            ),
                           ],
                         ),
                       ),
@@ -236,10 +237,13 @@ class _SettingsPageState extends State<SettingsPage> {
     final selected = _section == section;
     final label = switch (section) {
       _SettingsSection.firmInfo => context.tr('firm_information'),
-      _SettingsSection.personalInfo => context.tr('personal_information'),
-      _SettingsSection.preferences => context.tr('preferences'),
-      _SettingsSection.changePassword => context.tr('change_password'),
-    };
+      _SettingsSection.personalInfo => context.tr('personal_information'),                      _SettingsSection.preferences =>
+                        context.tr('preferences'),
+                      _SettingsSection.changePassword =>
+                        context.tr('change_password'),
+                      _SettingsSection.subscription =>
+                        context.tr('subscription'),
+                    };
     return ChoiceChip(
       selected: selected,
       showCheckmark: false,
@@ -291,10 +295,16 @@ class _SettingsPageState extends State<SettingsPage> {
               context.tr('roles_and_permissions'),
               onTap: () => context.push(AppRouter.employees),
             ),
+            // The subscription used to be its own page behind this link. It
+            // is now a section of this page: the firm's plan, status and
+            // renewal date belong beside the rest of the firm's settings, not
+            // in a separate screen reached from them.
             _sidebarHeader(context.tr('subscription')),
-            _sidebarLink(
+            _sidebarItem(
               context.tr('subscription_plan_and_billing'),
-              onTap: () => context.push(AppRouter.subscription),
+              selected: _section == _SettingsSection.subscription,
+              onTap: () =>
+                  setState(() => _section = _SettingsSection.subscription),
             ),
           ],
         ),
@@ -370,6 +380,8 @@ class _SettingsPageState extends State<SettingsPage> {
           _SettingsSection.preferences => _buildPreferencesPanel(context),
           _SettingsSection.changePassword =>
             _buildChangePasswordPanel(context),
+          _SettingsSection.subscription =>
+            _buildSubscriptionSection(context, subState),
         },
       ),
     );
@@ -573,13 +585,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 ? state.messageKey
                 : null;
 
-            final initials = (user?.fullName ?? '')
-                .split(RegExp(r'\s+'))
-                .where((part) => part.isNotEmpty)
-                .take(2)
-                .map((part) => part[0].toUpperCase())
-                .join();
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -590,37 +595,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: AppSpacing.l),
                 Row(
                   children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: AppColors.brass100,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.paperLine),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child:
-                          user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                          ? Image.network(
-                              cacheBustedUrl(user.avatarUrl!, user.updatedAt),
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Center(
-                                child: Text(
-                                  initials.isEmpty ? '?' : initials,
-                                  style: AppTypography.h3.copyWith(
-                                    color: AppColors.brass800,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Center(
-                              child: Text(
-                                initials.isEmpty ? '?' : initials,
-                                style: AppTypography.h3.copyWith(
-                                  color: AppColors.brass800,
-                                ),
-                              ),
-                            ),
+                    AppAvatar(
+                      name: user?.fullName ?? '',
+                      imageUrl: user?.avatarUrl,
+                      version: user?.updatedAt,
+                      size: 72,
                     ),
                     const SizedBox(width: AppSpacing.m),
                     Expanded(
@@ -656,31 +635,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   label: context.tr('email_address'),
                   readOnly: true,
                   controller: _emailController,
-                ),
-                const SizedBox(height: AppSpacing.m),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: AppTextField(
-                        label: context.tr('avatar_url'),
-                        controller: _avatarUrlController,
-                        keyboardType: TextInputType.url,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.s),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 22),
-                      child: OutlinedButton.icon(
-                        onPressed: _pickAndSetAvatar,
-                        icon: const Icon(Icons.image_outlined, size: 16),
-                        label: Text(
-                          context.tr('choose_photo'),
-                          style: AppTypography.bodySmall,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
                 const SizedBox(height: AppSpacing.l),
                 if (errorKey != null) ...[
@@ -726,13 +680,12 @@ class _SettingsPageState extends State<SettingsPage> {
       ).showSnackBar(SnackBar(content: Text(context.tr('full_name_required'))));
       return;
     }
-    _settingsCubit.submitProfileUpdate(
-      fullName: name,
-      // No phone field exists in this panel, so `phone` is omitted rather
-      // than sent as an empty string — otherwise every save would clear a
-      // phone number the app never displayed or let the user edit.
-      avatarUrl: _avatarUrlController.text.trim(),
-    );
+    // `phone` and `avatarUrl` are both omitted rather than sent empty: the
+    // panel exposes no field for either, and the backend's `UpdateProfileDto`
+    // treats an absent key as "leave unchanged" while an empty value would
+    // clear a value the user never saw or edited. (There is also no avatar
+    // upload route to offer here — see `AppAvatar`.)
+    _settingsCubit.submitProfileUpdate(fullName: name);
   }
 
   Widget _buildPreferencesPanel(BuildContext context) {
@@ -804,6 +757,213 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildChangePasswordPanel(BuildContext context) {
     return _ChangePasswordForm(settingsCubit: _settingsCubit);
+  }
+
+  /// Read-only plan & billing summary. Plan/cycle changes and
+  /// activate/deactivate are platform (`system.subscriptions.manage`)
+  /// operations performed by the platform admin, so this never offers them.
+  Widget _buildSubscriptionSection(
+    BuildContext context,
+    SubscriptionState state,
+  ) {
+    if (state is SubscriptionLoading || state is SubscriptionInitial) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+    if (state is SubscriptionError) {
+      return ErrorView(
+        message: state.message,
+        onRetry: () => _subscriptionCubit.fetchSubscription(),
+      );
+    }
+    if (state is! SubscriptionLoaded) return const SizedBox.shrink();
+
+    final firm = state.firm;
+    final subscription = state.activeSubscription;
+    final plan = subscription?['plan'] as Map?;
+    final billingCycle = subscription?['billingCycle'] as String? ?? 'MONTHLY';
+    final isYearly = billingCycle == 'YEARLY';
+    final price =
+        (plan?[isYearly ? 'priceYearly' : 'priceMonthly'] as num?)
+            ?.toDouble() ??
+        0;
+    final cycleLabel = isYearly
+        ? context.tr('yearly')
+        : context.tr('monthly');
+    final currencyFmt = NumberFormat.currency(
+      symbol: '${context.tr('currency_sar').trim()} ',
+      decimalDigits: 0,
+    );
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 448),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(context.tr('subscription'), style: AppTypography.h2),
+          const SizedBox(height: AppSpacing.s),
+          Text(
+            context.tr('subscribed_firm_details'),
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.l),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.m),
+            decoration: BoxDecoration(
+              color: AppColors.brass100,
+              borderRadius: AppRadius.small,
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.inventory_2_outlined,
+                  color: AppColors.brass700,
+                ),
+                const SizedBox(width: AppSpacing.m),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plan?['name'] as String? ?? context.tr('plan'),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.brass800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        plan == null
+                            ? context.tr('no_active_plan')
+                            : '${currencyFmt.format(price)} / $cycleLabel',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.brass800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (subscription != null) ...[
+            const SizedBox(height: AppSpacing.m),
+            _subscriptionStatusRow(context, subscription),
+          ],
+          const SizedBox(height: AppSpacing.l),
+          _subscriptionInfoRow(
+            context,
+            Icons.business_outlined,
+            context.tr('firm_name'),
+            firm['name'] as String? ?? '—',
+          ),
+          const SizedBox(height: AppSpacing.m),
+          _subscriptionInfoRow(
+            context,
+            Icons.email_outlined,
+            context.tr('email_address'),
+            firm['contactEmail'] as String? ?? '—',
+          ),
+          if (state.error != null) ...[
+            const SizedBox(height: AppSpacing.m),
+            _inlineBanner(
+              message: state.error!,
+              background: AppColors.rust100,
+              foreground: AppColors.rust600,
+              icon: Icons.error_outline,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _subscriptionStatusRow(
+    BuildContext context,
+    Map<String, dynamic> subscription,
+  ) {
+    final status = (subscription['status'] as String? ?? 'INACTIVE')
+        .toUpperCase();
+    final isActive = status == 'ACTIVE';
+    final color = isActive ? AppColors.emerald600 : AppColors.brass700;
+    final background = isActive ? AppColors.emerald100 : AppColors.brass100;
+    final periodEnd = subscription['currentPeriodEnd'] != null
+        ? DateTime.tryParse(subscription['currentPeriodEnd'] as String)
+        : null;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.m),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: AppRadius.small,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isActive ? Icons.check_circle_outline : Icons.timer_outlined,
+            color: color,
+          ),
+          const SizedBox(width: AppSpacing.m),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subscriptionStatusLabel(context, status),
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (periodEnd != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${context.tr('subscription_ends_on')} '
+                    '${DateFormat.yMd(Localizations.localeOf(context).languageCode).format(periodEnd)}',
+                    style: AppTypography.bodySmall.copyWith(color: color),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _subscriptionInfoRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: AppColors.textHint),
+        const SizedBox(width: AppSpacing.m),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppTypography.bodySmall),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _inlineBanner({

@@ -113,6 +113,25 @@ void main() {
     expect(failure.message, 'Unprocessable entity');
   });
 
+  // The exact body the deployed backend returns when a database query fails
+  // (observed live: an employee completing a task returned
+  // `{statusCode:500, message:'Internal server error', error:'QueryFailedError'}`).
+  // It must land on `ServerFailure` and never surface the raw sentence.
+  test('maps a 500 QueryFailedError envelope to ServerFailure', () {
+    final failure = mapDioError(
+      errorWith(statusCode: 500, data: {
+        'success': false,
+        'statusCode': 500,
+        'message': 'Internal server error',
+        'error': 'QueryFailedError',
+        'timestamp': '2026-10-23T04:39:55.565Z',
+      }),
+    );
+
+    expect(failure, isA<ServerFailure>());
+    expect(failure.message, 'Internal server error');
+  });
+
   test('maps 429 and 503 status codes to ServerFailure', () {
     final rateLimit = mapDioError(
       errorWith(statusCode: 429, data: {'message': 'Too many requests'}),

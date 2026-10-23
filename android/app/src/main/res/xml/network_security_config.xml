@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android blocks cleartext HTTP for apps targeting API 28+ unless a config
+  says otherwise. The deployed Hoqooq API (`ApiConfig`) is still served over
+  plain HTTP on port 3006, so without this exception every request in a
+  release build failed before it left the device.
+
+  The exception is deliberately narrow: HTTPS stays mandatory everywhere else,
+  and only the hosts the app is actually pointed at are listed. When the API
+  moves behind TLS, delete the `domain-config` block and switch
+  `ApiConfig._host` to `https://` — this file should then disappear entirely.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Deployed backend (ApiConfig's default host). -->
+        <domain includeSubdomains="false">13.50.240.246</domain>
+        <!-- Local development: Android emulator loopback and a bare
+             `npm run start:dev` backend. -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

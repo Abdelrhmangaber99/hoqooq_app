@@ -67,6 +67,14 @@ class _TasksPageState extends State<TasksPage> with RouteAware {
     if (mounted) setState(_reload);
   }
 
+  /// Opens the read-only Task view, where the Complete / Cancel actions live.
+  /// The Task is handed over as `extra` — this board already loaded it — and
+  /// the board re-reads on return so a status changed there is reflected here.
+  Future<void> _openDetails(TaskItem task) async {
+    await context.push<bool>('${AppRouter.tasks}/${task.id}', extra: task);
+    if (mounted) setState(_reload);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!currentUserHasPerm(PermissionCodes.taskView)) {
@@ -132,12 +140,23 @@ class _TasksPageState extends State<TasksPage> with RouteAware {
       return EmptyState(
         icon: Icons.task_alt_rounded,
         message: context.tr('no_tasks_found'),
+        // Employees receive only tasks assigned to them or reachable through
+        // a Case's `task.view` grant.
+        hint: currentUserIsEmployee()
+            ? context.tr('no_shared_records_hint')
+            : null,
       );
     }
+    // The deployed backend's Task status is exactly four values —
+    // `TODO|IN_PROGRESS|COMPLETED|CANCELLED` (`CreateTaskDto` and
+    // `TaskResponseDto`). This app still models the withdrawn `WAITING` value
+    // so an older payload decodes rather than throwing, but it gets no column
+    // of its own: a fifth column that can never fill is a visible mismatch
+    // with the reference web app. Any such row folds into the first column
+    // instead of disappearing.
     const columns = [
       TaskStatus.newTask,
       TaskStatus.inProgress,
-      TaskStatus.waiting,
       TaskStatus.completed,
       TaskStatus.cancelled,
     ];
@@ -146,7 +165,9 @@ class _TasksPageState extends State<TasksPage> with RouteAware {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: columns.map((status) {
-          final items = tasks.where((task) => task.status == status).toList();
+          final items = tasks
+              .where((task) => _columnFor(task.status) == status)
+              .toList();
           return Container(
             width: 280,
             margin: const EdgeInsetsDirectional.only(end: 14),
@@ -180,7 +201,13 @@ class _TasksPageState extends State<TasksPage> with RouteAware {
                     ),
                   )
                 else
-                  ...items.map((task) => _TaskCard(task, casesById)),
+                  ...items.map(
+                    (task) => _TaskCard(
+                      task,
+                      casesById,
+                      onTap: () => _openDetails(task),
+                    ),
+                  ),
               ],
             ),
           );
@@ -188,65 +215,76 @@ class _TasksPageState extends State<TasksPage> with RouteAware {
       ),
     );
   }
+
+  static TaskStatus _columnFor(TaskStatus status) =>
+      status == TaskStatus.waiting ? TaskStatus.newTask : status;
 }
 
 class _TaskCard extends StatelessWidget {
-  const _TaskCard(this.task, this.casesById);
+  const _TaskCard(this.task, this.casesById, {required this.onTap});
   final TaskItem task;
   final Map<String, LegalCase> casesById;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => Card(
     margin: const EdgeInsets.only(bottom: 9),
-    child: Padding(
-      padding: const EdgeInsets.all(13),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(task.title, style: AppTypography.labelLarge),
-          if (task.caseSummary != null) ...[
-            const SizedBox(height: 7),
-            Text(
-              courtReferenceForSummary(casesById, task.caseSummary),
-              style: AppTypography.bodySmall.copyWith(
-                fontFamily: AppTypography.monoFont,
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: taskPriorityColor(
-                    task.priority,
-                  ).withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  taskPriorityLabel(context, task.priority),
-                  style: AppTypography.bodySmall.copyWith(
-                    color: taskPriorityColor(task.priority),
-                    fontWeight: FontWeight.w600,
-                  ),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(task.title, style: AppTypography.labelLarge),
+            if (task.caseSummary != null) ...[
+              const SizedBox(height: 7),
+              Text(
+                courtReferenceForSummary(casesById, task.caseSummary),
+                style: AppTypography.bodySmall.copyWith(
+                  fontFamily: AppTypography.monoFont,
                 ),
               ),
-              const Spacer(),
-              if (task.dueDate != null)
-                Text(
-                  task.dueDate!.toLocal().toString().split(' ').first,
-                  style: AppTypography.bodySmall.copyWith(
-                    fontFamily: AppTypography.monoFont,
-                  ),
-                ),
             ],
-          ),
-          if (task.assignedTo?.fullName.isNotEmpty == true) ...[
-            const SizedBox(height: 9),
-            Text(task.assignedTo!.fullName, style: AppTypography.bodySmall),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: taskPriorityColor(
+                      task.priority,
+                    ).withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    taskPriorityLabel(context, task.priority),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: taskPriorityColor(task.priority),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (task.dueDate != null)
+                  Text(
+                    task.dueDate!.toLocal().toString().split(' ').first,
+                    style: AppTypography.bodySmall.copyWith(
+                      fontFamily: AppTypography.monoFont,
+                    ),
+                  ),
+              ],
+            ),
+            if (task.assignedTo?.fullName.isNotEmpty == true) ...[
+              const SizedBox(height: 9),
+              Text(task.assignedTo!.fullName, style: AppTypography.bodySmall),
+            ],
           ],
-        ],
+        ),
       ),
     ),
   );

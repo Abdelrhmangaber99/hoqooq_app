@@ -15,3 +15,18 @@ bool currentUserHasPerm(String permissionCode) {
   return sessionState is SessionAuthenticated &&
       (sessionState.isFirmAdmin || sessionState.user.hasPerm(permissionCode));
 }
+
+/// True when the signed-in account is a firm Employee rather than its admin.
+///
+/// Employees see only the Cases/Tasks/Hearings that carry a per-Case access
+/// grant for them or that they are directly assigned to — the backend's
+/// `CasesService.findAll`/`TasksService.findAll`/`HearingsService.findAll`
+/// filter every list query this way (PRD v2.0 §5.2, the "effective permission
+/// rule"). An Employee list that comes back empty is therefore a normal,
+/// expected state that needs explaining, not a failure.
+bool currentUserIsEmployee() {
+  final sessionState = getIt<SessionCubit>().state;
+  return sessionState is SessionAuthenticated &&
+      !sessionState.isFirmAdmin &&
+      !sessionState.user.isSuperAdmin;
+}

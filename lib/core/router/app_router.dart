@@ -35,7 +35,6 @@ import '../../features/service_of_process/presentation/pages/service_process_com
 import '../../features/meetings/domain/entities/client_meeting.dart';
 import '../../features/meetings/presentation/pages/meeting_form_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
-import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/platform_admin/presentation/pages/firms_page.dart';
 import '../../features/platform_admin/presentation/pages/provision_firm_page.dart';
 import '../../features/platform_admin/presentation/pages/firm_details_page.dart';
@@ -44,12 +43,12 @@ import '../../features/employees/presentation/pages/employees_page.dart';
 import '../../features/employees/presentation/pages/employee_edit_page.dart';
 import '../../features/platform_admin/presentation/pages/create_user_page.dart';
 import '../../features/tasks/domain/entities/task_item.dart';
+import '../../features/tasks/presentation/pages/task_details_page.dart';
 import '../../features/tasks/presentation/pages/task_form_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 
 import '../../features/finance/presentation/pages/finance_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
-import '../../features/subscriptions/presentation/pages/subscription_info_page.dart';
 import '../../shared/presentation/pages/main_layout.dart';
 
 class AppRouter {
@@ -75,9 +74,7 @@ class AppRouter {
   static const String reports = '/reports';
   static const String finance = '/finance';
   static const String settings = '/settings';
-  static const String subscription = '/subscription';
   static const String alerts = '/alerts';
-  static const String profile = '/profile';
   static const String newHearingRoute = '/hearings/new';
   static String newHearing({
     required String caseId,
@@ -232,6 +229,17 @@ class AppRouter {
                 builder: (context, state) =>
                     TaskFormPage(existingTask: typedExtra<TaskItem>(state)),
               ),
+              // The Task is carried as `extra` rather than re-fetched: every
+              // caller (the Tasks board, a Case's Tasks section) already holds
+              // the row it was tapped. A cold deep-link has no extra and is
+              // bounced back to the list, same guard as the edit route above.
+              GoRoute(
+                path: ':taskId',
+                redirect: (context, state) =>
+                    typedExtra<TaskItem>(state) == null ? tasks : null,
+                builder: (context, state) =>
+                    TaskDetailsPage(task: typedExtra<TaskItem>(state)!),
+              ),
             ],
           ),
           GoRoute(
@@ -381,17 +389,8 @@ class AppRouter {
             builder: (context, state) => const SettingsPage(),
           ),
           GoRoute(
-            path: subscription,
-            builder: (context, state) => const SubscriptionInfoPage(),
-          ),
-          GoRoute(
             path: alerts,
             builder: (context, state) => const NotificationsPage(),
-          ),
-
-          GoRoute(
-            path: profile,
-            builder: (context, state) => const ProfilePage(),
           ),
         ],
       ),

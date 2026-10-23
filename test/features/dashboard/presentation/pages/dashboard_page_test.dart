@@ -102,7 +102,7 @@ void main() {
     getIt.registerSingleton<SessionCubit>(sessionCubit);
     when(() => sessionCubit.state).thenReturn(
       SessionAuthenticated(
-        sessionUser.copyWith(permissions: const ['finance.firm.read']),
+        sessionUser.copyWith(permissions: const ['finance.firm.view']),
         isFirmAdmin: false,
       ),
     );
@@ -151,7 +151,7 @@ void main() {
 
   group('permission visibility', () {
     testWidgets(
-      '(1) firm-wide finance user (finance.firm.read) sees the finance '
+      '(1) firm-wide finance user (finance.firm.view) sees the finance '
       'dashboard with all six aggregates',
       (tester) async {
         whenListen(
@@ -203,7 +203,7 @@ void main() {
     });
 
     testWidgets(
-      '(3) an ACCOUNTANT-classified user without finance.firm.read sees no '
+      '(3) an ACCOUNTANT-classified user without finance.firm.view sees no '
       'firm finance section (job title grants nothing)',
       (tester) async {
         when(() => sessionCubit.state).thenReturn(
@@ -237,7 +237,7 @@ void main() {
           SessionAuthenticated(
             sessionUser.copyWith(
               permissions: const [
-                'finance.case.view',
+                'finance.view',
                 'finance.payment.record',
               ],
             ),
@@ -258,7 +258,7 @@ void main() {
       },
     );
 
-    testWidgets('(14) revoking finance.firm.read mid-session hides the finance '
+    testWidgets('(14) revoking finance.firm.view mid-session hides the finance '
         'widgets and the bloc stops serving aggregate data', (tester) async {
       final controller = StreamController<DashboardState>.broadcast();
       addTearDown(controller.close);

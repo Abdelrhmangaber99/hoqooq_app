@@ -2,11 +2,15 @@ import 'package:flutter/widgets.dart';
 
 import '../localization/app_localizations.dart';
 
+/// The code set the **deployed** v3 backend issues (see
+/// `permission_codes.dart` for the seven that were renamed from v2). Used by
+/// the localization tests to prove every grantable capability has a real
+/// bilingual label, and by nothing at runtime — the server's
+/// `GET /permissions` catalog is always authoritative for display.
 const knownPermissionCodes = <String>[
   'employee.create',
-  'employee.read',
-  'employee.edit',
-  'employee.permission.manage',
+  'employee.view',
+  'employee.manage',
   'employee.status.manage',
   'client.view',
   'client.edit',
@@ -47,15 +51,15 @@ const knownPermissionCodes = <String>[
   'calendar.manage',
   'calendar.read',
   'finance.payment.record',
-  'finance.firm.read',
+  'finance.firm.view',
   'finance.manage',
-  'finance.case.view',
+  'finance.view',
   'notification.read',
-  'report.operational.read',
+  'report.view',
   'dashboard.read',
   'firm.profile.manage',
   'firm.profile.read',
-  'audit.read',
+  'audit.view',
   'platform.firm.create',
   'platform.firm.read',
   'platform.firm.status.manage',
@@ -70,17 +74,77 @@ const knownPermissionCodes = <String>[
 String permissionTranslationKey(String permissionCode) =>
     'permission_${permissionCode.trim().toLowerCase().replaceAll('.', '_')}';
 
+/// The codes the **desktop app's** employee permission editor deliberately
+/// withholds, mirrored here so both clients offer the Firm Admin exactly the
+/// same checkbox set.
+///
+/// Taken from the shipped bundle's own list:
+/// `['meeting.','calendar.','notification.','reference.','firm.profile.',
+/// 'platform.','system.']` as prefixes, plus the four exact codes below.
+/// Everything else (case / client / opponent / hearing / service / document /
+/// task / finance) is grantable per employee.
+///
+/// The reason these are not per-employee grants: the dashboard and calendar
+/// are available to every employee unconditionally, the notification and
+/// reference codes are ambient reads, `firm.profile.*` and `settings` are
+/// Firm-Admin-only surfaces, and `platform.*`/`system.*` are rejected outright
+/// by the backend when granted to a firm account.
+const _nonGrantablePrefixes = <String>[
+  'meeting.',
+  'calendar.',
+  'notification.',
+  'reference.',
+  'firm.profile.',
+  'platform.',
+  'system.',
+];
+
+const _nonGrantableCodes = <String>{
+  'dashboard.read',
+  'report.view',
+  'audit.view',
+  'employee.status.manage',
+};
+
+/// Whether the employee permission editor should offer [permissionCode] as a
+/// per-employee grant. Membership is decided on the **canonical** code so a
+/// catalog still carrying a pre-rename spelling is filtered identically.
+bool isEmployeeGrantablePermission(String permissionCode) {
+  final canonical = canonicalPermissionCode(permissionCode);
+  if (_nonGrantableCodes.contains(canonical)) return false;
+  return !_nonGrantablePrefixes.any(canonical.startsWith);
+}
+
+/// Folds every code the backend has ever issued onto the code the deployed
+/// v3 catalog grants today. Two generations are covered: the pre-`v2`
+/// plural/CRUD spellings (`cases.read`, `settings.update`) and the v2
+/// spellings that the v3 release renamed outright (`employee.read` ->
+/// `employee.view`, `finance.firm.read` -> `finance.firm.view`, …).
+///
+/// Every value here must also appear in [knownPermissionCodes] and carry a
+/// `permission_<code>` label in both languages — `arabic_localization_test`
+/// enforces exactly that, which is what keeps a renamed code from silently
+/// degrading into a raw dotted string in the UI.
 const legacyPermissionAliases = <String, String>{
-  'employee.update': 'employee.edit',
+  // v2.0 -> v3.0 renames.
+  'employee.read': 'employee.view',
+  'employee.edit': 'employee.manage',
+  'employee.permission.manage': 'employee.manage',
+  'finance.firm.read': 'finance.firm.view',
+  'finance.case.view': 'finance.view',
+  'report.operational.read': 'report.view',
+  'audit.read': 'audit.view',
+  // Pre-v2 CRUD spellings.
+  'employee.update': 'employee.manage',
   'employee.delete': 'employee.status.manage',
   'employees.create': 'employee.create',
-  'employees.read': 'employee.read',
-  'employees.update': 'employee.edit',
+  'employees.read': 'employee.view',
+  'employees.update': 'employee.manage',
   'employees.delete': 'employee.status.manage',
-  'employees.permissions': 'employee.permission.manage',
+  'employees.permissions': 'employee.manage',
   'users.create': 'employee.create',
-  'users.read': 'employee.read',
-  'users.update': 'employee.edit',
+  'users.read': 'employee.view',
+  'users.update': 'employee.manage',
   'users.delete': 'employee.status.manage',
   'cases.create': 'case.create',
   'cases.read': 'case.view',
@@ -136,11 +200,11 @@ const legacyPermissionAliases = <String, String>{
   'task.read': 'task.view',
   'task.delete': 'task.complete',
   'finance.create': 'finance.payment.record',
-  'finance.read': 'finance.firm.read',
+  'finance.read': 'finance.firm.view',
   'finance.update': 'finance.manage',
   'finance.delete': 'finance.manage',
   'notifications.read': 'notification.read',
-  'reports.read': 'report.operational.read',
+  'reports.read': 'report.view',
   'settings.create': 'firm.profile.manage',
   'settings.read': 'firm.profile.read',
   'settings.update': 'firm.profile.manage',

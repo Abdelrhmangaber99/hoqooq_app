@@ -35,7 +35,7 @@ void main() {
       final accountant = createUser(
         id: 'acc1',
         jobClassification: 'ACCOUNTANT',
-        permissions: [], // No finance.firm.read or finance.case.view
+        permissions: [], // No finance.firm.view or finance.view
       );
 
       expect(FinanceAuthorizationService.canViewFirmFinance(accountant), false);
@@ -98,9 +98,9 @@ void main() {
       },
     );
 
-    // Scenario 4: User with finance.firm.read -> firm dashboard allowed
+    // Scenario 4: User with finance.firm.view -> firm dashboard allowed
     test(
-      'Scenario 4: User with finance.firm.read -> firm dashboard allowed',
+      'Scenario 4: User with finance.firm.view -> firm dashboard allowed',
       () {
         final userWithFirmRead = createUser(
           id: 'user4',

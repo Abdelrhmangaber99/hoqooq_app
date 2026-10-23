@@ -48,7 +48,7 @@ void main() {
     });
 
     test('case-finance grants work without any other permission', () {
-      // An employee can receive finance.case.view + finance.payment.record
+      // An employee can receive finance.view + finance.payment.record
       // without document.view — finance codes carry no implicit bundle of
       // other permissions.
       final codes = FinancePermissionGroups.caseFinanceOf(catalog);
@@ -67,7 +67,7 @@ void main() {
         allRules,
         everyElement(
           anyOf(
-            startsWith('finance.case.'),
+            startsWith('finance.view'),
             startsWith('finance.payment.'),
             startsWith('finance.manage'),
             startsWith('finance.firm.'),

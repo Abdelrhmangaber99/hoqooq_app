@@ -12,7 +12,9 @@ import '../../../../core/router/app_route_observer.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
 import '../../../authentication/presentation/bloc/session_cubit.dart';
 import '../../data/employee_status_api.dart';
@@ -114,8 +116,92 @@ class _EmployeesPageState extends State<EmployeesPage> with RouteAware {
       _reload();
     } on DioException catch (error) {
       if (mounted) {
+        context.showErrorSnackBar(_deactivationErrorMessage(error));
+      }
+    }
+  }
+
+  /// The backend refuses to deactivate an employee who still owns open work:
+  ///
+  /// `Forbidden — Cannot deactivate user with open assignments: 3 primary
+  /// Case(s), 5 Task(s), 2 Hearing(s)`
+  ///
+  /// The reference desktop app parses that sentence and rewrites it as
+  /// "reassign their workload first" with the counts, because the raw string
+  /// reads like a permissions problem. Same treatment here, falling back to the
+  /// plain mapped message when the shape ever changes.
+  String _deactivationErrorMessage(DioException error) {
+    final mapped = mapDioError(error);
+    final match = RegExp(
+      r'open assignments: (\d+) primary Case\(s\), (\d+) Task\(s\)',
+    ).firstMatch(mapped.message);
+    if (match == null) return localizedErrorMessage(context, mapped.message);
+    return context
+        .tr('employee_has_open_assignments')
+        .replaceAll('{cases}', match.group(1)!)
+        .replaceAll('{tasks}', match.group(2)!);
+  }
+
+  /// `POST /employees/:id/credentials` — replaces the employee's password and
+  /// signs them out everywhere. Firm-Admin-only, exactly like the desktop app,
+  /// which reveals this action only for `accountType === 'FIRM_ADMIN'`.
+  Future<void> _setNewPassword(EmployeeSummary employee) async {
+    final passwordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    try {
+      final submitted = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(context.tr('set_new_password')),
+          content: Form(
+            key: formKey,
+            child: AppTextField(
+              label: context.tr('new_password'),
+              controller: passwordController,
+              obscureText: true,
+              validator: (value) {
+                final text = value ?? '';
+                if (text.isEmpty) return context.tr('field_required');
+                final strong = text.length >= 8 &&
+                    RegExp(r'[A-Z]').hasMatch(text) &&
+                    RegExp(r'[a-z]').hasMatch(text) &&
+                    RegExp(r'[0-9]').hasMatch(text) &&
+                    RegExp(r'[^A-Za-z0-9]').hasMatch(text);
+                return strong ? null : context.tr('password_min_8');
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(context.tr('cancel')),
+            ),
+            TextButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() != true) return;
+                Navigator.pop(dialogContext, true);
+              },
+              child: Text(context.tr('confirm')),
+            ),
+          ],
+        ),
+      );
+      if (submitted != true) return;
+      await setEmployeeCredentials(
+        getIt<Dio>(),
+        employee.id,
+        passwordController.text,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('set_password_success'))),
+      );
+    } on DioException catch (error) {
+      if (mounted) {
         context.showErrorSnackBar(mapDioError(error).message);
       }
+    } finally {
+      passwordController.dispose();
     }
   }
 
@@ -247,12 +333,9 @@ class _EmployeesPageState extends State<EmployeesPage> with RouteAware {
                     final employee = employees[index];
                     return Card(
                       child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(
-                            employee.name.isEmpty
-                                ? '?'
-                                : employee.name.characters.first.toUpperCase(),
-                          ),
+                        leading: AppAvatar(
+                          name: employee.name,
+                          imageUrl: employee.avatarUrl,
                         ),
                         title: Text(
                           employee.name.isEmpty
@@ -270,6 +353,15 @@ class _EmployeesPageState extends State<EmployeesPage> with RouteAware {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // Firm-Admin-only on both clients — the desktop's
+                            // row action is gated on `isFirmAdmin`, never on a
+                            // permission code, and matches the backend route.
+                            if (_isFirmAdmin)
+                              IconButton(
+                                icon: const Icon(Icons.key_outlined),
+                                tooltip: context.tr('set_new_password'),
+                                onPressed: () => _setNewPassword(employee),
+                              ),
                             if (_canManageStatus)
                               IconButton(
                                 icon: const Icon(

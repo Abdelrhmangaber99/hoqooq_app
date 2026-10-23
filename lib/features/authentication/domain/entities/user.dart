@@ -52,7 +52,21 @@ abstract class User with _$User {
     TenantRef? tenant,
   }) = _User;
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  /// The deployed backend sends exactly one avatar key: `avatarUrl`, a
+  /// nullable URL string (confirmed against a live `GET /users/me` payload and
+  /// the deployed OpenAPI document — `UserResponseDto.avatarUrl`, set through
+  /// `PATCH /users/me`'s `UpdateProfileDto`). The `avatar`/`photoUrl`/
+  /// `profileImage`/`imageUrl` aliases this used to probe for were
+  /// speculative and have never appeared in a real response, so they are gone;
+  /// `avatar_url` survives only as a defensive snake_case fallback.
+  factory User.fromJson(Map<String, dynamic> json) {
+    final avatar = json['avatarUrl'] ?? json['avatar_url'];
+    final Map<String, dynamic> mutableJson = Map<String, dynamic>.from(json);
+    if (avatar != null && avatar.toString().trim().isNotEmpty) {
+      mutableJson['avatarUrl'] = avatar.toString().trim();
+    }
+    return _$UserFromJson(mutableJson);
+  }
 
   bool hasPerm(String permissionCode) => permissions.contains(permissionCode);
 

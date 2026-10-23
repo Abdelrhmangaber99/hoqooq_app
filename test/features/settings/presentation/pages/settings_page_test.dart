@@ -117,10 +117,13 @@ void main() {
     );
 
     getIt.registerLazySingleton<Dio>(() => dio);
-    getIt.registerLazySingleton<SubscriptionCubit>(
-      () => SubscriptionCubit(dio),
-    );
     sessionCubit = SessionCubit();
+    // SubscriptionCubit loads the firm record from the session, so it needs
+    // that cubit. The registration is lazy — it is constructed when the screen
+    // under test first resolves it, by which point the session exists.
+    getIt.registerLazySingleton<SubscriptionCubit>(
+      () => SubscriptionCubit(dio, sessionCubit),
+    );
     sessionCubit.authenticated(_firmAdminUser(), 'token', isFirmAdmin: true);
     getIt.registerLazySingleton<SessionCubit>(() => sessionCubit);
     getIt.registerLazySingleton<ProfileCubit>(() => profileCubit);
@@ -199,7 +202,15 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text('Changes saved successfully'), findsOneWidget);
-          verify(() => dio.get('/tenants/my-firm')).called(2);
+          // The sidebar renders the firm name, so the sanctioned UI is the
+          // authoritative confirmation that the refetched payload replaced
+          // the displayed one without a reload or navigation.
+          expect(find.text('New Firm Name'), findsOneWidget);
+          expect(find.text('Old Firm Name'), findsNothing);
+          // Three reads: the session-driven load that now backs the sidebar's
+          // workspace identity, the panel's own entry fetch, and the refetch
+          // after the save — the last being the behaviour under test.
+          verify(() => dio.get('/tenants/my-firm')).called(3);
         });
       },
     );
@@ -273,27 +284,25 @@ void main() {
             findsOneWidget,
           );
 
+          // No avatar field exists in this panel: the backend exposes no
+          // avatar upload route, and an empty value would clear a value the
+          // user never saw. `avatarUrl`/`phone` are therefore omitted from the
+          // request entirely rather than sent blank.
+          expect(find.text('AVATAR URL'), findsNothing);
+
           final updatedUser = _firmAdminUser().copyWith(
             fullName: 'Updated Name',
-            avatarUrl: 'https://cdn.example.com/avatar.png',
           );
 
           when(
             () => authRepository.updateProfile(
               userId: 'u1',
               fullName: 'Updated Name',
-              avatarUrl: 'https://cdn.example.com/avatar.png',
             ),
           ).thenAnswer((_) async => Right(updatedUser));
 
           final nameField = find.byType(TextFormField).first;
           await tester.enterText(nameField, 'Updated Name');
-
-          final avatarFields = find.byType(TextFormField);
-          await tester.enterText(
-            avatarFields.at(2),
-            'https://cdn.example.com/avatar.png',
-          );
 
           await tester.tap(find.text('Save Changes'));
           await tester.pumpAndSettle();
@@ -347,6 +356,39 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => profileCubit.toggleLocale()).called(1);
+      });
+    });
+  });
+
+  group('subscription section', () {
+    // The standalone Subscription page was folded into Settings, so this panel
+    // is now the only place the firm's plan and status are shown.
+    Future<void> openSubscriptionPanel(WidgetTester tester) async {
+      when(
+        () => dio.get('/tenants/my-firm'),
+      ).thenAnswer((_) async => ok('/tenants/my-firm', firmPayload()));
+      when(
+        () => dio.get('/subscriptions/plans'),
+      ).thenAnswer((_) async => ok('/subscriptions/plans', <dynamic>[]));
+
+      await tester.pumpWidget(buildTestable());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Subscription plan & billing'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('renders the plan, cycle and status from the firm record', (
+      tester,
+    ) async {
+      await withLargeSurface(tester, () async {
+        await openSubscriptionPanel(tester);
+
+        expect(find.text('Basic'), findsOneWidget);
+        expect(find.text('Active'), findsOneWidget);
+        expect(find.textContaining('Monthly'), findsOneWidget);
+        // Still an inline section, not a pushed page.
+        expect(find.text('Subscription plan & billing'), findsOneWidget);
       });
     });
   });

@@ -11,6 +11,7 @@ import '../../../../core/widgets/app_date_field.dart';
 import '../../../../core/widgets/app_dropdown_field.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../di/injection.dart';
+import '../../../cases/presentation/case_display_helpers.dart';
 import '../../data/models/create_task_request.dart';
 import '../../data/models/update_task_request.dart';
 import '../../domain/entities/task_item.dart';
@@ -195,13 +196,19 @@ class _TaskFormViewState extends State<_TaskFormView> {
                       ],
                       const SizedBox(height: AppSpacing.m),
                       if (widget.fixedCaseId == null) ...[
+                        // Court number + year, not the internal generated
+                        // `caseNumber`: every other Case picker in the app
+                        // (Hearings, Meetings, Service, Finance, the Case
+                        // list itself) identifies a filed Case by its
+                        // judicial reference, and this dropdown was the one
+                        // place still showing the opaque firm-local number.
                         AppDropdownField<String?>(
                           label: context.tr('case'),
                           value: _caseId,
                           items: state.cases.map((c) => c.id),
-                          labelOf: (id) => state.cases
-                              .firstWhere((c) => c.id == id)
-                              .caseNumber,
+                          labelOf: (id) => legalCaseCourtReference(
+                            state.cases.firstWhere((c) => c.id == id),
+                          ),
                           onChanged: (v) => setState(() => _caseId = v),
                         ),
                         const SizedBox(height: AppSpacing.m),

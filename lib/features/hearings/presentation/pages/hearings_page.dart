@@ -158,6 +158,11 @@ class _HearingsPageState extends State<HearingsPage> with RouteAware {
       return EmptyState(
         icon: Icons.gavel_rounded,
         message: context.tr('no_hearings_found'),
+        // Employees receive only hearings on Cases they hold a `hearing.view`
+        // grant for, or that are assigned to them directly.
+        hint: currentUserIsEmployee()
+            ? context.tr('no_shared_records_hint')
+            : null,
       );
     }
     final sorted = [...hearings]

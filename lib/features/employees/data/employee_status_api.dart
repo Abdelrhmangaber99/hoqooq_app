@@ -21,3 +21,26 @@ import 'package:dio/dio.dart';
 Future<void> deactivateEmployee(Dio dio, String employeeId) async {
   await dio.delete('/employees/$employeeId');
 }
+
+/// Replaces an employee's password through `POST /employees/:id/credentials`
+/// (`SetEmployeeCredentialsDto { password }` — a single required field, per the
+/// deployed API's own schema).
+///
+/// The server also revokes the employee's sessions, which is why the reference
+/// desktop app follows this call with "the employee was signed out of all
+/// devices, share it with them securely" — and why the app never displays the
+/// password itself.
+///
+/// Firm-Admin-only on both sides: the desktop app reveals this action only to a
+/// Firm Admin (`accountType === 'FIRM_ADMIN'`), matching the backend route's
+/// own authorization.
+Future<void> setEmployeeCredentials(
+  Dio dio,
+  String employeeId,
+  String password,
+) async {
+  await dio.post(
+    '/employees/$employeeId/credentials',
+    data: {'password': password},
+  );
+}

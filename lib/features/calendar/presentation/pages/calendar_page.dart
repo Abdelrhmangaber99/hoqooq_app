@@ -26,18 +26,13 @@ class CalendarPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!currentUserHasPerm(PermissionCodes.calendarRead)) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: ErrorView(
-            message: context.tr('no_permission_message'),
-            isForbidden: true,
-            onRetry: () {},
-          ),
-        ),
-      );
-    }
+    // No page-level permission gate: the desktop app's sidebar map leaves the
+    // Calendar ungated (`calendar: null`) and its own permission editor tells
+    // the Firm Admin that "the dashboard and calendar are available to every
+    // employee and show only their own work". The timeline endpoint returns
+    // each employee only their own items, so there is nothing to hide here.
+    // Creating an event is still gated on `calendar.manage` in
+    // `_openCreateEvent` below.
     return BlocProvider(
       create: (context) => getIt<CalendarBloc>()..add(FetchTimelineRequested()),
       child: Builder(

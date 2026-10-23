@@ -262,6 +262,48 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('surfaces an unhandled 500 as ServerFailure with its message', () async {
+      // Reproduces the reported Employee symptom verbatim: the request shape
+      // is identical to the Firm Admin's (and to the desktop app's), so a
+      // failure here is the server's own unhandled exception, not a
+      // malformed request. NestJS's default 500 body is exactly this.
+      when(() => dio.patch('/tasks/t1/complete', data: any(named: 'data')))
+          .thenThrow(
+            DioException(
+              requestOptions: RequestOptions(path: '/tasks/t1/complete'),
+              response: Response(
+                requestOptions: RequestOptions(path: '/tasks/t1/complete'),
+                statusCode: 500,
+                data: {'statusCode': 500, 'message': 'Internal server error'},
+              ),
+              type: DioExceptionType.badResponse,
+            ),
+          );
+
+      final result = await repository.completeTask('t1', 'Filed');
+
+      result.fold((failure) {
+        expect(failure, isA<ServerFailure>());
+        expect(failure.message, 'Internal server error');
+      }, (_) => fail('expected Left'));
+    });
+
+    test('a non-Task response body fails as ServerFailure, not a throw', () async {
+      // An uncaught decode error would escape `_complete()` and the
+      // `CaseTasksBloc` handler before either can clear `isSubmitting`,
+      // leaving the button spinning with no error shown.
+      when(
+        () => dio.patch('/tasks/t1/complete', data: any(named: 'data')),
+      ).thenAnswer((_) async => okResponse('/tasks/t1/complete', <dynamic>[]));
+
+      final result = await repository.completeTask('t1', 'Filed');
+
+      result.fold(
+        (failure) => expect(failure, isA<ServerFailure>()),
+        (_) => fail('expected Left'),
+      );
+    });
   });
 
   group('cancelTask', () {

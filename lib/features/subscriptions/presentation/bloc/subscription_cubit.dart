@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 
 import '../../../../core/network/dio_error_mapper.dart';
+import '../../../authentication/presentation/bloc/session_cubit.dart';
 import 'subscription_state.dart';
 
 /// Single source of truth for the firm record (`/tenants/my-firm` — name,
@@ -13,11 +15,63 @@ import 'subscription_state.dart';
 /// sidebar all observe the same stream and every successful mutation
 /// immediately rebuilds every consumer — no per-screen duplicate copies of
 /// firm/subscription state, no manual refresh, no polling.
+///
+/// **The firm record is loaded from the session, not by whichever screen
+/// happens to open first.** The main-layout sidebar renders the firm's name
+/// and logo, so before this the sidebar fell back to the product wordmark
+/// after every fresh sign-in (nothing had fetched `/tenants/my-firm` yet),
+/// and a sign-out/sign-in could leave the *previous* session's firm on
+/// screen. Listening to [SessionCubit] fixes both: a sign-in loads the
+/// record, and a sign-out clears it.
 @lazySingleton
 class SubscriptionCubit extends Cubit<SubscriptionState> {
   final Dio _dio;
+  final SessionCubit _sessionCubit;
+  late final StreamSubscription<SessionState> _sessionSubscription;
 
-  SubscriptionCubit(this._dio) : super(const SubscriptionInitial());
+  SubscriptionCubit(this._dio, this._sessionCubit)
+    : super(const SubscriptionInitial()) {
+    _sessionSubscription = _sessionCubit.stream.listen(_onSessionChanged);
+    // The cubit is resolved lazily, so the session may already be signed in
+    // by the time it exists — an existing state must be handled too, not
+    // only future stream events.
+    _onSessionChanged(_sessionCubit.state);
+  }
+
+  /// Loads the firm record as soon as there is a session that has none, and
+  /// drops it on sign-out so the next session never sees the previous firm.
+  ///
+  /// The fetch is skipped when the loaded firm already matches the signed-in
+  /// tenant: the refresh interceptor re-emits `SessionAuthenticated` after a
+  /// token refresh, and refetching the firm on every one of those would be a
+  /// needless request storm.
+  void _onSessionChanged(SessionState session) {
+    if (session is! SessionAuthenticated) {
+      if (state is! SubscriptionInitial) emit(const SubscriptionInitial());
+      return;
+    }
+    // A platform administrator belongs to no firm, so there is nothing to
+    // load and `/tenants/my-firm` would only 404/403 for them.
+    if (session.user.isSuperAdmin) return;
+
+    final current = state;
+    final loadedFirmId = current is SubscriptionLoaded
+        ? current.firm['id']?.toString()
+        : null;
+    final tenantId = session.user.tenant?.id;
+    if (loadedFirmId != null &&
+        tenantId != null &&
+        loadedFirmId == tenantId) {
+      return;
+    }
+    fetchSubscription();
+  }
+
+  @override
+  Future<void> close() async {
+    await _sessionSubscription.cancel();
+    return super.close();
+  }
 
   Future<void> fetchSubscription() async {
     emit(const SubscriptionLoading());
@@ -30,8 +84,15 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
             )),
       ]);
 
-      final firm = Map<String, dynamic>.from(responses[0].data as Map);
-      final plansRaw = responses[1].data;
+      final firmRaw = responses[0].data;
+      final Map<String, dynamic> firm = firmRaw is Map
+          ? Map<String, dynamic>.from(
+              (firmRaw['data'] is Map ? firmRaw['data'] : firmRaw) as Map)
+          : <String, dynamic>{};
+
+      final plansRaw = responses[1].data is Map && (responses[1].data as Map)['data'] is List
+          ? (responses[1].data as Map)['data']
+          : responses[1].data;
       final plans = plansRaw is List
           ? plansRaw.map((e) => Map<String, dynamic>.from(e as Map)).toList()
           : <Map<String, dynamic>>[];
@@ -87,7 +148,9 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   Future<void> _refetch() async {
     try {
       final response = await _dio.get('/tenants/my-firm');
-      final firm = Map<String, dynamic>.from(response.data as Map);
+      final firmRaw = response.data;
+      final firm = Map<String, dynamic>.from(
+          (firmRaw is Map && firmRaw['data'] is Map ? firmRaw['data'] : firmRaw) as Map);
       if (state is SubscriptionLoaded) {
         emit((state as SubscriptionLoaded).copyWith(
           firm: firm,

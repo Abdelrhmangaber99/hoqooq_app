@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hqooq/features/authentication/domain/entities/tenant_ref.dart';
+import 'package:hqooq/features/authentication/domain/entities/user.dart';
+import 'package:hqooq/features/authentication/presentation/bloc/session_cubit.dart';
 import 'package:hqooq/features/subscriptions/presentation/bloc/subscription_cubit.dart';
 import 'package:hqooq/features/subscriptions/presentation/bloc/subscription_state.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,7 +13,19 @@ class MockDio extends Mock implements Dio {}
 
 void main() {
   late MockDio dio;
+  late SessionCubit sessionCubit;
   late SubscriptionCubit cubit;
+
+  User firmUser({String tenantId = 'firm-1'}) => User(
+    id: 'u1',
+    email: 'admin@firm.com',
+    fullName: 'Jane Doe',
+    status: 'ACTIVE',
+    createdAt: DateTime(2026, 1, 1),
+    updatedAt: DateTime(2026, 1, 1),
+    accountType: 'FIRM_ADMIN',
+    tenant: TenantRef(id: tenantId, name: 'Firm'),
+  );
 
   const activePlan = {
     'id': 'plan-basic',
@@ -64,7 +79,79 @@ void main() {
 
   setUp(() {
     dio = MockDio();
-    cubit = SubscriptionCubit(dio);
+    sessionCubit = SessionCubit();
+    cubit = SubscriptionCubit(dio, sessionCubit);
+  });
+
+  tearDown(() => cubit.close());
+
+  // The firm record backs the sidebar's workspace name and logo, so it has to
+  // exist as soon as a session does — not only after some screen that happens
+  // to fetch it is opened.
+  group('session-driven firm loading', () {
+    test('signing in loads the firm record', () async {
+      when(
+        () => dio.get('/tenants/my-firm'),
+      ).thenAnswer((_) async => ok('/tenants/my-firm', firmPayload()));
+      stubPlans();
+
+      sessionCubit.authenticated(firmUser(), 'token', isFirmAdmin: true);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, isA<SubscriptionLoaded>());
+      expect((cubit.state as SubscriptionLoaded).firm['id'], 'firm-1');
+    });
+
+    test('signing out clears the previous session\'s firm', () async {
+      when(
+        () => dio.get('/tenants/my-firm'),
+      ).thenAnswer((_) async => ok('/tenants/my-firm', firmPayload()));
+      stubPlans();
+
+      sessionCubit.authenticated(firmUser(), 'token', isFirmAdmin: true);
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.state, isA<SubscriptionLoaded>());
+
+      sessionCubit.unauthenticated();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, isA<SubscriptionInitial>());
+    });
+
+    test('a token refresh re-emitting the session does not refetch', () async {
+      when(
+        () => dio.get('/tenants/my-firm'),
+      ).thenAnswer((_) async => ok('/tenants/my-firm', firmPayload()));
+      stubPlans();
+
+      sessionCubit.authenticated(firmUser(), 'token', isFirmAdmin: true);
+      await Future<void>.delayed(Duration.zero);
+      clearInteractions(dio);
+
+      // Same tenant: the loaded record already matches.
+      sessionCubit.authenticated(firmUser(), 'new-token', isFirmAdmin: true);
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(() => dio.get('/tenants/my-firm'));
+    });
+
+    test('a platform administrator never requests a firm record', () async {
+      final superAdmin = User(
+        id: 'sa',
+        email: 'sa@platform.com',
+        fullName: 'System Admin',
+        status: 'ACTIVE',
+        createdAt: DateTime(2026, 1, 1),
+        updatedAt: DateTime(2026, 1, 1),
+        accountType: 'SUPER_ADMIN',
+      );
+
+      sessionCubit.authenticated(superAdmin, 'token', isFirmAdmin: false);
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(() => dio.get('/tenants/my-firm'));
+      expect(cubit.state, isA<SubscriptionInitial>());
+    });
   });
 
   group('fetchSubscription', () {

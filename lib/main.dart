@@ -42,7 +42,7 @@ class MyApp extends StatelessWidget {
       ],
       child: BlocBuilder<LocaleBloc, LocaleState>(
         builder: (context, localeState) => MaterialApp.router(
-          title: 'Lexora',
+          title: 'hoqooq',
           debugShowCheckedModeBanner: false,
           // Light mode only. No `darkTheme`/`themeMode` is supplied, so the
           // removed in-app switch cannot come back and the device's own

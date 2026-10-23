@@ -255,7 +255,7 @@ void main() {
   );
 
   blocTest<DashboardBloc, DashboardState>(
-    '(2)(3)(4) never requests firm aggregates without finance.firm.read — '
+    '(2)(3)(4) never requests firm aggregates without finance.firm.view — '
     'including ACCOUNTANT-classified and case-only finance users',
     setUp: () {
       sessionCubit.authenticated(
@@ -385,7 +385,7 @@ void main() {
   );
 
   blocTest<DashboardBloc, DashboardState>(
-    '(14) ignores finance refresh requests once finance.firm.read is '
+    '(14) ignores finance refresh requests once finance.firm.view is '
     'revoked mid-session — no stale data, no further requests',
     setUp: () {
       when(

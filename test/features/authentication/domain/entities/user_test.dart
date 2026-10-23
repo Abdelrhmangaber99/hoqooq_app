@@ -160,6 +160,6 @@ void main() {
 
     expect(user.isEmployee, isTrue);
     expect(user.isLawyer, isTrue);
-    expect(user.hasPerm('finance.firm.read'), isFalse);
+    expect(user.hasPerm('finance.firm.view'), isFalse);
   });
 }

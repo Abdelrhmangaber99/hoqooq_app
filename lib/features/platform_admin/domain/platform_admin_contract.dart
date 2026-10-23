@@ -49,11 +49,21 @@ class PlatformAdminContract {
   /// resources"`.
   static Map<String, dynamic> normalizeTenant(Object? value) {
     if (value is! Map) return <String, dynamic>{};
-    var source = value['tenant'] is Map
+    var source = value['data'] is Map
+        ? Map<String, dynamic>.from(value['data'] as Map)
+        : value['tenant'] is Map
         ? Map<String, dynamic>.from(value['tenant'] as Map)
         : Map<String, dynamic>.from(value);
     if (source['firm'] is Map) {
-      final admin = source['firmAdmin'];
+      Object? admin = source['firmAdmin'];
+      if (admin == null) {
+        for (final key in const ['admin', 'ownerUser', 'owner', 'firm_admin', 'ownerAdmin']) {
+          if (source[key] is Map) {
+            admin = source[key];
+            break;
+          }
+        }
+      }
       final subscription = source['currentSubscription'];
       source = Map<String, dynamic>.from(source['firm'] as Map);
       if (admin is Map) {
@@ -61,6 +71,14 @@ class PlatformAdminContract {
       }
       if (subscription is Map) {
         source['currentSubscription'] = Map<String, dynamic>.from(subscription);
+      }
+    }
+    if (source['firmAdmin'] == null) {
+      for (final key in const ['admin', 'ownerUser', 'owner', 'firm_admin', 'ownerAdmin']) {
+        if (source[key] is Map) {
+          source['firmAdmin'] = Map<String, dynamic>.from(source[key] as Map);
+          break;
+        }
       }
     }
     final name =
@@ -88,7 +106,7 @@ class PlatformAdminContract {
   /// employee array. Keep that response compatible with the platform pages.
   static Map<String, dynamic>? overviewAdmin(Object? data) {
     if (data is! Map) return null;
-    for (final key in const ['firmAdmin', 'admin', 'ownerUser', 'owner']) {
+    for (final key in const ['firmAdmin', 'admin', 'ownerUser', 'owner', 'firm_admin', 'ownerAdmin', 'user']) {
       final value = data[key];
       if (value is Map) return Map<String, dynamic>.from(value);
     }
